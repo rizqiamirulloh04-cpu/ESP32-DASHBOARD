@@ -1,3 +1,5 @@
+#define STEERING_PIN 2
+#define THROTTLE_PIN 3
 #include <Arduino.h>
 #include "CyberUI.h"
 #include <WiFi.h>
