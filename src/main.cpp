@@ -3,7 +3,7 @@
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
-
+#include "WebDashboard.h"
 #include <Arduino_GFX_Library.h>
 
 // ======================================================
@@ -246,6 +246,7 @@ void setup()
     // START SERVER
     // =========================
 
+    initWebDashboard();
     server.begin();
 
     Serial.println("Server Started");
@@ -258,4 +259,6 @@ void setup()
 void loop()
 {
     updateCyberUI();
+
+    handleWebDashboard();
 }
