@@ -68,7 +68,7 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 // LVGL BUFFER
 // ======================================================
 
-static lv_color_t buf1[172 * 20];
+static lv_color_t buf1[320 * 20];
 
 // ======================================================
 // WEB SERVER
@@ -298,8 +298,8 @@ void setup()
 
     lv_display_t *disp =
         lv_display_create(
-            172,
-            320
+            320,
+            172
         );
 
     lv_display_set_flush_cb(
@@ -343,7 +343,7 @@ void setup()
 
     gfx->setCursor(
         10,
-        300
+        150
     );
 
     gfx->println(IP);
