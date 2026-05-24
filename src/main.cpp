@@ -16,32 +16,41 @@
 // WAVESHARE ESP32-C6 LCD 1.47
 // ======================================================
 
-#define TFT_BL    15
+#define TFT_BL    22
 
-#define TFT_DC    8
+#define TFT_MOSI  6
+#define TFT_SCLK  7
+#define TFT_DC    15
 #define TFT_CS    14
 #define TFT_RST   21
 
 // ======================================================
-// SPI DISPLAY
+// DISPLAY BUS
 // ======================================================
 
-Arduino_DataBus *bus = new Arduino_HWSPI(
+Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
-    TFT_CS
+    TFT_CS,
+    TFT_SCLK,
+    TFT_MOSI,
+    GFX_NOT_DEFINED
 );
+
+// ======================================================
+// DISPLAY
+// ======================================================
 
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    1,      // rotation
-    true,   // IPS
-    172,    // width
-    320,    // height
-    34,     // col offset 1
-    0,      // row offset 1
-    34,     // col offset 2
-    0       // row offset 2
+    1,
+    true,
+    172,
+    320,
+    34,
+    0,
+    34,
+    0
 );
 
 // ======================================================
@@ -52,45 +61,33 @@ void setup()
 {
     Serial.begin(115200);
 
-    // =========================
     // BACKLIGHT
-    // =========================
 
     pinMode(TFT_BL, OUTPUT);
-
-    // COBA HIGH DULU
     digitalWrite(TFT_BL, HIGH);
 
-    // =========================
-    // LCD RESET
-    // =========================
+    // RESET
 
     pinMode(TFT_RST, OUTPUT);
 
     digitalWrite(TFT_RST, HIGH);
-    delay(100);
+    delay(50);
 
     digitalWrite(TFT_RST, LOW);
-    delay(100);
+    delay(50);
 
     digitalWrite(TFT_RST, HIGH);
     delay(200);
 
-    // =========================
     // DISPLAY INIT
-    // =========================
 
     gfx->begin();
 
-    gfx->invertDisplay(true);
-
     gfx->setRotation(1);
 
-    // =========================
-    // TEST SCREEN
-    // =========================
-
     gfx->fillScreen(BLACK);
+
+    // BORDER
 
     gfx->drawRect(
         0,
@@ -100,9 +97,7 @@ void setup()
         CYAN
     );
 
-    // =========================
     // TEXT
-    // =========================
 
     gfx->setTextColor(WHITE);
 
@@ -115,11 +110,9 @@ void setup()
     gfx->println("ESP32-C6");
 
     gfx->setCursor(20, 120);
-    gfx->println("WAVESHARE 1.47");
+    gfx->println("WAVESHARE LCD");
 
-    // =========================
     // COLOR TEST
-    // =========================
 
     gfx->fillRect(250, 20, 40, 40, RED);
 
@@ -129,10 +122,6 @@ void setup()
 
     Serial.println("LCD TEST DONE");
 }
-
-// ======================================================
-// LOOP
-// ======================================================
 
 void loop()
 {
