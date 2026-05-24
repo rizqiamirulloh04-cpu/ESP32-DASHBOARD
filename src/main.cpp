@@ -289,7 +289,7 @@ void setup()
     gfx->begin();
 
     gfx->fillScreen(
-        TFT_BLACK
+        BLACK
     );
 
     // LVGL
@@ -336,7 +336,7 @@ void setup()
     // SHOW IP
 
     gfx->setTextColor(
-        TFT_WHITE
+        WHITE
     );
 
     gfx->setTextSize(2);
@@ -355,7 +355,7 @@ void setup()
         WebRequestMethod::HTTP_GET,
         [](AsyncWebServerRequest *request)
         {
-            request->send_P(
+            request->send(
                 200,
                 "text/html",
                 index_html
