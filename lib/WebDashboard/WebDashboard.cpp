@@ -155,7 +155,7 @@ void initWebDashboard()
     server.on("/dashboard", HTTP_GET,
     [](AsyncWebServerRequest *request)
     {
-        request->send_P(
+        request->send(
             200,
             "text/html",
             dashboard_html
