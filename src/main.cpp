@@ -1,12 +1,15 @@
-#define STEERING_PIN 2
-#define THROTTLE_PIN 3
 #include <Arduino.h>
-#include "CyberUI.h"
+
 #include <WiFi.h>
+
 #include <ESPAsyncWebServer.h>
+#include <AsyncTCP.h>
 #include <AsyncElegantOTA.h>
-#include "WebDashboard.h"
+
 #include <Arduino_GFX_Library.h>
+
+#include "CyberUI.h"
+#include "WebDashboard.h"
 
 // ======================================================
 // HOTSPOT
@@ -14,6 +17,13 @@
 
 const char* ap_ssid = "ESP32-DASHBOARD";
 const char* ap_password = "12345678";
+
+// ======================================================
+// RECEIVER PINS
+// ======================================================
+
+#define STEERING_PIN 2
+#define THROTTLE_PIN 3
 
 // ======================================================
 // LCD PINS WAVESHARE 1.47
@@ -57,6 +67,16 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 // ======================================================
 
 AsyncWebServer server(80);
+
+// ======================================================
+// RECEIVER DATA
+// ======================================================
+
+volatile int throttlePWM = 1500;
+volatile int steeringPWM = 1500;
+
+int speedKMH = 0;
+int steeringAngle = 0;
 
 // ======================================================
 // HTML DASHBOARD
@@ -161,6 +181,56 @@ OTA Web Installer Ready
 )rawliteral";
 
 // ======================================================
+// READ RECEIVER
+// ======================================================
+
+void readReceiver()
+{
+    throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 25000);
+
+    steeringPWM = pulseIn(STEERING_PIN, HIGH, 25000);
+
+    // fallback
+    if(throttlePWM == 0)
+        throttlePWM = 1500;
+
+    if(steeringPWM == 0)
+        steeringPWM = 1500;
+
+    // =========================
+    // SPEED
+    // =========================
+
+    speedKMH = map(
+        throttlePWM,
+        1000,
+        2000,
+        0,
+        180
+    );
+
+    speedKMH = constrain(speedKMH, 0, 180);
+
+    // =========================
+    // STEERING
+    // =========================
+
+    steeringAngle = map(
+        steeringPWM,
+        1000,
+        2000,
+        -45,
+        45
+    );
+
+    steeringAngle = constrain(
+        steeringAngle,
+        -45,
+        45
+    );
+}
+
+// ======================================================
 // SETUP
 // ======================================================
 
@@ -169,10 +239,19 @@ void setup()
     Serial.begin(115200);
 
     // =========================
+    // RECEIVER INPUTS
+    // =========================
+
+    pinMode(STEERING_PIN, INPUT);
+
+    pinMode(THROTTLE_PIN, INPUT);
+
+    // =========================
     // BACKLIGHT
     // =========================
 
     pinMode(TFT_BL, OUTPUT);
+
     digitalWrite(TFT_BL, HIGH);
 
     // =========================
@@ -181,17 +260,7 @@ void setup()
 
     gfx->begin();
 
-    gfx->initCyberUI();
-
-    gfx->setTextColor(WHITE);
-
-    gfx->setTextSize(2);
-
-    gfx->setCursor(20, 40);
-    gfx->println("ESP32-DASHBOARD");
-
-    gfx->setCursor(20, 80);
-    gfx->println("Starting AP...");
+    initCyberUI();
 
     // =========================
     // WIFI AP MODE
@@ -207,25 +276,16 @@ void setup()
     // LCD STATUS
     // =========================
 
-    gfx->fillScreen(BLACK);
+    gfx->setTextColor(WHITE);
 
-    gfx->setCursor(20, 30);
-    gfx->println("HOTSPOT ACTIVE");
+    gfx->setTextSize(2);
 
-    gfx->setCursor(20, 70);
-    gfx->println(ap_ssid);
+    gfx->setCursor(20, 260);
 
-    gfx->setCursor(20, 120);
-    gfx->println("OPEN:");
-
-    gfx->setCursor(20, 160);
     gfx->println(IP);
 
-    gfx->setCursor(20, 220);
-    gfx->println("OTA READY");
-
     // =========================
-    // WEB PAGE
+    // ROOT PAGE
     // =========================
 
     server.on("/", HTTP_GET,
@@ -239,6 +299,12 @@ void setup()
     });
 
     // =========================
+    // WEB DASHBOARD
+    // =========================
+
+    initWebDashboard();
+
+    // =========================
     // OTA
     // =========================
 
@@ -248,7 +314,6 @@ void setup()
     // START SERVER
     // =========================
 
-    initWebDashboard();
     server.begin();
 
     Serial.println("Server Started");
@@ -260,7 +325,41 @@ void setup()
 
 void loop()
 {
+    // =========================
+    // READ RC RECEIVER
+    // =========================
+
+    readReceiver();
+
+    // =========================
+    // UPDATE UI
+    // =========================
+
     updateCyberUI();
 
+    // =========================
+    // HANDLE WEBSOCKET
+    // =========================
+
     handleWebDashboard();
+
+    // =========================
+    // SERIAL DEBUG
+    // =========================
+
+    Serial.print("Throttle PWM: ");
+    Serial.print(throttlePWM);
+
+    Serial.print(" | Steering PWM: ");
+    Serial.print(steeringPWM);
+
+    Serial.print(" | Speed: ");
+    Serial.print(speedKMH);
+
+    Serial.print(" km/h");
+
+    Serial.print(" | Steering: ");
+    Serial.println(steeringAngle);
+
+    delay(20);
 }
