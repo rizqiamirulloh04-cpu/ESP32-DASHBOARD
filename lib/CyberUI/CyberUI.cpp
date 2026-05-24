@@ -4,12 +4,22 @@
 extern Arduino_GFX *gfx;
 
 // ======================================================
+// RGB565 COLORS
+// ======================================================
+
+#define COLOR_BLACK     0x0000
+#define COLOR_WHITE     0xFFFF
+#define COLOR_CYAN      0x07FF
+#define COLOR_GREEN     0x07E0
+#define COLOR_DARKGREY  0x7BEF
+
+// ======================================================
 // INIT UI
 // ======================================================
 
 void initCyberUI()
 {
-    gfx->fillScreen(TFT_BLACK);
+    gfx->fillScreen(COLOR_BLACK);
 
     // HEADER
 
@@ -18,10 +28,10 @@ void initCyberUI()
         0,
         320,
         30,
-        TFT_CYAN
+        COLOR_CYAN
     );
 
-    gfx->setTextColor(TFT_BLACK);
+    gfx->setTextColor(COLOR_BLACK);
 
     gfx->setTextSize(2);
 
@@ -31,7 +41,7 @@ void initCyberUI()
 
     // BODY
 
-    gfx->setTextColor(TFT_WHITE);
+    gfx->setTextColor(COLOR_WHITE);
 
     gfx->setCursor(20, 60);
     gfx->println("SYSTEM ONLINE");
@@ -49,7 +59,7 @@ void initCyberUI()
         180,
         290,
         80,
-        TFT_CYAN
+        COLOR_CYAN
     );
 
     gfx->setCursor(30, 210);
@@ -79,7 +89,7 @@ void updateCyberUI()
                 280,
                 15,
                 6,
-                TFT_GREEN
+                COLOR_GREEN
             );
         }
         else
@@ -88,7 +98,7 @@ void updateCyberUI()
                 280,
                 15,
                 6,
-                TFT_DARKGREY
+                COLOR_DARKGREY
             );
         }
     }
