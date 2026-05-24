@@ -65,14 +65,10 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 );
 
 // ======================================================
-// LVGL
+// LVGL BUFFER
 // ======================================================
 
-static lv_disp_draw_buf_t draw_buf;
-
-static lv_color_t buf1[320 * 20];
-
-static lv_disp_drv_t disp_drv;
+static lv_color_t buf1[172 * 20];
 
 // ======================================================
 // WEB SERVER
@@ -137,25 +133,6 @@ h1{
     color:cyan;
 }
 
-.button{
-
-    display:inline-block;
-
-    margin-top:20px;
-
-    background:cyan;
-
-    color:black;
-
-    padding:14px 24px;
-
-    border-radius:12px;
-
-    text-decoration:none;
-
-    font-weight:bold;
-}
-
 .footer{
     margin-top:20px;
     opacity:0.5;
@@ -173,12 +150,12 @@ h1{
 <h1>ESP32-DASHBOARD</h1>
 
 <p>
-ESP32-C6 OTA Dashboard<br>
+ESP32-C6 Dashboard<br>
 Waveshare LCD 1.47
 </p>
 
 <div class="footer">
-Web Dashboard Ready
+WEB DASHBOARD READY
 </div>
 
 </div>
@@ -193,9 +170,9 @@ Web Dashboard Ready
 // ======================================================
 
 void my_disp_flush(
-    lv_disp_drv_t *disp,
+    lv_display_t *disp,
     const lv_area_t *area,
-    lv_color_t *color_p)
+    uint8_t *px_map)
 {
     uint32_t width =
         area->x2 - area->x1 + 1;
@@ -206,12 +183,12 @@ void my_disp_flush(
     gfx->draw16bitRGBBitmap(
         area->x1,
         area->y1,
-        (uint16_t *)&color_p->full,
+        (uint16_t *)px_map,
         width,
         height
     );
 
-    lv_disp_flush_ready(disp);
+    lv_display_flush_ready(disp);
 }
 
 // ======================================================
@@ -220,15 +197,27 @@ void my_disp_flush(
 
 void readReceiver()
 {
-    throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 25000);
+    throttlePWM =
+        pulseIn(
+            THROTTLE_PIN,
+            HIGH,
+            25000
+        );
 
-    steeringPWM = pulseIn(STEERING_PIN, HIGH, 25000);
+    steeringPWM =
+        pulseIn(
+            STEERING_PIN,
+            HIGH,
+            25000
+        );
 
     if(throttlePWM == 0)
         throttlePWM = 1500;
 
     if(steeringPWM == 0)
         steeringPWM = 1500;
+
+    // SPEED
 
     speedKMH = map(
         throttlePWM,
@@ -238,11 +227,14 @@ void readReceiver()
         180
     );
 
-    speedKMH = constrain(
-        speedKMH,
-        0,
-        180
-    );
+    speedKMH =
+        constrain(
+            speedKMH,
+            0,
+            180
+        );
+
+    // STEERING
 
     steeringAngle = map(
         steeringPWM,
@@ -252,11 +244,12 @@ void readReceiver()
         45
     );
 
-    steeringAngle = constrain(
-        steeringAngle,
-        -45,
-        45
-    );
+    steeringAngle =
+        constrain(
+            steeringAngle,
+            -45,
+            45
+        );
 }
 
 // ======================================================
@@ -267,40 +260,68 @@ void setup()
 {
     Serial.begin(115200);
 
-    pinMode(STEERING_PIN, INPUT);
+    // RECEIVER
 
-    pinMode(THROTTLE_PIN, INPUT);
+    pinMode(
+        STEERING_PIN,
+        INPUT
+    );
 
-    pinMode(TFT_BL, OUTPUT);
+    pinMode(
+        THROTTLE_PIN,
+        INPUT
+    );
 
-    digitalWrite(TFT_BL, HIGH);
+    // BACKLIGHT
+
+    pinMode(
+        TFT_BL,
+        OUTPUT
+    );
+
+    digitalWrite(
+        TFT_BL,
+        HIGH
+    );
+
+    // DISPLAY
 
     gfx->begin();
 
-    lv_init();
-
-    lv_disp_draw_buf_init(
-        &draw_buf,
-        buf1,
-        NULL,
-        320 * 20
+    gfx->fillScreen(
+        TFT_BLACK
     );
 
-    lv_disp_drv_init(&disp_drv);
+    // LVGL
 
-    disp_drv.hor_res = 320;
+    lv_init();
 
-    disp_drv.ver_res = 172;
+    lv_display_t *disp =
+        lv_display_create(
+            172,
+            320
+        );
 
-    disp_drv.flush_cb = my_disp_flush;
+    lv_display_set_flush_cb(
+        disp,
+        my_disp_flush
+    );
 
-    disp_drv.draw_buf = &draw_buf;
+    lv_display_set_buffers(
+        disp,
+        buf1,
+        NULL,
+        sizeof(buf1),
+        LV_DISPLAY_RENDER_MODE_PARTIAL
+    );
 
-    lv_disp_drv_register(&disp_drv);
+    // UI
 
     initCyberUI();
 
     initLVGLDashboard();
+
+    // WIFI AP
 
     WiFi.softAP(
         ap_ssid,
@@ -312,30 +333,42 @@ void setup()
 
     Serial.println(IP);
 
-    gfx->setTextColor(TFT_WHITE);
+    // SHOW IP
+
+    gfx->setTextColor(
+        TFT_WHITE
+    );
 
     gfx->setTextSize(2);
 
-    gfx->setCursor(20, 260);
+    gfx->setCursor(
+        10,
+        300
+    );
 
     gfx->println(IP);
 
-    server.on("/", WebRequestMethod::HTTP_GET,
-    [](AsyncWebServerRequest *request)
-    {
-        request->send_P(
-            200,
-            "text/html",
-            index_html
-        );
-    });
+    // WEB SERVER
+
+    server.on(
+        "/",
+        WebRequestMethod::HTTP_GET,
+        [](AsyncWebServerRequest *request)
+        {
+            request->send_P(
+                200,
+                "text/html",
+                index_html
+            );
+        }
+    );
 
     initWebDashboard();
 
     server.begin();
 
     Serial.println(
-        "Server Started"
+        "SERVER STARTED"
     );
 }
 
@@ -345,7 +378,11 @@ void setup()
 
 void loop()
 {
+    // READ RECEIVER
+
     readReceiver();
+
+    // UPDATE UI
 
     updateCyberUI();
 
@@ -354,23 +391,51 @@ void loop()
         steeringAngle
     );
 
+    // LVGL
+
     lv_timer_handler();
+
+    // WEB
 
     handleWebDashboard();
 
-    Serial.print("Throttle PWM: ");
-    Serial.print(throttlePWM);
+    // DEBUG
 
-    Serial.print(" | Steering PWM: ");
-    Serial.print(steeringPWM);
+    Serial.print(
+        "Throttle PWM: "
+    );
 
-    Serial.print(" | Speed: ");
-    Serial.print(speedKMH);
+    Serial.print(
+        throttlePWM
+    );
 
-    Serial.print(" km/h");
+    Serial.print(
+        " | Steering PWM: "
+    );
 
-    Serial.print(" | Steering: ");
-    Serial.println(steeringAngle);
+    Serial.print(
+        steeringPWM
+    );
+
+    Serial.print(
+        " | Speed: "
+    );
+
+    Serial.print(
+        speedKMH
+    );
+
+    Serial.print(
+        " km/h"
+    );
+
+    Serial.print(
+        " | Steering: "
+    );
+
+    Serial.println(
+        steeringAngle
+    );
 
     delay(20);
 }
