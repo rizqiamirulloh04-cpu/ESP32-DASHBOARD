@@ -58,14 +58,14 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    0,
-    true,
-    172,
-    320,
-    34,
-    0,
-    34,
-    0
+    0,          // rotation
+    true,       // IPS
+    172,        // width
+    320,        // height
+    34,         // col offset 1
+    0,          // row offset 1
+    34,         // col offset 2
+    0           // row offset 2
 );
 
 // ======================================================
@@ -260,17 +260,21 @@ void setup()
 
     gfx->begin();
 
-    gfx->setRotation(1);
+pinMode(TFT_BL, OUTPUT);
+digitalWrite(TFT_BL, HIGH);
 
-    gfx->fillScreen(BLACK);
+gfx->fillScreen(BLACK);
 
-    gfx->setTextColor(WHITE);
+gfx->setRotation(1);
 
-    gfx->setTextSize(2);
+gfx->setTextColor(WHITE);
+gfx->setTextSize(2);
 
-    gfx->setCursor(20, 40);
+gfx->setCursor(20, 40);
+gfx->println("DISPLAY OK");
 
-    gfx->println("DISPLAY OK");
+gfx->setCursor(20, 80);
+gfx->println("ESP32-C6");
 
     gfx->drawRect(
         0,
