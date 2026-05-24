@@ -1,8 +1,11 @@
 #pragma once
 
+#include <Arduino.h>
+
 #include <ESPAsyncWebServer.h>
 
-void initWebDashboard();
-void handleWebDashboard();
-
 extern AsyncWebServer server;
+
+void initWebDashboard();
+
+void handleWebDashboard();
