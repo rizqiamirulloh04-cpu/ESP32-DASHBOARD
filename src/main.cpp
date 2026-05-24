@@ -177,12 +177,8 @@ ESP32-C6 OTA Dashboard<br>
 Waveshare LCD 1.47
 </p>
 
-<a class="button" href="/update">
-UPLOAD FIRMWARE
-</a>
-
 <div class="footer">
-OTA Web Installer Ready
+Web Dashboard Ready
 </div>
 
 </div>
@@ -234,10 +230,6 @@ void readReceiver()
     if(steeringPWM == 0)
         steeringPWM = 1500;
 
-    // =========================
-    // SPEED
-    // =========================
-
     speedKMH = map(
         throttlePWM,
         1000,
@@ -251,10 +243,6 @@ void readReceiver()
         0,
         180
     );
-
-    // =========================
-    // STEERING
-    // =========================
 
     steeringAngle = map(
         steeringPWM,
@@ -279,31 +267,15 @@ void setup()
 {
     Serial.begin(115200);
 
-    // =========================
-    // RECEIVER INPUTS
-    // =========================
-
     pinMode(STEERING_PIN, INPUT);
 
     pinMode(THROTTLE_PIN, INPUT);
-
-    // =========================
-    // BACKLIGHT
-    // =========================
 
     pinMode(TFT_BL, OUTPUT);
 
     digitalWrite(TFT_BL, HIGH);
 
-    // =========================
-    // LCD INIT
-    // =========================
-
     gfx->begin();
-
-    // =========================
-    // LVGL INIT
-    // =========================
 
     lv_init();
 
@@ -326,21 +298,9 @@ void setup()
 
     lv_disp_drv_register(&disp_drv);
 
-    // =========================
-    // CYBER UI
-    // =========================
-
     initCyberUI();
 
-    // =========================
-    // LVGL DASHBOARD
-    // =========================
-
     initLVGLDashboard();
-
-    // =========================
-    // WIFI AP MODE
-    // =========================
 
     WiFi.softAP(
         ap_ssid,
@@ -352,11 +312,7 @@ void setup()
 
     Serial.println(IP);
 
-    // =========================
-    // LCD STATUS
-    // =========================
-
-    gfx->setTextColor(WHITE);
+    gfx->setTextColor(TFT_WHITE);
 
     gfx->setTextSize(2);
 
@@ -364,11 +320,7 @@ void setup()
 
     gfx->println(IP);
 
-    // =========================
-    // ROOT PAGE
-    // =========================
-
-    server.on("/", HTTP_GET,
+    server.on("/", WebRequestMethod::HTTP_GET,
     [](AsyncWebServerRequest *request)
     {
         request->send_P(
@@ -378,19 +330,7 @@ void setup()
         );
     });
 
-    // =========================
-    // WEB DASHBOARD
-    // =========================
-
     initWebDashboard();
-
-    // =========================
-    // OTA
-    // =========================
-
-    // =========================
-    // START SERVER
-    // =========================
 
     server.begin();
 
@@ -405,21 +345,9 @@ void setup()
 
 void loop()
 {
-    // =========================
-    // READ RC RECEIVER
-    // =========================
-
     readReceiver();
 
-    // =========================
-    // UPDATE CYBER UI
-    // =========================
-
     updateCyberUI();
-
-    // =========================
-    // UPDATE LVGL
-    // =========================
 
     updateLVGLDashboard(
         speedKMH,
@@ -428,15 +356,7 @@ void loop()
 
     lv_timer_handler();
 
-    // =========================
-    // HANDLE WEBSOCKET
-    // =========================
-
     handleWebDashboard();
-
-    // =========================
-    // SERIAL DEBUG
-    // =========================
 
     Serial.print("Throttle PWM: ");
     Serial.print(throttlePWM);
