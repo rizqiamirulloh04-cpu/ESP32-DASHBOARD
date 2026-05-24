@@ -9,19 +9,29 @@ extern Arduino_GFX *gfx;
 
 void initCyberUI()
 {
-    gfx->fillScreen(BLACK);
+    gfx->fillScreen(TFT_BLACK);
 
     // HEADER
-    gfx->fillRect(0, 0, 320, 30, CYAN);
 
-    gfx->setTextColor(BLACK);
+    gfx->fillRect(
+        0,
+        0,
+        320,
+        30,
+        TFT_CYAN
+    );
+
+    gfx->setTextColor(TFT_BLACK);
+
     gfx->setTextSize(2);
 
     gfx->setCursor(10, 8);
+
     gfx->println("CYBER DASHBOARD");
 
     // BODY
-    gfx->setTextColor(WHITE);
+
+    gfx->setTextColor(TFT_WHITE);
 
     gfx->setCursor(20, 60);
     gfx->println("SYSTEM ONLINE");
@@ -30,12 +40,20 @@ void initCyberUI()
     gfx->println("WIFI: ACTIVE");
 
     gfx->setCursor(20, 140);
-    gfx->println("WEB: READY");
+    gfx->println("OTA: READY");
 
     // STATUS BOX
-    gfx->drawRect(15, 180, 290, 80, CYAN);
+
+    gfx->drawRect(
+        15,
+        180,
+        290,
+        80,
+        TFT_CYAN
+    );
 
     gfx->setCursor(30, 210);
+
     gfx->println("Awaiting telemetry...");
 }
 
@@ -47,7 +65,7 @@ void updateCyberUI()
 {
     static uint32_t last = 0;
 
-    if (millis() - last > 1000)
+    if(millis() - last > 1000)
     {
         last = millis();
 
@@ -55,13 +73,23 @@ void updateCyberUI()
 
         blink = !blink;
 
-        if (blink)
+        if(blink)
         {
-            gfx->fillCircle(280, 15, 6, GREEN);
+            gfx->fillCircle(
+                280,
+                15,
+                6,
+                TFT_GREEN
+            );
         }
         else
         {
-            gfx->fillCircle(280, 15, 6, DARKGREY);
+            gfx->fillCircle(
+                280,
+                15,
+                6,
+                TFT_DARKGREY
+            );
         }
     }
 }
