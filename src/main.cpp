@@ -8,8 +8,11 @@
 
 #include <Arduino_GFX_Library.h>
 
+#include <lvgl.h>
+
 #include "CyberUI.h"
 #include "WebDashboard.h"
+#include "LVGLDashboard.h"
 
 // ======================================================
 // HOTSPOT
@@ -61,6 +64,16 @@ Arduino_GFX *gfx = new Arduino_ST7789(
     34,
     0
 );
+
+// ======================================================
+// LVGL
+// ======================================================
+
+static lv_disp_draw_buf_t draw_buf;
+
+static lv_color_t buf1[320 * 20];
+
+static lv_disp_drv_t disp_drv;
 
 // ======================================================
 // WEB SERVER
@@ -181,6 +194,32 @@ OTA Web Installer Ready
 )rawliteral";
 
 // ======================================================
+// LVGL DISPLAY FLUSH
+// ======================================================
+
+void my_disp_flush(
+    lv_disp_drv_t *disp,
+    const lv_area_t *area,
+    lv_color_t *color_p)
+{
+    uint32_t width =
+        area->x2 - area->x1 + 1;
+
+    uint32_t height =
+        area->y2 - area->y1 + 1;
+
+    gfx->draw16bitRGBBitmap(
+        area->x1,
+        area->y1,
+        (uint16_t *)&color_p->full,
+        width,
+        height
+    );
+
+    lv_disp_flush_ready(disp);
+}
+
+// ======================================================
 // READ RECEIVER
 // ======================================================
 
@@ -190,7 +229,6 @@ void readReceiver()
 
     steeringPWM = pulseIn(STEERING_PIN, HIGH, 25000);
 
-    // fallback
     if(throttlePWM == 0)
         throttlePWM = 1500;
 
@@ -209,7 +247,11 @@ void readReceiver()
         180
     );
 
-    speedKMH = constrain(speedKMH, 0, 180);
+    speedKMH = constrain(
+        speedKMH,
+        0,
+        180
+    );
 
     // =========================
     // STEERING
@@ -260,15 +302,54 @@ void setup()
 
     gfx->begin();
 
+    // =========================
+    // LVGL INIT
+    // =========================
+
+    lv_init();
+
+    lv_disp_draw_buf_init(
+        &draw_buf,
+        buf1,
+        NULL,
+        320 * 20
+    );
+
+    lv_disp_drv_init(&disp_drv);
+
+    disp_drv.hor_res = 320;
+
+    disp_drv.ver_res = 172;
+
+    disp_drv.flush_cb = my_disp_flush;
+
+    disp_drv.draw_buf = &draw_buf;
+
+    lv_disp_drv_register(&disp_drv);
+
+    // =========================
+    // CYBER UI
+    // =========================
+
     initCyberUI();
+
+    // =========================
+    // LVGL DASHBOARD
+    // =========================
+
+    initLVGLDashboard();
 
     // =========================
     // WIFI AP MODE
     // =========================
 
-    WiFi.softAP(ap_ssid, ap_password);
+    WiFi.softAP(
+        ap_ssid,
+        ap_password
+    );
 
-    IPAddress IP = WiFi.softAPIP();
+    IPAddress IP =
+        WiFi.softAPIP();
 
     Serial.println(IP);
 
@@ -308,7 +389,9 @@ void setup()
     // OTA
     // =========================
 
-    AsyncElegantOTA.begin(&server);
+    AsyncElegantOTA.begin(
+        &server
+    );
 
     // =========================
     // START SERVER
@@ -316,7 +399,9 @@ void setup()
 
     server.begin();
 
-    Serial.println("Server Started");
+    Serial.println(
+        "Server Started"
+    );
 }
 
 // ======================================================
@@ -332,10 +417,21 @@ void loop()
     readReceiver();
 
     // =========================
-    // UPDATE UI
+    // UPDATE CYBER UI
     // =========================
 
     updateCyberUI();
+
+    // =========================
+    // UPDATE LVGL
+    // =========================
+
+    updateLVGLDashboard(
+        speedKMH,
+        steeringAngle
+    );
+
+    lv_timer_handler();
 
     // =========================
     // HANDLE WEBSOCKET
