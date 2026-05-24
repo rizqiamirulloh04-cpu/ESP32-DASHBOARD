@@ -1,5 +1,11 @@
 #include <Arduino.h>
 
+#include <WiFi.h>
+
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+
+#include "WebDashboard.h">
 
 extern AsyncWebServer server;
 
