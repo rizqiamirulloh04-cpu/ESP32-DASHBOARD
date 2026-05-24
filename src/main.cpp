@@ -27,8 +27,8 @@ const char* ap_password = "12345678";
 // RECEIVER PINS
 // ======================================================
 
-#define STEERING_PIN 2
-#define THROTTLE_PIN 3
+#define STEERING_PIN  2
+#define THROTTLE_PIN  3
 
 // ======================================================
 // LCD PINS WAVESHARE 1.47
@@ -58,14 +58,14 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    0,          // rotation
-    true,       // IPS
-    172,        // width
-    320,        // height
-    34,         // col offset 1
-    0,          // row offset 1
-    34,         // col offset 2
-    0           // row offset 2
+    0,
+    true,
+    172,
+    320,
+    34,
+    0,
+    34,
+    0
 );
 
 // ======================================================
@@ -104,26 +104,18 @@ const char index_html[] PROGMEM = R"rawliteral(
 body{
     margin:0;
     padding:0;
-
     background:#0f0f0f;
     color:white;
-
     font-family:Arial;
-
     text-align:center;
 }
 
 .card{
     width:320px;
-
     margin:auto;
-
     margin-top:40px;
-
     background:#1b1b1b;
-
     border-radius:24px;
-
     padding:24px;
 }
 
@@ -169,19 +161,17 @@ WEB DASHBOARD READY
 
 void readReceiver()
 {
-    throttlePWM =
-        pulseIn(
-            THROTTLE_PIN,
-            HIGH,
-            25000
-        );
+    throttlePWM = pulseIn(
+        THROTTLE_PIN,
+        HIGH,
+        25000
+    );
 
-    steeringPWM =
-        pulseIn(
-            STEERING_PIN,
-            HIGH,
-            25000
-        );
+    steeringPWM = pulseIn(
+        STEERING_PIN,
+        HIGH,
+        25000
+    );
 
     if(throttlePWM == 0)
         throttlePWM = 1500;
@@ -199,12 +189,11 @@ void readReceiver()
         180
     );
 
-    speedKMH =
-        constrain(
-            speedKMH,
-            0,
-            180
-        );
+    speedKMH = constrain(
+        speedKMH,
+        0,
+        180
+    );
 
     // STEERING
 
@@ -216,12 +205,11 @@ void readReceiver()
         45
     );
 
-    steeringAngle =
-        constrain(
-            steeringAngle,
-            -45,
-            45
-        );
+    steeringAngle = constrain(
+        steeringAngle,
+        -45,
+        45
+    );
 }
 
 // ======================================================
@@ -260,21 +248,21 @@ void setup()
 
     gfx->begin();
 
-pinMode(TFT_BL, OUTPUT);
-digitalWrite(TFT_BL, HIGH);
+    gfx->invertDisplay(true);
 
-gfx->fillScreen(BLACK);
+    gfx->fillScreen(BLACK);
 
-gfx->setRotation(1);
+    gfx->setRotation(1);
 
-gfx->setTextColor(WHITE);
-gfx->setTextSize(2);
+    gfx->setTextColor(WHITE);
 
-gfx->setCursor(20, 40);
-gfx->println("DISPLAY OK");
+    gfx->setTextSize(2);
 
-gfx->setCursor(20, 80);
-gfx->println("ESP32-C6");
+    gfx->setCursor(20, 40);
+    gfx->println("DISPLAY OK");
+
+    gfx->setCursor(20, 80);
+    gfx->println("ESP32-C6");
 
     gfx->drawRect(
         0,
@@ -298,11 +286,7 @@ gfx->println("ESP32-C6");
 
     // SHOW IP
 
-    gfx->setCursor(
-        20,
-        90
-    );
-
+    gfx->setCursor(20, 120);
     gfx->println(IP);
 
     // WEB SERVER
@@ -324,9 +308,7 @@ gfx->println("ESP32-C6");
 
     server.begin();
 
-    Serial.println(
-        "SERVER STARTED"
-    );
+    Serial.println("SERVER STARTED");
 }
 
 // ======================================================
@@ -339,51 +321,25 @@ void loop()
 
     readReceiver();
 
-    // UPDATE UI
-
-    updateCyberUI();
-
     // WEB
 
     handleWebDashboard();
 
     // DEBUG
 
-    Serial.print(
-        "Throttle PWM: "
-    );
+    Serial.print("Throttle PWM: ");
+    Serial.print(throttlePWM);
 
-    Serial.print(
-        throttlePWM
-    );
+    Serial.print(" | Steering PWM: ");
+    Serial.print(steeringPWM);
 
-    Serial.print(
-        " | Steering PWM: "
-    );
+    Serial.print(" | Speed: ");
+    Serial.print(speedKMH);
 
-    Serial.print(
-        steeringPWM
-    );
+    Serial.print(" km/h");
 
-    Serial.print(
-        " | Speed: "
-    );
-
-    Serial.print(
-        speedKMH
-    );
-
-    Serial.print(
-        " km/h"
-    );
-
-    Serial.print(
-        " | Steering: "
-    );
-
-    Serial.println(
-        steeringAngle
-    );
+    Serial.print(" | Steering: ");
+    Serial.println(steeringAngle);
 
     delay(20);
 }
