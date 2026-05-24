@@ -9,6 +9,12 @@
 
 #include <lvgl.h>
 
+#define BLACK 0x0000
+#define WHITE 0xFFFF
+#define CYAN  0x07FF
+#define GREEN 0x07E0
+#define DARKGREY 0x7BEF
+
 #include "CyberUI.h"
 #include "WebDashboard.h"
 #include "LVGLDashboard.h"
