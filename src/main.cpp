@@ -293,6 +293,12 @@ void setup()
     // DISPLAY
 
     gfx->begin();
+gfx->fillScreen(BLACK);
+
+gfx->setCursor(20, 40);
+gfx->setTextColor(WHITE);
+gfx->setTextSize(2);
+gfx->println("DISPLAY OK");
 
     gfx->fillScreen(
         BLACK
