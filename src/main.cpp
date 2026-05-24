@@ -179,7 +179,7 @@ void setup()
 
     gfx->begin();
 
-    gfx->fillScreen(BLACK);
+    gfx->initCyberUI();
 
     gfx->setTextColor(WHITE);
 
@@ -257,5 +257,5 @@ void setup()
 
 void loop()
 {
-
+    updateCyberUI();
 }
