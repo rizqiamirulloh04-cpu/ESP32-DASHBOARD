@@ -1,0 +1,22 @@
+# PlatformIO
+.pio/
+
+# VSCode
+.vscode/
+
+# Build Files
+*.bin
+*.elf
+
+# Logs
+*.log
+
+# Temporary Files
+*.tmp
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
