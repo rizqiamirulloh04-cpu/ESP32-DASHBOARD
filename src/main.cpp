@@ -7,17 +7,14 @@
 
 #include <Arduino_GFX_Library.h>
 
-#include <lvgl.h>
-
-#define BLACK 0x0000
-#define WHITE 0xFFFF
-#define CYAN  0x07FF
-#define GREEN 0x07E0
-#define DARKGREY 0x7BEF
+#define BLACK     0x0000
+#define WHITE     0xFFFF
+#define CYAN      0x07FF
+#define GREEN     0x07E0
+#define DARKGREY  0x7BEF
 
 #include "CyberUI.h"
 #include "WebDashboard.h"
-#include "LVGLDashboard.h"
 
 // ======================================================
 // HOTSPOT
@@ -37,13 +34,14 @@ const char* ap_password = "12345678";
 // LCD PINS WAVESHARE 1.47
 // ======================================================
 
-#define TFT_BL   15
+#define TFT_BL    15
 
-#define TFT_MOSI 6
-#define TFT_SCLK 7
-#define TFT_DC   8
-#define TFT_RST  9
-#define TFT_CS   14
+#define TFT_MOSI  6
+#define TFT_SCLK  7
+#define TFT_DC    8
+#define TFT_CS    14
+
+#define TFT_RST   GFX_NOT_DEFINED
 
 // ======================================================
 // DISPLAY
@@ -60,7 +58,7 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    1,
+    0,
     true,
     172,
     320,
@@ -69,12 +67,6 @@ Arduino_GFX *gfx = new Arduino_ST7789(
     34,
     0
 );
-
-// ======================================================
-// LVGL BUFFER
-// ======================================================
-
-static lv_color_t buf1[320 * 20];
 
 // ======================================================
 // WEB SERVER
@@ -172,32 +164,6 @@ WEB DASHBOARD READY
 )rawliteral";
 
 // ======================================================
-// LVGL DISPLAY FLUSH
-// ======================================================
-
-void my_disp_flush(
-    lv_display_t *disp,
-    const lv_area_t *area,
-    uint8_t *px_map)
-{
-    uint32_t width =
-        area->x2 - area->x1 + 1;
-
-    uint32_t height =
-        area->y2 - area->y1 + 1;
-
-    gfx->draw16bitRGBBitmap(
-        area->x1,
-        area->y1,
-        (uint16_t *)px_map,
-        width,
-        height
-    );
-
-    lv_display_flush_ready(disp);
-}
-
-// ======================================================
 // READ RECEIVER
 // ======================================================
 
@@ -293,45 +259,26 @@ void setup()
     // DISPLAY
 
     gfx->begin();
-gfx->fillScreen(BLACK);
 
-gfx->setCursor(20, 40);
-gfx->setTextColor(WHITE);
-gfx->setTextSize(2);
-gfx->println("DISPLAY OK");
+    gfx->setRotation(1);
 
-    gfx->fillScreen(
-        BLACK
+    gfx->fillScreen(BLACK);
+
+    gfx->setTextColor(WHITE);
+
+    gfx->setTextSize(2);
+
+    gfx->setCursor(20, 40);
+
+    gfx->println("DISPLAY OK");
+
+    gfx->drawRect(
+        0,
+        0,
+        320,
+        172,
+        CYAN
     );
-
-    // LVGL
-
-    lv_init();
-
-    lv_display_t *disp =
-        lv_display_create(
-            320,
-            172
-        );
-
-    lv_display_set_flush_cb(
-        disp,
-        my_disp_flush
-    );
-
-    lv_display_set_buffers(
-        disp,
-        buf1,
-        NULL,
-        sizeof(buf1),
-        LV_DISPLAY_RENDER_MODE_PARTIAL
-    );
-
-    // UI
-
-    initCyberUI();
-
-    initLVGLDashboard();
 
     // WIFI AP
 
@@ -347,15 +294,9 @@ gfx->println("DISPLAY OK");
 
     // SHOW IP
 
-    gfx->setTextColor(
-        WHITE
-    );
-
-    gfx->setTextSize(2);
-
     gfx->setCursor(
-        10,
-        150
+        20,
+        90
     );
 
     gfx->println(IP);
@@ -397,15 +338,6 @@ void loop()
     // UPDATE UI
 
     updateCyberUI();
-
-    updateLVGLDashboard(
-        speedKMH,
-        steeringAngle
-    );
-
-    // LVGL
-
-    lv_timer_handler();
 
     // WEB
 
