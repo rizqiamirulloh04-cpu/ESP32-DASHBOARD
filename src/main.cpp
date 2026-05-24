@@ -4,7 +4,6 @@
 
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
-#include <ElegantOTA.h>
 
 #include <Arduino_GFX_Library.h>
 
@@ -388,10 +387,6 @@ void setup()
     // =========================
     // OTA
     // =========================
-
-    ElegantOTA.begin(
-        &server
-    );
 
     // =========================
     // START SERVER
