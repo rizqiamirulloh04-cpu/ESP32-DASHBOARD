@@ -44,11 +44,15 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 // =====================================================
 
 #define BLACK   0x0000
-#define WHITE   0xFFFF
+
+// Soft white OEM style
+#define WHITE   0xE71C
+
 #define RED     0xF800
 #define CYAN    0x07FF
 #define GREEN   0x07E0
 #define YELLOW  0xFFE0
+
 #define GRAY    0x4208
 #define DARK    0x18C3
 
@@ -56,8 +60,26 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 // VARIABLES
 // =====================================================
 
-int speedValue = 0;
+float displaySpeed = 0;
+float targetSpeed  = 0;
+
 bool upDir = true;
+
+// =====================================================
+// DRAW PANEL
+// =====================================================
+
+void drawPanel()
+{
+    gfx->drawRoundRect(
+        55,
+        28,
+        210,
+        100,
+        12,
+        DARK
+    );
+}
 
 // =====================================================
 // DRAW ARC
@@ -66,48 +88,70 @@ bool upDir = true;
 void drawArc()
 {
     int cx = 160;
-    int cy = 92;
 
-    // Arc lebih besar
+    // Arc lebih naik
+    int cy = 84;
+
     int radius = 58;
 
     // Background arc
-    for (int i = -150; i <= -30; i += 2)
+    for (int i = -150; i <= -30; i += 1)
     {
         float rad = i * 0.0174533;
 
         int x1 = cx + cos(rad) * radius;
         int y1 = cy + sin(rad) * radius;
 
-        int x2 = cx + cos(rad) * (radius - 8);
-        int y2 = cy + sin(rad) * (radius - 8);
+        // Arc lebih tebal
+        int x2 = cx + cos(rad) * (radius - 14);
+        int y2 = cy + sin(rad) * (radius - 14);
 
-        gfx->drawLine(x1, y1, x2, y2, DARK);
+        gfx->drawLine(
+            x1,
+            y1,
+            x2,
+            y2,
+            DARK
+        );
     }
 
-    // Active arc
-    int active = map(speedValue, 0, 120, -150, -30);
+    int active = map(
+        (int)displaySpeed,
+        0,
+        120,
+        -150,
+        -30
+    );
 
-    for (int i = -150; i <= active; i += 2)
+    // Active arc
+    for (int i = -150; i <= active; i += 1)
     {
         float rad = i * 0.0174533;
 
         int x1 = cx + cos(rad) * radius;
         int y1 = cy + sin(rad) * radius;
 
-        int x2 = cx + cos(rad) * (radius - 8);
-        int y2 = cy + sin(rad) * (radius - 8);
+        int x2 = cx + cos(rad) * (radius - 14);
+        int y2 = cy + sin(rad) * (radius - 14);
 
         uint16_t color;
 
         if (i < -90)
             color = CYAN;
+
         else if (i < -60)
             color = YELLOW;
+
         else
             color = RED;
 
-        gfx->drawLine(x1, y1, x2, y2, color);
+        gfx->drawLine(
+            x1,
+            y1,
+            x2,
+            y2,
+            color
+        );
     }
 }
 
@@ -118,21 +162,47 @@ void drawArc()
 void drawNeedle()
 {
     int cx = 160;
-    int cy = 92;
 
-    int angle = map(speedValue, 0, 120, -150, -30);
+    // Naik juga
+    int cy = 84;
+
+    int angle = map(
+        (int)displaySpeed,
+        0,
+        120,
+        -150,
+        -30
+    );
 
     float rad = angle * 0.0174533;
 
-    // Jarum lebih pendek
     int r = 30;
 
     int x = cx + cos(rad) * r;
     int y = cy + sin(rad) * r;
 
-    gfx->drawLine(cx, cy, x, y, RED);
+    gfx->drawLine(
+        cx,
+        cy,
+        x,
+        y,
+        RED
+    );
 
-    gfx->fillCircle(cx, cy, 3, WHITE);
+    gfx->fillCircle(
+        cx,
+        cy,
+        3,
+        WHITE
+    );
+
+    // Glow ring
+    gfx->drawCircle(
+        cx,
+        cy,
+        6,
+        CYAN
+    );
 }
 
 // =====================================================
@@ -142,18 +212,19 @@ void drawNeedle()
 void drawScale()
 {
     gfx->setTextSize(1);
+
     gfx->setTextColor(WHITE);
 
-    gfx->setCursor(58, 96);
+    gfx->setCursor(58, 88);
     gfx->print("0");
 
-    gfx->setCursor(102, 34);
+    gfx->setCursor(102, 28);
     gfx->print("40");
 
-    gfx->setCursor(198, 34);
+    gfx->setCursor(198, 28);
     gfx->print("80");
 
-    gfx->setCursor(252, 96);
+    gfx->setCursor(252, 88);
     gfx->print("120");
 }
 
@@ -163,35 +234,42 @@ void drawScale()
 
 void drawSpeed()
 {
-    gfx->setTextColor(WHITE);
+    int speed = (int)displaySpeed;
 
+    char speedText[4];
+
+    sprintf(speedText, "%03d", speed);
+
+    int x;
+
+    if (speed < 10)
+        x = 134;
+
+    else if (speed < 100)
+        x = 122;
+
+    else
+        x = 110;
+
+    int y = 68;
+
+    // Shadow
     gfx->setTextSize(4);
 
-    // Posisi angka lebih center
-    if (speedValue < 10)
-    {
-        gfx->setCursor(134, 64);
-    }
-    else if (speedValue < 100)
-    {
-        gfx->setCursor(122, 64);
-    }
-    else
-    {
-        gfx->setCursor(110, 64);
-    }
+    gfx->setTextColor(DARK);
 
-    // Leading zero
-    if (speedValue < 10)
-        gfx->print("00");
+    gfx->setCursor(x + 2, y + 2);
+    gfx->print(speedText);
 
-    else if (speedValue < 100)
-        gfx->print("0");
+    // Main text
+    gfx->setTextColor(WHITE);
 
-    gfx->print(speedValue);
+    gfx->setCursor(x, y);
+    gfx->print(speedText);
 
-    // KM/H turun sedikit
+    // KM/H
     gfx->setTextSize(2);
+
     gfx->setTextColor(CYAN);
 
     gfx->setCursor(122, 112);
@@ -222,21 +300,53 @@ void drawStatus()
 void drawRPM()
 {
     // Background
-    gfx->fillRoundRect(35, 145, 250, 10, 4, GRAY);
+    gfx->fillRoundRect(
+        35,
+        145,
+        250,
+        8,
+        4,
+        GRAY
+    );
 
-    // Value
-    int bar = map(speedValue, 0, 120, 0, 250);
+    int bar = map(
+        (int)displaySpeed,
+        0,
+        120,
+        0,
+        250
+    );
 
     uint16_t color;
 
-    if (speedValue < 70)
+    if (displaySpeed < 70)
         color = CYAN;
-    else if (speedValue < 100)
+
+    else if (displaySpeed < 100)
         color = YELLOW;
+
     else
         color = RED;
 
-    gfx->fillRoundRect(35, 145, bar, 10, 4, color);
+    // Foreground
+    gfx->fillRoundRect(
+        35,
+        145,
+        bar,
+        8,
+        4,
+        color
+    );
+
+    // Outline
+    gfx->drawRoundRect(
+        35,
+        145,
+        250,
+        8,
+        4,
+        DARK
+    );
 }
 
 // =====================================================
@@ -247,11 +357,18 @@ void drawDashboard()
 {
     gfx->fillScreen(BLACK);
 
+    drawPanel();
+
     drawStatus();
+
     drawArc();
+
     drawScale();
+
     drawNeedle();
+
     drawSpeed();
+
     drawRPM();
 }
 
@@ -262,6 +379,7 @@ void drawDashboard()
 void setup()
 {
     pinMode(TFT_BL, OUTPUT);
+
     digitalWrite(TFT_BL, HIGH);
 
     Serial.begin(115200);
@@ -281,26 +399,31 @@ void setup()
 
 void loop()
 {
+    // Smooth animation
+    displaySpeed +=
+        (targetSpeed - displaySpeed) * 0.08;
+
     drawDashboard();
 
+    // Demo animation
     if (upDir)
     {
-        speedValue++;
+        targetSpeed++;
 
-        if (speedValue >= 120)
+        if (targetSpeed >= 120)
         {
             upDir = false;
         }
     }
     else
     {
-        speedValue--;
+        targetSpeed--;
 
-        if (speedValue <= 0)
+        if (targetSpeed <= 0)
         {
             upDir = true;
         }
     }
 
-    delay(22);
+    delay(16);
 }
