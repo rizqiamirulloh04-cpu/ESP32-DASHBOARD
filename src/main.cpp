@@ -172,7 +172,7 @@ void loop()
     // CLEAR CENTER AREA
     // ==================================================
 
-    gfx->fillRect(28, 58, 116, 110, BLACK);
+    gfx->fillRect(24, 58, 124, 110, BLACK);
 
 // ==================================================
 // SPEED NUMBER
@@ -182,7 +182,7 @@ gfx->setTextColor(WHITE);
 gfx->setTextSize(4);
 
 // posisi lebih tengah
-gfx->setCursor(42, 78);
+gfx->setCursor(38, 78);
 
 // format 3 digit
 if (speedValue < 10)
@@ -199,7 +199,7 @@ gfx->print(speedValue);
 gfx->setTextColor(CYAN);
 gfx->setTextSize(2);
 
-gfx->setCursor(56, 128);
+gfx->setCursor(54, 128);
 gfx->print("KM/H");
 
 // ==================================================
