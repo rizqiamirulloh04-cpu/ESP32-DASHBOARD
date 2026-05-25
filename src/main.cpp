@@ -2,7 +2,9 @@
 #include <Arduino_GFX_Library.h>
 #include <math.h>
 
-// ================= LCD PINS =================
+// =====================================================
+// LCD PINS
+// =====================================================
 
 #define TFT_BL   22
 
@@ -12,7 +14,9 @@
 #define TFT_DC   15
 #define TFT_RST  21
 
-// ================= DISPLAY =================
+// =====================================================
+// DISPLAY
+// =====================================================
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
@@ -35,7 +39,9 @@ Arduino_GFX *gfx = new Arduino_ST7789(
     0
 );
 
-// ================= COLORS =================
+// =====================================================
+// COLORS
+// =====================================================
 
 #define BLACK   0x0000
 #define WHITE   0xFFFF
@@ -43,48 +49,53 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 #define CYAN    0x07FF
 #define GREEN   0x07E0
 #define YELLOW  0xFFE0
-#define GRAY    0x2104
-#define DARK    0x1082
+#define GRAY    0x4208
+#define DARK    0x18C3
 
-// ================= VARIABLES =================
+// =====================================================
+// VARIABLES
+// =====================================================
 
 int speedValue = 0;
 bool upDir = true;
 
-// ================= DRAW ARC =================
+// =====================================================
+// DRAW HUD ARC
+// =====================================================
 
-void drawArcMeter()
+void drawArc()
 {
     int cx = 160;
-    int cy = 120;
-    int r  = 80;
+    int cy = 92;
+
+    int radius = 52;
 
     // Background arc
-    for (int i = -140; i <= -40; i += 2)
+    for (int i = -150; i <= -30; i += 2)
     {
         float rad = i * 0.0174533;
 
-        int x1 = cx + cos(rad) * r;
-        int y1 = cy + sin(rad) * r;
+        int x1 = cx + cos(rad) * radius;
+        int y1 = cy + sin(rad) * radius;
 
-        int x2 = cx + cos(rad) * (r - 12);
-        int y2 = cy + sin(rad) * (r - 12);
+        int x2 = cx + cos(rad) * (radius - 8);
+        int y2 = cy + sin(rad) * (radius - 8);
 
         gfx->drawLine(x1, y1, x2, y2, DARK);
     }
 
     // Active arc
-    int activeAngle = map(speedValue, 0, 120, -140, -40);
+    int active = map(speedValue, 0, 120, -150, -30);
 
-    for (int i = -140; i <= activeAngle; i += 2)
+    for (int i = -150; i <= active; i += 2)
     {
         float rad = i * 0.0174533;
 
-        int x1 = cx + cos(rad) * r;
-        int y1 = cy + sin(rad) * r;
+        int x1 = cx + cos(rad) * radius;
+        int y1 = cy + sin(rad) * radius;
 
-        int x2 = cx + cos(rad) * (r - 12);
-        int y2 = cy + sin(rad) * (r - 12);
+        int x2 = cx + cos(rad) * (radius - 8);
+        int y2 = cy + sin(rad) * (radius - 8);
 
         uint16_t color;
 
@@ -99,104 +110,152 @@ void drawArcMeter()
     }
 }
 
-// ================= DRAW NEEDLE =================
+// =====================================================
+// DRAW NEEDLE
+// =====================================================
 
 void drawNeedle()
 {
     int cx = 160;
-    int cy = 120;
+    int cy = 92;
 
-    int angle = map(speedValue, 0, 120, -140, -40);
+    int angle = map(speedValue, 0, 120, -150, -30);
 
     float rad = angle * 0.0174533;
 
-    int r = 60;
+    // Jarum lebih pendek
+    int r = 38;
 
     int x = cx + cos(rad) * r;
     int y = cy + sin(rad) * r;
 
     gfx->drawLine(cx, cy, x, y, RED);
 
-    gfx->fillCircle(cx, cy, 4, WHITE);
+    gfx->fillCircle(cx, cy, 3, WHITE);
 }
 
-// ================= DRAW SPEED =================
-
-void drawSpeed()
-{
-    gfx->setTextColor(WHITE);
-    gfx->setTextSize(5);
-
-    if (speedValue < 10)
-        gfx->setCursor(126, 55);
-    else if (speedValue < 100)
-        gfx->setCursor(106, 55);
-    else
-        gfx->setCursor(86, 55);
-
-    gfx->print(speedValue);
-
-    gfx->setTextSize(2);
-    gfx->setTextColor(CYAN);
-    gfx->setCursor(122, 100);
-    gfx->print("KM/H");
-}
-
-// ================= DRAW SCALE =================
+// =====================================================
+// DRAW SCALE
+// =====================================================
 
 void drawScale()
 {
     gfx->setTextSize(1);
     gfx->setTextColor(WHITE);
 
-    gfx->setCursor(35, 100);
+    gfx->setCursor(74, 88);
     gfx->print("0");
 
-    gfx->setCursor(70, 45);
+    gfx->setCursor(112, 38);
     gfx->print("40");
 
-    gfx->setCursor(145, 20);
+    gfx->setCursor(198, 38);
     gfx->print("80");
 
-    gfx->setCursor(255, 45);
+    gfx->setCursor(246, 88);
     gfx->print("120");
 }
 
-// ================= DRAW BAR =================
+// =====================================================
+// DRAW SPEED TEXT
+// =====================================================
 
-void drawBar()
+void drawSpeed()
 {
-    gfx->fillRect(35, 145, 250, 10, GRAY);
+    gfx->setTextColor(WHITE);
 
-    int bar = map(speedValue, 0, 120, 0, 250);
+    // Angka lebih kecil & center
+    gfx->setTextSize(4);
 
-    gfx->fillRect(35, 145, bar, 10, RED);
+    if (speedValue < 10)
+    {
+        gfx->setCursor(138, 58);
+    }
+    else if (speedValue < 100)
+    {
+        gfx->setCursor(126, 58);
+    }
+    else
+    {
+        gfx->setCursor(114, 58);
+    }
+
+    if (speedValue < 10)
+        gfx->print("00");
+
+    else if (speedValue < 100)
+        gfx->print("0");
+
+    gfx->print(speedValue);
+
+    // KM/H
+    gfx->setTextSize(2);
+    gfx->setTextColor(CYAN);
+
+    gfx->setCursor(122, 105);
+    gfx->print("KM/H");
 }
 
-// ================= MAIN UI =================
+// =====================================================
+// DRAW STATUS
+// =====================================================
+
+void drawStatus()
+{
+    gfx->setTextSize(1);
+
+    gfx->setTextColor(GREEN);
+
+    gfx->setCursor(8, 8);
+    gfx->print("SPORT");
+
+    gfx->setCursor(262, 8);
+    gfx->print("READY");
+}
+
+// =====================================================
+// DRAW RPM BAR
+// =====================================================
+
+void drawRPM()
+{
+    // Background
+    gfx->fillRoundRect(35, 145, 250, 10, 4, GRAY);
+
+    // Value
+    int bar = map(speedValue, 0, 120, 0, 250);
+
+    uint16_t color;
+
+    if (speedValue < 70)
+        color = CYAN;
+    else if (speedValue < 100)
+        color = YELLOW;
+    else
+        color = RED;
+
+    gfx->fillRoundRect(35, 145, bar, 10, 4, color);
+}
+
+// =====================================================
+// MAIN DRAW
+// =====================================================
 
 void drawDashboard()
 {
     gfx->fillScreen(BLACK);
 
-    // Top text
-    gfx->setTextColor(GREEN);
-    gfx->setTextSize(1);
-
-    gfx->setCursor(10, 10);
-    gfx->print("SPORT");
-
-    gfx->setCursor(270, 10);
-    gfx->print("READY");
-
-    drawArcMeter();
-    drawNeedle();
+    drawStatus();
+    drawArc();
     drawScale();
+    drawNeedle();
     drawSpeed();
-    drawBar();
+    drawRPM();
 }
 
-// ================= SETUP =================
+// =====================================================
+// SETUP
+// =====================================================
 
 void setup()
 {
@@ -206,13 +265,17 @@ void setup()
     Serial.begin(115200);
 
     gfx->begin();
+
     gfx->setRotation(1);
+
     gfx->invertDisplay(false);
 
     gfx->fillScreen(BLACK);
 }
 
-// ================= LOOP =================
+// =====================================================
+// LOOP
+// =====================================================
 
 void loop()
 {
@@ -223,15 +286,19 @@ void loop()
         speedValue++;
 
         if (speedValue >= 120)
+        {
             upDir = false;
+        }
     }
     else
     {
         speedValue--;
 
         if (speedValue <= 0)
+        {
             upDir = true;
+        }
     }
 
-    delay(25);
+    delay(22);
 }
