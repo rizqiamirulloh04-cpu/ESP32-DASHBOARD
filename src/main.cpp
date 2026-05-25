@@ -32,27 +32,28 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 
 void setup()
 {
-    pinMode(TFT_BL, OUTPUT);
-    digitalWrite(TFT_BL, HIGH);
+    // Backlight redup
+    ledcAttach(TFT_BL, 5000, 8);
+    ledcWrite(TFT_BL, 40);
 
     gfx->begin();
 
     gfx->invertDisplay(false);
 
-    gfx->fillScreen(0x0000);
+    gfx->fillScreen(BLACK);
 
-    gfx->setTextColor(0x07E0);
+    gfx->setTextColor(GREEN);
     gfx->setTextSize(3);
 
-    gfx->setCursor(30, 40);
+    gfx->setCursor(40, 40);
     gfx->println("ESP32-C6");
 
-    gfx->setCursor(30, 90);
+    gfx->setCursor(40, 90);
     gfx->println("LANDSCAPE");
 
-    gfx->fillRect(20, 140, 80, 20, 0xF800);
-    gfx->fillRect(120, 140, 80, 20, 0x07E0);
-    gfx->fillRect(220, 140, 80, 20, 0x001F);
+    gfx->fillRect(20, 140, 80, 20, RED);
+    gfx->fillRect(120, 140, 80, 20, GREEN);
+    gfx->fillRect(220, 140, 80, 20, BLUE);
 }
 
 void loop()
