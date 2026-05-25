@@ -2,104 +2,92 @@
 #include <Arduino_GFX_Library.h>
 
 // ======================================================
-// WAVESHARE ESP32-C6 1.47"
-// FINAL RACING DASHBOARD
+// WAVESHARE ESP32-C6 1.47" LCD
+// FULL WORKING TEST + DASHBOARD
 // ======================================================
 
-// ================= BACKLIGHT =================
+// ---------------- BACKLIGHT ----------------
+#define TFT_BL 15
 
-#define TFT_BL 22
-
-// ================= TFT PINS =================
-
+// ---------------- SPI LCD ----------------
 #define TFT_MOSI 6
 #define TFT_SCLK 7
+#define TFT_DC   8
+#define TFT_RST  9
 #define TFT_CS   14
-#define TFT_DC   15
-#define TFT_RST  21
-
-// ================= RECEIVER INPUT =================
-
-#define STEER_PIN    1
-#define THROTTLE_PIN 2
-
-// ================= COLORS =================
-
-#define BLACK   0x0000
-#define WHITE   0xFFFF
-#define RED     0xF800
-#define GREEN   0x07E0
-#define BLUE    0x001F
-#define CYAN    0x07FF
-#define YELLOW  0xFFE0
-#define DARK    0x2104
-
-// soft white-blue
-#define ICE     0xCE79
 
 // ======================================================
-// DISPLAY
+// LCD CONFIG
 // ======================================================
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
-    8,   // DC
-    14,  // CS
-    7,   // SCK
-    6,   // MOSI
-    GFX_NOT_DEFINED // MISO
+    TFT_DC,
+    TFT_CS,
+    TFT_SCLK,
+    TFT_MOSI,
+    GFX_NOT_DEFINED
 );
 
+// CONFIG PALING COCOK UNTUK WAVESHARE 1.47"
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
-    9,    // RST
-    1,    // rotation
-    true, // IPS
-    172,  // width
-    320,  // height
-    34,   // col offset
-    0,    // row offset
-    35,   // col offset2
-    0     // row offset2
+    TFT_RST,
+    1,      // rotation
+    true,   // IPS
+    320,    // width
+    172,    // height
+    35,     // col offset
+    0       // row offset
 );
 
 // ======================================================
-// VARIABLES
+// DRAW UI
 // ======================================================
 
-int speedValue = 0;
-int targetSpeed = 0;
-
-bool blinkState = false;
-unsigned long blinkTimer = 0;
-
-// ======================================================
-// STATIC UI
-// ======================================================
-
-void drawStaticUI()
+void drawDashboard(int speed)
 {
     gfx->fillScreen(BLACK);
 
-    // ===== LEFT BAR =====
+    // BORDER
+    gfx->drawRoundRect(0, 0, 320, 172, 12, DARKGREY);
 
-    gfx->fillRect(16, 54, 4, 96, RED);
+    // LEFT BAR
+    gfx->fillRoundRect(18, 28, 12, 110, 8, RED);
 
-    // ===== RIGHT BAR =====
+    // RIGHT BAR
+    gfx->fillRoundRect(290, 28, 12, 110, 8, BLUE);
 
-    gfx->fillRect(118, 54, 4, 96, BLUE);
-
-    // ===== TOP LINE =====
-
-    gfx->drawFastHLine(32, 26, 70, CYAN);
-
-    // ===== TOP TRIANGLE =====
-
+    // TOP INDICATOR
     gfx->fillTriangle(
-        67, 12,
-        57, 28,
-        77, 28,
+        150, 10,
+        170, 10,
+        160, 0,
         GREEN
     );
+
+    // SPEED NUMBER
+    gfx->setTextSize(6);
+    gfx->setTextColor(WHITE);
+
+    char buf[10];
+    sprintf(buf, "%03d", speed);
+
+    gfx->setCursor(90, 55);
+    gfx->println(buf);
+
+    // KM/H
+    gfx->setTextSize(3);
+    gfx->setTextColor(CYAN);
+
+    gfx->setCursor(118, 115);
+    gfx->println("KM/H");
+
+    // LOWER LINE
+    gfx->drawFastHLine(60, 150, 200, DARKGREY);
+
+    // CORNER LIGHTS
+    gfx->fillCircle(20, 20, 5, GREEN);
+    gfx->fillCircle(300, 20, 5, RED);
 }
 
 // ======================================================
@@ -110,25 +98,29 @@ void setup()
 {
     Serial.begin(115200);
 
-    // ===== BACKLIGHT =====
+    // BACKLIGHT
+    pinMode(TFT_BL, OUTPUT);
+    digitalWrite(TFT_BL, HIGH);
 
-    ledcAttach(TFT_BL, 5000, 8);
-
-    // brightness
-    ledcWrite(TFT_BL, 18);
-
-    // ===== DISPLAY =====
-
+    // LCD INIT
     gfx->begin();
 
-    gfx->invertDisplay(false);
+    // OPTIONAL
+    gfx->setRotation(1);
 
-    drawStaticUI();
+    // TEST COLORS
+    gfx->fillScreen(RED);
+    delay(500);
 
-    // ===== INPUT =====
+    gfx->fillScreen(GREEN);
+    delay(500);
 
-    pinMode(STEER_PIN, INPUT);
-    pinMode(THROTTLE_PIN, INPUT);
+    gfx->fillScreen(BLUE);
+    delay(500);
+
+    gfx->fillScreen(BLACK);
+
+    drawDashboard(0);
 }
 
 // ======================================================
@@ -137,123 +129,29 @@ void setup()
 
 void loop()
 {
-    // ==================================================
-    // READ PWM
-    // ==================================================
+    static int speed = 0;
+    static bool up = true;
 
-    int steerPWM = pulseIn(STEER_PIN, HIGH, 25000);
-    int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 25000);
+    drawDashboard(speed);
 
-    // ==================================================
-    // FAILSAFE
-    // ==================================================
-
-    if (steerPWM == 0)
-        steerPWM = 1500;
-
-    if (throttlePWM == 0)
-        throttlePWM = 1000;
-
-    // ==================================================
-    // SPEED MAP
-    // ==================================================
-
-    targetSpeed = map(throttlePWM, 1000, 2000, 0, 120);
-
-    targetSpeed = constrain(targetSpeed, 0, 120);
-
-    // ==================================================
-    // SMOOTHING
-    // ==================================================
-
-    if (speedValue < targetSpeed)
-        speedValue++;
-
-    if (speedValue > targetSpeed)
-        speedValue--;
-
-    // ==================================================
-    // BLINK TIMER
-    // ==================================================
-
-    if (millis() - blinkTimer > 350)
+    if (up)
     {
-        blinkTimer = millis();
-        blinkState = !blinkState;
+        speed++;
+
+        if (speed >= 180)
+        {
+            up = false;
+        }
+    }
+    else
+    {
+        speed--;
+
+        if (speed <= 0)
+        {
+            up = true;
+        }
     }
 
-    // ==================================================
-    // CLEAR CENTER
-    // ==================================================
-
-    gfx->fillRect(24, 60, 90, 80, BLACK);
-
-    // ==================================================
-    // SPEED NUMBER
-    // ==================================================
-
-    gfx->setTextColor(ICE);
-
-    gfx->setTextSize(4);
-
-    gfx->setCursor(30, 84);
-
-    if (speedValue < 10)
-        gfx->print("00");
-    else if (speedValue < 100)
-        gfx->print("0");
-
-    gfx->print(speedValue);
-
-    // ==================================================
-    // KM/H
-    // ==================================================
-
-    gfx->setTextColor(CYAN);
-
-    gfx->setTextSize(2);
-
-    gfx->setCursor(42, 124);
-
-    gfx->print("KM/H");
-
-    // ==================================================
-    // GLOW LINE
-    // ==================================================
-
-    gfx->drawFastHLine(42, 118, 52, DARK);
-
-    // ==================================================
-    // LEFT SIGNAL
-    // ==================================================
-
-    gfx->fillRect(24, 70, 12, 20, BLACK);
-
-    if (steerPWM < 1400 && blinkState)
-    {
-        gfx->fillTriangle(
-            24, 80,
-            36, 72,
-            36, 88,
-            YELLOW
-        );
-    }
-
-    // ==================================================
-    // RIGHT SIGNAL
-    // ==================================================
-
-    gfx->fillRect(102, 70, 12, 20, BLACK);
-
-    if (steerPWM > 1600 && blinkState)
-    {
-        gfx->fillTriangle(
-            114, 80,
-            102, 72,
-            102, 88,
-            YELLOW
-        );
-    }
-
-    delay(15);
+    delay(30);
 }
