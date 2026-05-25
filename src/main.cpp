@@ -172,47 +172,55 @@ void loop()
     // CLEAR CENTER AREA
     // ==================================================
 
-    gfx->fillRect(26, 58, 120, 110, BLACK);
+    gfx->fillRect(28, 58, 116, 110, BLACK);
 
-    // ==================================================
-    // SPEED NUMBER
-    // ==================================================
+// ==================================================
+// SPEED NUMBER
+// ==================================================
 
-    gfx->setTextColor(WHITE);
-    gfx->setTextSize(7);
+gfx->setTextColor(WHITE);
+gfx->setTextSize(4);
 
-    gfx->setCursor(28, 72);
+// posisi lebih tengah
+gfx->setCursor(42, 78);
 
-    if (speedValue < 10)
-        gfx->print("00");
-    else if (speedValue < 100)
-        gfx->print("0");
+// format 3 digit
+if (speedValue < 10)
+    gfx->print("00");
+else if (speedValue < 100)
+    gfx->print("0");
 
-    gfx->print(speedValue);
+gfx->print(speedValue);
 
-    // ==================================================
-    // KM/H TEXT
-    // ==================================================
+// ==================================================
+// KM/H TEXT
+// ==================================================
 
-    gfx->setTextColor(CYAN);
-    gfx->setTextSize(2);
+gfx->setTextColor(CYAN);
+gfx->setTextSize(2);
 
-    gfx->setCursor(58, 150);
-    gfx->print("KM/H");
+gfx->setCursor(56, 128);
+gfx->print("KM/H");
 
-    // ==================================================
-    // LEFT SIGNAL
-    // ==================================================
+// ==================================================
+// DIGITAL GLOW LINE
+// ==================================================
 
-    gfx->fillRect(24, 95, 20, 20, BLACK);
+gfx->drawFastHLine(45, 118, 70, DARK);
 
-    if (steerPWM < 1400 && blinkState)
-    {
-        gfx->fillTriangle(
-            24, 105,
-            42, 95,
-            42, 115,
-            YELLOW
+// ==================================================
+// LEFT SIGNAL
+// ==================================================
+
+gfx->fillRect(22, 92, 20, 20, BLACK);
+
+if (steerPWM < 1400 && blinkState)
+{
+    gfx->fillTriangle(
+        22, 102,
+        40, 92,
+        40, 112,
+        YELLOW
         );
     }
 
