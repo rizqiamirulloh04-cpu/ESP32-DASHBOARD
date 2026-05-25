@@ -9,6 +9,13 @@
 #define TFT_RST  9
 #define TFT_CS   14
 
+// RGB565 Colors
+#define BLACK   0x0000
+#define WHITE   0xFFFF
+#define RED     0xF800
+#define GREEN   0x07E0
+#define BLUE    0x001F
+
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
     TFT_CS,
@@ -36,21 +43,21 @@ void setup()
     gfx->begin();
     gfx->fillScreen(BLACK);
 
-    gfx->setTextSize(3);
-    gfx->setTextColor(WHITE);
-
-    gfx->setCursor(20, 20);
-    gfx->println("RC DASH");
-
-    // Border test
+    // Border fullscreen test
     gfx->drawRect(0, 0, 172, 320, RED);
 
     // Center line
     gfx->drawLine(0, 160, 172, 160, GREEN);
 
-    // Speed text
+    // Title
+    gfx->setTextColor(WHITE);
+    gfx->setTextSize(2);
+    gfx->setCursor(25, 20);
+    gfx->println("RC DASH");
+
+    // Speed number
     gfx->setTextSize(6);
-    gfx->setCursor(25, 120);
+    gfx->setCursor(20, 110);
     gfx->println("046");
 
     // Bottom bars
