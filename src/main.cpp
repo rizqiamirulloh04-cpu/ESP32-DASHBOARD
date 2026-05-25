@@ -66,22 +66,28 @@ void setup()
     static int dir = 1;
 
     // Hapus bola lama saja
-    gfx->fillCircle(old_x, 80, 20, 0x0000);
+    gfx->fillCircle(old_x, 80, 18, 0x0000);
 
-    // Gambar bola baru
-    gfx->fillCircle(x, 80, 20, 0xF800);
-
-    // Text tetap
+    // Text static
     gfx->setTextColor(0x07E0);
     gfx->setTextSize(2);
 
-    gfx->setCursor(10, 10);
+    gfx->setCursor(5, 5);
     gfx->println("FPS TEST");
 
-    // Simpan posisi lama
+    gfx->setCursor(35, 25);
+    gfx->println("ESP32-C6");
+
+    // Gambar bola baru
+    gfx->fillCircle(x, 80, 18, 0xF800);
+
+    // RGB bar
+    gfx->fillRect(15, 120, 40, 15, 0xF800);
+    gfx->fillRect(65, 120, 40, 15, 0x07E0);
+    gfx->fillRect(115, 120, 40, 15, 0x001F);
+
     old_x = x;
 
-    // Gerakan
     x += dir * 4;
 
     if (x >= 150)
@@ -94,5 +100,5 @@ void setup()
         dir = 1;
     }
 
-    delay(10);
+    delay(8);
 }
