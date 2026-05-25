@@ -78,7 +78,7 @@ void drawStaticUI()
     // ===== SIDE ACCENTS =====
 
     gfx->fillRect(18, 48, 4, 140, RED);
-    gfx->fillRect(150, 48, 4, 140, BLUE);
+    gfx->fillRect(132, 48, 4, 140, BLUE);
 
     // ===== CENTER ARROW =====
 
@@ -187,7 +187,7 @@ void loop()
     gfx->setTextColor(0xDEDB);
     gfx->setTextSize(7);
 
-    gfx->setCursor(22, 72);
+    gfx->setCursor(34, 72);
 
     if (speedValue < 10)
         gfx->print("00");
@@ -203,7 +203,7 @@ void loop()
     gfx->setTextColor(CYAN);
     gfx->setTextSize(2);
 
-    gfx->setCursor(55, 138);
+    gfx->setCursor(60, 150);
     gfx->print("KM/H");
 
     // ==================================================
