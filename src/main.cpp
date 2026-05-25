@@ -44,14 +44,22 @@ void setup()
     gfx->invertDisplay(false);
 
     gfx->fillScreen(0x0000);
+
+    // KM/H static
+    gfx->setTextColor(0x07FF);
+    gfx->setTextSize(3);
+
+    gfx->setCursor(105, 110);
+    gfx->println("KM/H");
+
+    // Bar background static
+    gfx->fillRect(40, 145, 240, 12, 0x2104);
 }
 
 void loop()
 {
-    // Hapus area speed
-    gfx->fillRect(0, 0, 320, 130, 0x0000);
+    // ===== SPEED UPDATE =====
 
-    // Animasi speed
     speedValue += dir * 2;
 
     if (speedValue >= 120)
@@ -64,7 +72,11 @@ void loop()
         dir = 1;
     }
 
-    // ===== SPEED =====
+    // ===== CLEAR SPEED ONLY =====
+
+    gfx->fillRect(60, 35, 210, 60, 0x0000);
+
+    // ===== DRAW SPEED =====
 
     gfx->setTextColor(0xFFFF);
     gfx->setTextSize(6);
@@ -86,21 +98,15 @@ void loop()
 
     gfx->print(speedValue);
 
-    // ===== KM/H =====
-
-    gfx->setTextColor(0x07FF);
-    gfx->setTextSize(3);
-
-    gfx->setCursor(105, 110);
-    gfx->println("KM/H");
-
-    // ===== SPEED BAR =====
-
-    gfx->fillRect(40, 145, 240, 12, 0x2104);
+    // ===== RPM BAR =====
 
     int bar = map(speedValue, 0, 120, 0, 240);
 
+    // clear previous bar
+    gfx->fillRect(40, 145, 240, 12, 0x2104);
+
+    // draw new bar
     gfx->fillRect(40, 145, bar, 12, 0xF800);
 
-    delay(25);
+    delay(20);
 }
