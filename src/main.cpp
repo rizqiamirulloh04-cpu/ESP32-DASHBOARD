@@ -44,11 +44,15 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 // =====================================================
 
 #define BLACK   0x0000
+
+// Soft white OEM style
 #define WHITE   0xE71C
+
 #define RED     0xF800
 #define CYAN    0x07FF
 #define GREEN   0x07E0
 #define YELLOW  0xFFE0
+
 #define GRAY    0x4208
 #define DARK    0x18C3
 
@@ -62,7 +66,7 @@ float targetSpeed  = 0;
 bool upDir = true;
 
 // =====================================================
-// STATIC UI
+// DRAW PANEL
 // =====================================================
 
 void drawPanel()
@@ -77,6 +81,10 @@ void drawPanel()
     );
 }
 
+// =====================================================
+// DRAW STATUS
+// =====================================================
+
 void drawStatus()
 {
     gfx->setTextSize(1);
@@ -89,6 +97,10 @@ void drawStatus()
     gfx->setCursor(262, 8);
     gfx->print("READY");
 }
+
+// =====================================================
+// DRAW SCALE
+// =====================================================
 
 void drawScale()
 {
@@ -110,7 +122,7 @@ void drawScale()
 }
 
 // =====================================================
-// STATIC BACKGROUND
+// STATIC UI
 // =====================================================
 
 void drawStaticUI()
@@ -144,24 +156,27 @@ void drawStaticUI()
 }
 
 // =====================================================
-// ARC
+// DRAW ARC
 // =====================================================
 
 void drawArc()
 {
+    // Clear arc area only
+    gfx->fillRect(
+        70,
+        18,
+        180,
+        80,
+        BLACK
+    );
+
+    // Redraw scale after clear
+    drawScale();
+
     int cx = 160;
     int cy = 84;
 
     int radius = 58;
-
-    // Clear old arc area only
-    gfx->fillRect(
-        90,
-        20,
-        140,
-        70,
-        BLACK
-    );
 
     // Background arc
     for (int i = -150; i <= -30; i += 1)
@@ -224,7 +239,7 @@ void drawArc()
 }
 
 // =====================================================
-// NEEDLE
+// DRAW NEEDLE
 // =====================================================
 
 void drawNeedle()
@@ -271,16 +286,16 @@ void drawNeedle()
 }
 
 // =====================================================
-// SPEED TEXT
+// DRAW SPEED
 // =====================================================
 
 void drawSpeed()
 {
     // Clear speed area only
     gfx->fillRect(
-        90,
+        95,
         55,
-        140,
+        130,
         70,
         BLACK
     );
@@ -312,7 +327,7 @@ void drawSpeed()
     gfx->setCursor(x + 2, y + 2);
     gfx->print(speedText);
 
-    // Main text
+    // Main
     gfx->setTextColor(WHITE);
 
     gfx->setCursor(x, y);
@@ -328,12 +343,12 @@ void drawSpeed()
 }
 
 // =====================================================
-// RPM BAR
+// DRAW RPM BAR
 // =====================================================
 
 void drawRPM()
 {
-    // Clear RPM value only
+    // Clear bar area only
     gfx->fillRect(
         35,
         145,
@@ -342,7 +357,7 @@ void drawRPM()
         BLACK
     );
 
-    // Redraw background
+    // Background redraw
     gfx->fillRoundRect(
         35,
         145,
@@ -371,7 +386,7 @@ void drawRPM()
     else
         color = RED;
 
-    // Value bar
+    // Active bar
     gfx->fillRoundRect(
         35,
         145,
@@ -381,7 +396,7 @@ void drawRPM()
         color
     );
 
-    // Outline
+    // Outline redraw
     gfx->drawRoundRect(
         35,
         145,
@@ -393,7 +408,7 @@ void drawRPM()
 }
 
 // =====================================================
-// DYNAMIC DRAW
+// DASHBOARD
 // =====================================================
 
 void drawDashboard()
@@ -425,7 +440,6 @@ void setup()
 
     gfx->invertDisplay(false);
 
-    // Draw once only
     drawStaticUI();
 }
 
