@@ -33,8 +33,6 @@
 #define CYAN    0x07FF
 #define YELLOW  0xFFE0
 #define DARK    0x2104
-
-// soft white-blue
 #define ICE     0xCE79
 
 // ======================================================
@@ -80,26 +78,34 @@ void drawStaticUI()
 {
     gfx->fillScreen(BLACK);
 
-    // ===== LEFT BAR =====
+    // ==================================================
+    // TOP LINE
+    // ==================================================
 
-    gfx->fillRect(16, 54, 4, 96, RED);
+    gfx->drawFastHLine(38, 26, 64, CYAN);
 
-    // ===== RIGHT BAR =====
-
-    gfx->fillRect(118, 54, 4, 96, BLUE);
-
-    // ===== TOP LINE =====
-
-    gfx->drawFastHLine(32, 26, 70, CYAN);
-
-    // ===== TOP TRIANGLE =====
+    // ==================================================
+    // TRIANGLE
+    // ==================================================
 
     gfx->fillTriangle(
-        67, 12,
-        57, 28,
-        77, 28,
+        70, 12,
+        60, 28,
+        80, 28,
         GREEN
     );
+
+    // ==================================================
+    // LEFT BAR
+    // ==================================================
+
+    gfx->fillRect(20, 54, 4, 96, RED);
+
+    // ==================================================
+    // RIGHT BAR
+    // ==================================================
+
+    gfx->fillRect(122, 54, 4, 96, BLUE);
 }
 
 // ======================================================
@@ -110,14 +116,18 @@ void setup()
 {
     Serial.begin(115200);
 
-    // ===== BACKLIGHT =====
+    // ==================================================
+    // BACKLIGHT
+    // ==================================================
 
     ledcAttach(TFT_BL, 5000, 8);
 
     // brightness
     ledcWrite(TFT_BL, 18);
 
-    // ===== DISPLAY =====
+    // ==================================================
+    // DISPLAY
+    // ==================================================
 
     gfx->begin();
 
@@ -125,7 +135,9 @@ void setup()
 
     drawStaticUI();
 
-    // ===== INPUT =====
+    // ==================================================
+    // INPUT
+    // ==================================================
 
     pinMode(STEER_PIN, INPUT);
     pinMode(THROTTLE_PIN, INPUT);
@@ -186,17 +198,17 @@ void loop()
     // CLEAR CENTER
     // ==================================================
 
-    gfx->fillRect(24, 60, 90, 80, BLACK);
+    gfx->fillRect(28, 60, 92, 92, BLACK);
 
     // ==================================================
-    // SPEED NUMBER
+    // SPEED
     // ==================================================
 
     gfx->setTextColor(ICE);
 
-    gfx->setTextSize(4);
+    gfx->setTextSize(5);
 
-    gfx->setCursor(30, 84);
+    gfx->setCursor(24, 76);
 
     if (speedValue < 10)
         gfx->print("00");
@@ -213,7 +225,7 @@ void loop()
 
     gfx->setTextSize(2);
 
-    gfx->setCursor(42, 124);
+    gfx->setCursor(44, 132);
 
     gfx->print("KM/H");
 
@@ -221,20 +233,20 @@ void loop()
     // GLOW LINE
     // ==================================================
 
-    gfx->drawFastHLine(42, 118, 52, DARK);
+    gfx->drawFastHLine(42, 120, 58, DARK);
 
     // ==================================================
     // LEFT SIGNAL
     // ==================================================
 
-    gfx->fillRect(24, 70, 12, 20, BLACK);
+    gfx->fillRect(28, 72, 14, 18, BLACK);
 
     if (steerPWM < 1400 && blinkState)
     {
         gfx->fillTriangle(
-            24, 80,
-            36, 72,
-            36, 88,
+            28, 81,
+            40, 72,
+            40, 90,
             YELLOW
         );
     }
@@ -243,14 +255,14 @@ void loop()
     // RIGHT SIGNAL
     // ==================================================
 
-    gfx->fillRect(102, 70, 12, 20, BLACK);
+    gfx->fillRect(104, 72, 14, 18, BLACK);
 
     if (steerPWM > 1600 && blinkState)
     {
         gfx->fillTriangle(
-            114, 80,
-            102, 72,
-            102, 88,
+            116, 81,
+            104, 72,
+            104, 90,
             YELLOW
         );
     }
