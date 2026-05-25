@@ -76,11 +76,11 @@ void drawStaticUI()
 
     // ===== LEFT RED BAR =====
 
-    gfx->fillRect(18, 48, 4, 120, RED);
+    gfx->fillRect(30, 48, 4, 120, RED);
 
     // ===== RIGHT BLUE BAR =====
 
-    gfx->fillRect(150, 48, 4, 120, BLUE);
+    gfx->fillRect(138, 48, 4, 120, BLUE);
 
     // ===== TOP CENTER INDICATOR =====
 
@@ -181,8 +181,8 @@ void loop()
 gfx->setTextColor(WHITE);
 gfx->setTextSize(4);
 
-// posisi lebih tengah
-gfx->setCursor(38, 78);
+// lebih center
+gfx->setCursor(50, 78);
 
 // format 3 digit
 if (speedValue < 10)
