@@ -34,7 +34,7 @@ void setup()
 {
     // Backlight redup
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 40);
+    ledcWrite(TFT_BL, 80);
 
     gfx->begin();
 
