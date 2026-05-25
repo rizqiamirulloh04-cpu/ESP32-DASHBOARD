@@ -184,7 +184,7 @@ void loop()
     // SPEED NUMBER
     // ==================================================
 
-    gfx->setTextColor(WHITE);
+    gfx->setTextColor(0xDEDB);
     gfx->setTextSize(5);
 
     gfx->setCursor(36, 78);
