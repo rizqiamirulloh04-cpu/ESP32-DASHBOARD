@@ -1,6 +1,10 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
 
+// ======================================================
+// DISPLAY PINS
+// ======================================================
+
 #define TFT_BL   22
 
 #define TFT_MOSI 6
@@ -9,12 +13,16 @@
 #define TFT_DC   15
 #define TFT_RST  21
 
-// ================= RECEIVER =================
+// ======================================================
+// RECEIVER INPUT
+// ======================================================
 
-#define STEER_PIN    1
-#define THROTTLE_PIN 2
+#define STEER_PIN     1
+#define THROTTLE_PIN  2
 
-// ================= DISPLAY =================
+// ======================================================
+// DISPLAY CONFIG
+// ======================================================
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
@@ -37,63 +45,93 @@ Arduino_GFX *gfx = new Arduino_ST7789(
     0
 );
 
-// ================= VARIABLES =================
+// ======================================================
+// VARIABLES
+// ======================================================
 
 int speedValue = 0;
 int targetSpeed = 0;
 
-unsigned long blinkTimer = 0;
 bool blinkState = false;
+unsigned long blinkTimer = 0;
 
-// ================= STATIC UI =================
+// ======================================================
+// DRAW STATIC UI
+// ======================================================
 
 void drawStaticUI()
 {
-    gfx->fillScreen(0x0000);
+    gfx->fillScreen(BLACK);
 
-    // RPM BAR FRAME
-    gfx->drawRect(10, 280, 152, 15, 0xFFFF);
+    // ===== OUTER FRAME =====
 
-    // CENTER INDICATOR
+    gfx->drawRect(0, 0, 320, 172, 0x39E7);
+
+    // ===== TOP BAR =====
+
+    gfx->fillRect(0, 0, 320, 18, 0x18C3);
+
+    // ===== RPM FRAME =====
+
+    gfx->drawRect(18, 138, 284, 18, WHITE);
+
+    // ===== CENTER MARK =====
+
     gfx->fillTriangle(
-        86, 20,
-        70, 50,
-        102, 50,
-        0x07E0
+        160, 28,
+        148, 48,
+        172, 48,
+        GREEN
     );
+
+    // ===== BATTERY ICON =====
+
+    gfx->drawRect(270, 3, 32, 12, WHITE);
+    gfx->fillRect(303, 6, 3, 6, WHITE);
+
+    gfx->fillRect(272, 5, 26, 8, GREEN);
 }
+
+// ======================================================
+// SETUP
+// ======================================================
 
 void setup()
 {
     Serial.begin(115200);
 
-    // ================= BACKLIGHT =================
+    // ===== BACKLIGHT =====
 
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 35);
+    ledcWrite(TFT_BL, 45);
 
-    // ================= DISPLAY =================
+    // ===== DISPLAY =====
 
     gfx->begin();
-
     gfx->invertDisplay(false);
 
     drawStaticUI();
 
-    // ================= INPUT =================
+    // ===== INPUT =====
 
     pinMode(STEER_PIN, INPUT);
     pinMode(THROTTLE_PIN, INPUT);
 }
 
+// ======================================================
+// LOOP
+// ======================================================
+
 void loop()
 {
-    // ================= READ PWM =================
+    // ==================================================
+    // READ RECEIVER
+    // ==================================================
 
     int steerPWM = pulseIn(STEER_PIN, HIGH, 25000);
     int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 25000);
 
-    // ================= FAILSAFE =================
+    // FAILSAFE
 
     if (steerPWM == 0)
         steerPWM = 1500;
@@ -101,21 +139,17 @@ void loop()
     if (throttlePWM == 0)
         throttlePWM = 1000;
 
-    // ================= DEBUG =================
-
-    Serial.print("STEER: ");
-    Serial.print(steerPWM);
-
-    Serial.print(" | THR: ");
-    Serial.println(throttlePWM);
-
-    // ================= MAP SPEED =================
+    // ==================================================
+    // MAP SPEED
+    // ==================================================
 
     targetSpeed = map(throttlePWM, 1000, 2000, 0, 120);
 
     targetSpeed = constrain(targetSpeed, 0, 120);
 
-    // ================= SMOOTH SPEED =================
+    // ==================================================
+    // SMOOTHING
+    // ==================================================
 
     if (speedValue < targetSpeed)
         speedValue++;
@@ -123,24 +157,30 @@ void loop()
     if (speedValue > targetSpeed)
         speedValue--;
 
-    // ================= BLINK TIMER =================
+    // ==================================================
+    // BLINKER TIMER
+    // ==================================================
 
-    if (millis() - blinkTimer > 350)
+    if (millis() - blinkTimer > 300)
     {
         blinkTimer = millis();
         blinkState = !blinkState;
     }
 
-    // ================= CLEAR DYNAMIC AREA =================
+    // ==================================================
+    // CLEAR DYNAMIC AREA
+    // ==================================================
 
-    gfx->fillRect(20, 70, 135, 120, 0x0000);
+    gfx->fillRect(0, 20, 320, 110, BLACK);
 
-    // ================= SPEED =================
+    // ==================================================
+    // BIG SPEED NUMBER
+    // ==================================================
 
-    gfx->setTextColor(0xFFFF);
-    gfx->setTextSize(5);
+    gfx->setTextColor(WHITE);
+    gfx->setTextSize(7);
 
-    gfx->setCursor(28, 85);
+    gfx->setCursor(80, 52);
 
     if (speedValue < 10)
         gfx->print("00");
@@ -149,55 +189,105 @@ void loop()
 
     gfx->print(speedValue);
 
-    // ================= KM/H =================
+    // ==================================================
+    // KM/H TEXT
+    // ==================================================
 
-    gfx->setTextColor(0x07FF);
-    gfx->setTextSize(2);
+    gfx->setTextColor(0xC7FF);
+    gfx->setTextSize(3);
 
-    gfx->setCursor(55, 150);
+    gfx->setCursor(118, 112);
     gfx->println("KM/H");
 
-    // ================= LEFT SIGNAL =================
+    // ==================================================
+    // LEFT SIGNAL
+    // ==================================================
 
     if (steerPWM < 1400)
     {
         if (blinkState)
         {
             gfx->fillTriangle(
-                25, 160,
-                55, 145,
-                55, 175,
-                0xF800
+                25, 86,
+                55, 66,
+                55, 106,
+                0xFD20
             );
         }
     }
 
-    // ================= RIGHT SIGNAL =================
+    // ==================================================
+    // RIGHT SIGNAL
+    // ==================================================
 
     else if (steerPWM > 1600)
     {
         if (blinkState)
         {
             gfx->fillTriangle(
-                147, 160,
-                117, 145,
-                117, 175,
-                0x001F
+                295, 86,
+                265, 66,
+                265, 106,
+                0x07FF
             );
         }
     }
 
-    // ================= RPM BAR =================
+    // ==================================================
+    // RPM BAR BACKGROUND
+    // ==================================================
 
-    gfx->drawRect(10, 280, 152, 15, 0xFFFF);
+    gfx->fillRect(20, 140, 280, 14, 0x2104);
 
-    int bar = map(speedValue, 0, 120, 0, 148);
+    // ==================================================
+    // RPM BAR VALUE
+    // ==================================================
 
-    // Clear old bar
-    gfx->fillRect(12, 282, 148, 11, 0x2104);
+    int rpmBar = map(speedValue, 0, 120, 0, 280);
 
-    // Draw new bar
-    gfx->fillRect(12, 282, bar, 11, 0xF800);
+    // COLOR ZONES
+
+    if (rpmBar < 180)
+    {
+        gfx->fillRect(20, 140, rpmBar, 14, GREEN);
+    }
+    else if (rpmBar < 240)
+    {
+        gfx->fillRect(20, 140, rpmBar, 14, YELLOW);
+    }
+    else
+    {
+        gfx->fillRect(20, 140, rpmBar, 14, RED);
+    }
+
+    // ==================================================
+    // THROTTLE BAR SIDE
+    // ==================================================
+
+    gfx->drawRect(6, 30, 8, 90, WHITE);
+
+    int throttleBar = map(speedValue, 0, 120, 0, 86);
+
+    gfx->fillRect(
+        7,
+        121 - throttleBar,
+        6,
+        throttleBar,
+        0xF800
+    );
+
+    // ==================================================
+    // DEBUG SERIAL
+    // ==================================================
+
+    Serial.print("STEER: ");
+    Serial.print(steerPWM);
+
+    Serial.print(" | THR: ");
+    Serial.print(throttlePWM);
+
+    Serial.print(" | SPEED: ");
+    Serial.println(speedValue);
 
     delay(15);
 }
