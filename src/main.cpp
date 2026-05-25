@@ -466,7 +466,7 @@ void setup()
     // 0 - 255
     // 90 = premium brightness
 
-    ledcWrite(TFT_BL, 90);
+    ledcWrite(TFT_BL, 50);
 
     // =================================================
     // DISPLAY
