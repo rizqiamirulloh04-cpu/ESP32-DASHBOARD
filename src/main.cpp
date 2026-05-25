@@ -9,6 +9,11 @@
 #define TFT_DC   15
 #define TFT_RST  21
 
+// ===== RECEIVER =====
+
+#define STEER_PIN    1
+#define THROTTLE_PIN 2
+
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
     TFT_CS,
@@ -20,8 +25,8 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    3,
-    true,
+    0,
+    false,
     172,
     320,
     34,
@@ -31,134 +36,123 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 );
 
 int speedValue = 0;
-int dir = 1;
 
 void setup()
 {
-    // Backlight redup
+    Serial.begin(115200);
+
+    // ===== BACKLIGHT =====
+
     ledcAttach(TFT_BL, 5000, 8);
     ledcWrite(TFT_BL, 35);
 
-    gfx->begin();
+    // ===== DISPLAY =====
 
-    gfx->invertDisplay(false);
+    gfx->begin();
 
     gfx->fillScreen(0x0000);
 
-    // KM/H static
-    gfx->setTextColor(0x07FF);
-    gfx->setTextSize(3);
+    // ===== RECEIVER INPUT =====
 
-    gfx->setCursor(105, 110);
-    gfx->println("KM/H");
-
-    // Bar background static
-    gfx->fillRect(40, 145, 240, 12, 0x2104);
+    pinMode(STEER_PIN, INPUT);
+    pinMode(THROTTLE_PIN, INPUT);
 }
 
 void loop()
 {
-    static int steering = -100;
-    static int steeringDir = 1;
+    // ===== READ PWM =====
+
+    int steerPWM = pulseIn(STEER_PIN, HIGH, 25000);
+    int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 25000);
+
+    // ===== DEBUG SERIAL =====
+
+    Serial.print("STEER: ");
+    Serial.print(steerPWM);
+
+    Serial.print(" | THR: ");
+    Serial.println(throttlePWM);
+
+    // ===== MAP SPEED =====
+
+    speedValue = map(throttlePWM, 1000, 2000, 0, 120);
+
+    if (speedValue < 0)
+        speedValue = 0;
+
+    if (speedValue > 120)
+        speedValue = 120;
+
+    // ===== CLEAR DYNAMIC AREA =====
+
+    gfx->fillRect(0, 0, 172, 320, 0x0000);
 
     // ===== SPEED =====
 
-    speedValue += dir * 2;
-
-    if (speedValue >= 120)
-    {
-        dir = -1;
-    }
-
-    if (speedValue <= 0)
-    {
-        dir = 1;
-    }
-
-    // ===== STEERING ANIMATION =====
-
-    steering += steeringDir * 8;
-
-    if (steering >= 100)
-    {
-        steeringDir = -1;
-    }
-
-    if (steering <= -100)
-    {
-        steeringDir = 1;
-    }
-
-    // ===== CLEAR SPEED AREA =====
-
-    gfx->fillRect(60, 35, 210, 60, 0x0000);
-
-    // ===== CLEAR ARROW AREA =====
-
-    gfx->fillRect(0, 45, 55, 50, 0x0000);
-    gfx->fillRect(265, 45, 55, 50, 0x0000);
-
-    // ===== LEFT ARROW =====
-
-    uint16_t leftColor = 0x4208;
-
-    if (steering < -20)
-    {
-        leftColor = 0x07E0;
-    }
-
-    gfx->fillTriangle(
-        20, 70,
-        45, 55,
-        45, 85,
-        leftColor
-    );
-
-    // ===== RIGHT ARROW =====
-
-    uint16_t rightColor = 0x4208;
-
-    if (steering > 20)
-    {
-        rightColor = 0x07E0;
-    }
-
-    gfx->fillTriangle(
-        300, 70,
-        275, 55,
-        275, 85,
-        rightColor
-    );
-
-    // ===== DRAW SPEED =====
-
     gfx->setTextColor(0xFFFF);
-    gfx->setTextSize(6);
+    gfx->setTextSize(5);
+
+    gfx->setCursor(35, 80);
 
     if (speedValue < 10)
     {
-        gfx->setCursor(95, 45);
         gfx->print("00");
     }
     else if (speedValue < 100)
     {
-        gfx->setCursor(95, 45);
         gfx->print("0");
-    }
-    else
-    {
-        gfx->setCursor(75, 45);
     }
 
     gfx->print(speedValue);
 
+    // ===== KM/H =====
+
+    gfx->setTextColor(0xFFFF);
+    gfx->setTextSize(2);
+
+    gfx->setCursor(55, 145);
+    gfx->println("KM/H");
+
+    // ===== LEFT / RIGHT INDICATOR =====
+
+    if (steerPWM < 1400)
+    {
+        // LEFT
+        gfx->fillTriangle(
+            15, 160,
+            45, 145,
+            45, 175,
+            0xF800
+        );
+    }
+    else if (steerPWM > 1600)
+    {
+        // RIGHT
+        gfx->fillTriangle(
+            157, 160,
+            127, 145,
+            127, 175,
+            0x001F
+        );
+    }
+    else
+    {
+        // CENTER
+        gfx->fillTriangle(
+            86, 20,
+            70, 50,
+            102, 50,
+            0x07E0
+        );
+    }
+
     // ===== RPM BAR =====
 
-    int bar = map(speedValue, 0, 120, 0, 240);
+    gfx->drawRect(10, 280, 152, 15, 0xFFFF);
 
-    gfx->fillRect(40, 145, 240, 12, 0x2104);
+    int bar = map(speedValue, 0, 120, 0, 148);
 
-    gfx->fillRect(40, 145, bar, 12, 0xF800);
+    gfx->fillRect(12, 282, bar, 11, 0xF800);
 
     delay(20);
 }
