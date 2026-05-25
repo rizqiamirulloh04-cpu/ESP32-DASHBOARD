@@ -42,24 +42,24 @@
 // ======================================================
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
-    TFT_DC,
-    TFT_CS,
-    TFT_SCLK,
-    TFT_MOSI,
-    GFX_NOT_DEFINED
+    8,   // DC
+    14,  // CS
+    7,   // SCK
+    6,   // MOSI
+    GFX_NOT_DEFINED // MISO
 );
 
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
-    TFT_RST,
-    3,
-    true,
-    172,
-    320,
-    34,
-    0,
-    34,
-    0
+    9,    // RST
+    1,    // rotation
+    true, // IPS
+    172,  // width
+    320,  // height
+    34,   // col offset
+    0,    // row offset
+    35,   // col offset2
+    0     // row offset2
 );
 
 // ======================================================
