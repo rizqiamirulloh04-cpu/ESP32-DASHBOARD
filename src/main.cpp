@@ -35,68 +35,82 @@ int dir = 1;
 
 void setup()
 {
+    // Backlight
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 35);
+    ledcWrite(TFT_BL, 40);
 
     gfx->begin();
+
     gfx->invertDisplay(false);
-    gfx->fillScreen(0x0000);
-}
 
-void drawUI()
-{
     gfx->fillScreen(0x0000);
 
-    // Title
+    // ===== TITLE =====
+
     gfx->setTextColor(0x07E0);
     gfx->setTextSize(2);
 
-    gfx->setCursor(10, 8);
+    gfx->setCursor(20, 10);
     gfx->println("RC DASHBOARD");
 
-    // SPEED
-    gfx->setTextSize(5);
+    // ===== RGB BAR =====
 
-    if (speedValue < 10)
-        gfx->setCursor(52, 45);
-    else if (speedValue < 100)
-        gfx->setCursor(38, 45);
-    else
-        gfx->setCursor(20, 45);
-
-    gfx->setTextColor(0xFFFF);
-    gfx->println(speedValue);
-
-    // KMH
-    gfx->setTextSize(2);
-    gfx->setCursor(60, 100);
-    gfx->println("KM/H");
-
-    // Speed bar background
-    gfx->drawRect(20, 130, 132, 12, 0xFFFF);
-
-    // Speed bar fill
-    int bar = map(speedValue, 0, 120, 0, 128);
-
-    gfx->fillRect(22, 132, bar, 8, 0xF800);
-
-    // RGB bottom
-    gfx->fillRect(15, 150, 40, 10, 0xF800);
-    gfx->fillRect(65, 150, 40, 10, 0x07E0);
-    gfx->fillRect(115, 150, 40, 10, 0x001F);
+    gfx->fillRect(15, 145, 40, 10, 0xF800);
+    gfx->fillRect(65, 145, 40, 10, 0x07E0);
+    gfx->fillRect(115, 145, 40, 10, 0x001F);
 }
 
 void loop()
 {
-    speedValue += dir;
+    // Hapus area speed
+    gfx->fillRect(25, 45, 120, 60, 0x0000);
+
+    // Speed animasi
+    speedValue += dir * 2;
 
     if (speedValue >= 120)
+    {
         dir = -1;
+    }
 
     if (speedValue <= 0)
+    {
         dir = 1;
+    }
 
-    drawUI();
+    // ===== SPEED =====
+
+    gfx->setTextColor(0xFFFF);
+    gfx->setTextSize(4);
+
+    gfx->setCursor(35, 55);
+
+    if (speedValue < 10)
+    {
+        gfx->print("00");
+    }
+    else if (speedValue < 100)
+    {
+        gfx->print("0");
+    }
+
+    gfx->print(speedValue);
+
+    // ===== KMH =====
+
+    gfx->setTextColor(0x07FF);
+    gfx->setTextSize(2);
+
+    gfx->setCursor(55, 105);
+    gfx->println("KM/H");
+
+    // ===== SIMPLE RPM BAR =====
+
+    gfx->fillRect(10, 125, 152, 10, 0x2104);
+
+    int bar = map(speedValue, 0, 120, 0, 152);
+
+    gfx->fillRect(10, 125, bar, 10, 0xF800);
 
     delay(30);
 }
