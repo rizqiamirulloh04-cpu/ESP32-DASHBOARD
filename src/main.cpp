@@ -40,21 +40,13 @@ void setup()
 
     gfx->invertDisplay(false);
 
-    gfx->fillScreen(BLACK);
+    gfx->fillScreen(0x0000);
 
-    gfx->setTextColor(GREEN);
-    gfx->setTextSize(3);
+gfx->setTextColor(0x07E0);
 
-    gfx->setCursor(40, 40);
-    gfx->println("ESP32-C6");
-
-    gfx->setCursor(40, 90);
-    gfx->println("LANDSCAPE");
-
-    gfx->fillRect(20, 140, 80, 20, RED);
-    gfx->fillRect(120, 140, 80, 20, GREEN);
-    gfx->fillRect(220, 140, 80, 20, BLUE);
-}
+gfx->fillRect(20, 140, 80, 20, 0xF800);
+gfx->fillRect(120, 140, 80, 20, 0x07E0);
+gfx->fillRect(220, 140, 80, 20, 0x001F);
 
 void loop()
 {
