@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
 
-// ================= DISPLAY PIN =================
+// ================= DISPLAY PINS =================
 
 #define TFT_BL   22
 
@@ -25,8 +25,7 @@
 #define BLUE    0x001F
 #define YELLOW  0xFFE0
 #define CYAN    0x07FF
-#define ORANGE  0xFD20
-#define GRAY    0x8410
+#define GRAY    0x4208
 
 // ================= DISPLAY =================
 
@@ -56,8 +55,8 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 int speedValue = 0;
 int targetSpeed = 0;
 
-unsigned long blinkTimer = 0;
 bool blinkState = false;
+unsigned long blinkTimer = 0;
 
 // ================= STATIC UI =================
 
@@ -66,24 +65,22 @@ void drawStaticUI()
     gfx->fillScreen(BLACK);
 
     // TOP LINE
-    gfx->drawFastHLine(0, 28, 172, CYAN);
+    gfx->drawFastHLine(10, 26, 152, CYAN);
 
-    // RPM FRAME
-    gfx->drawRect(10, 280, 152, 18, WHITE);
-
-    // LEFT BORDER
-    gfx->drawFastVLine(0, 0, 320, RED);
-
-    // RIGHT BORDER
-    gfx->drawFastVLine(171, 0, 320, BLUE);
+    // SIDE BARS
+    gfx->fillRect(8, 40, 4, 180, RED);
+    gfx->fillRect(160, 40, 4, 180, BLUE);
 
     // CENTER ARROW
     gfx->fillTriangle(
-        86, 18,
-        72, 42,
-        100, 42,
+        86, 14,
+        72, 38,
+        100, 38,
         GREEN
     );
+
+    // RPM FRAME
+    gfx->drawRect(10, 250, 152, 18, WHITE);
 }
 
 // ================= SETUP =================
@@ -93,19 +90,16 @@ void setup()
     Serial.begin(115200);
 
     // BACKLIGHT
-
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 40);
+    ledcWrite(TFT_BL, 35);
 
     // DISPLAY
-
     gfx->begin();
     gfx->invertDisplay(false);
 
     drawStaticUI();
 
     // INPUT
-
     pinMode(STEER_PIN, INPUT);
     pinMode(THROTTLE_PIN, INPUT);
 }
@@ -127,12 +121,21 @@ void loop()
     if (throttlePWM == 0)
         throttlePWM = 1000;
 
+    // DEBUG
+
+    Serial.print("STEER: ");
+    Serial.print(steerPWM);
+
+    Serial.print(" | THR: ");
+    Serial.println(throttlePWM);
+
     // MAP SPEED
 
     targetSpeed = map(throttlePWM, 1000, 2000, 0, 120);
+
     targetSpeed = constrain(targetSpeed, 0, 120);
 
-    // SMOOTHING
+    // SMOOTH SPEED
 
     if (speedValue < targetSpeed)
         speedValue++;
@@ -142,22 +145,22 @@ void loop()
 
     // BLINK
 
-    if (millis() - blinkTimer > 300)
+    if (millis() - blinkTimer > 350)
     {
         blinkTimer = millis();
         blinkState = !blinkState;
     }
 
-    // CLEAR SPEED AREA
+    // CLEAR CENTER AREA
 
-    gfx->fillRect(15, 50, 142, 120, BLACK);
+    gfx->fillRect(20, 60, 132, 120, BLACK);
 
-    // SPEED NUMBER
+    // SPEED
 
     gfx->setTextColor(WHITE);
     gfx->setTextSize(5);
 
-    gfx->setCursor(28, 70);
+    gfx->setCursor(28, 85);
 
     if (speedValue < 10)
         gfx->print("00");
@@ -166,12 +169,12 @@ void loop()
 
     gfx->print(speedValue);
 
-    // KMH
+    // KM/H
 
     gfx->setTextColor(CYAN);
     gfx->setTextSize(2);
 
-    gfx->setCursor(56, 135);
+    gfx->setCursor(52, 145);
     gfx->print("KM/H");
 
     // LEFT SIGNAL
@@ -181,10 +184,10 @@ void loop()
         if (blinkState)
         {
             gfx->fillTriangle(
-                18, 165,
-                48, 150,
-                48, 180,
-                ORANGE
+                20, 110,
+                40, 95,
+                40, 125,
+                YELLOW
             );
         }
     }
@@ -196,10 +199,10 @@ void loop()
         if (blinkState)
         {
             gfx->fillTriangle(
-                154, 165,
-                124, 150,
-                124, 180,
-                BLUE
+                152, 110,
+                132, 95,
+                132, 125,
+                YELLOW
             );
         }
     }
@@ -208,19 +211,19 @@ void loop()
 
     int rpmBar = map(speedValue, 0, 120, 0, 148);
 
-    gfx->fillRect(12, 282, 148, 14, GRAY);
+    gfx->fillRect(12, 252, 148, 14, GRAY);
 
     if (speedValue < 50)
     {
-        gfx->fillRect(12, 282, rpmBar, 14, GREEN);
+        gfx->fillRect(12, 252, rpmBar, 14, GREEN);
     }
     else if (speedValue < 90)
     {
-        gfx->fillRect(12, 282, rpmBar, 14, YELLOW);
+        gfx->fillRect(12, 252, rpmBar, 14, YELLOW);
     }
     else
     {
-        gfx->fillRect(12, 282, rpmBar, 14, RED);
+        gfx->fillRect(12, 252, rpmBar, 14, RED);
     }
 
     delay(15);
