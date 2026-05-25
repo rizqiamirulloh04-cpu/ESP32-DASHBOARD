@@ -13,7 +13,7 @@
 #define CYAN    0x07FF
 
 // ==========================
-// WAVESHARE ESP32-C6 LCD
+// PIN LCD
 // ==========================
 
 #define TFT_BL   15
@@ -25,7 +25,7 @@
 #define TFT_CS   14
 
 // ==========================
-// SPI BUS
+// BUS SPI
 // ==========================
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
@@ -43,14 +43,12 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    1,      // rotation
+    0,      // rotation
     true,   // IPS
     172,    // width
     320,    // height
     34,     // col offset
-    0,      // row offset
-    35,     // col offset 2
-    0       // row offset 2
+    0       // row offset
 );
 
 // ==========================
@@ -63,17 +61,16 @@ void setup()
     pinMode(TFT_BL, OUTPUT);
     digitalWrite(TFT_BL, HIGH);
 
-    // DISPLAY INIT
-    gfx->begin(40000000);
-
-    gfx->invertDisplay(false);
-
-    // ======================
-    // COLOR TEST
-    // ======================
+    // INIT DISPLAY
+    gfx->begin();
 
     gfx->fillScreen(BLACK);
+
     delay(500);
+
+    // ==========================
+    // TEST COLOR
+    // ==========================
 
     gfx->fillScreen(RED);
     delay(1000);
@@ -86,55 +83,53 @@ void setup()
 
     gfx->fillScreen(BLACK);
 
-    // ======================
-    // TEST UI
-    // ======================
+    // ==========================
+    // TEST DRAW
+    // ==========================
 
-    gfx->drawRect(0, 0, 320, 172, WHITE);
+    gfx->drawRect(0, 0, 172, 320, WHITE);
 
-    // TOP LINE
-    gfx->drawFastHLine(70, 20, 180, CYAN);
+    gfx->drawFastHLine(36, 26, 100, CYAN);
 
-    // TRIANGLE
     gfx->fillTriangle(
-        160, 8,
-        150, 20,
-        170, 20,
+        86, 12,
+        78, 24,
+        94, 24,
         GREEN
     );
 
     // LEFT BAR
     gfx->fillRoundRect(
-        40,
-        40,
-        8,
-        100,
+        22,
+        48,
+        6,
+        110,
         3,
         RED
     );
 
     // RIGHT BAR
     gfx->fillRoundRect(
-        272,
-        40,
-        8,
-        100,
+        144,
+        48,
+        6,
+        110,
         3,
         CYAN
     );
 
     // SPEED
     gfx->setTextColor(WHITE);
-    gfx->setTextSize(5);
+    gfx->setTextSize(4);
 
-    gfx->setCursor(90, 80);
+    gfx->setCursor(42, 82);
     gfx->print("000");
 
     // KM/H
     gfx->setTextColor(CYAN);
     gfx->setTextSize(2);
 
-    gfx->setCursor(120, 130);
+    gfx->setCursor(52, 128);
     gfx->print("KM/H");
 }
 
