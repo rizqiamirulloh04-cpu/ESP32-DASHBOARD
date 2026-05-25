@@ -1,9 +1,7 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
 
-// =====================================================
-// PIN CONFIG
-// =====================================================
+// ====================== PIN CONFIG ======================
 
 #define TFT_BL   22
 
@@ -13,21 +11,17 @@
 #define TFT_DC   15
 #define TFT_RST  21
 
-// =====================================================
-// COLORS
-// =====================================================
+// ====================== COLORS ======================
 
 #define BLACK        0x0000
 #define UI_WHITE     0xE71C
 #define SPEED_WHITE  0xFFFF
 #define DARK         0x4208
-#define CYAN         0x07FF
+#define CYAN         0x867D
 #define GREEN        0x07E0
 #define YELLOW       0xFFE0
 
-// =====================================================
-// DISPLAY BUS
-// =====================================================
+// ====================== DISPLAY ======================
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
@@ -36,10 +30,6 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_MOSI,
     GFX_NOT_DEFINED
 );
-
-// =====================================================
-// ST7789 WITH OFFSET FIX
-// =====================================================
 
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
@@ -52,256 +42,209 @@ Arduino_GFX *gfx = new Arduino_ST7789(
     0
 );
 
-// =====================================================
-// GLOBALS
-// =====================================================
+// ====================== VARIABLES ======================
 
-int signalFrame = 0;
-int speedValue = 68;
+int speedValue = 0;
+int rpmBar = 0;
 
-// =====================================================
-// STATIC UI
-// =====================================================
+bool leftSignal = false;
+bool rightSignal = true;
 
-void drawStaticUI()
-{
-    gfx->fillScreen(0x0000);
+unsigned long signalMillis = 0;
+bool blinkState = false;
 
-    delay(50);
-
-    // main center panel
-    gfx->drawRoundRect(
-        42,
-        34,
-        236,
-        90,
-        10,
-        DARK
-    );
-
-    // bottom bar outline
-    gfx->drawRoundRect(
-        20,
-        138,
-        280,
-        10,
-        5,
-        DARK
-    );
-}
-
-// =====================================================
-// SIGNAL ANIMATION
-// =====================================================
-
-void drawSignals()
-{
-    gfx->fillRect(0, 0, 170, 24, BLACK);
-
-    gfx->setTextSize(2);
-
-    // LEFT SIGNAL
-    for (int i = 0; i < 4; i++)
-    {
-        if (i >= (3 - signalFrame))
-            gfx->setTextColor(YELLOW);
-        else
-            gfx->setTextColor(DARK);
-
-        gfx->setCursor(8 + (i * 12), 4);
-        gfx->print("<");
-    }
-
-    // RIGHT SIGNAL
-    for (int i = 0; i < 4; i++)
-    {
-        if (i <= signalFrame)
-            gfx->setTextColor(YELLOW);
-        else
-            gfx->setTextColor(DARK);
-
-        gfx->setCursor(264 + (i * 12), 4);
-        gfx->print(">");
-    }
-
-    signalFrame++;
-
-    if (signalFrame > 3)
-        signalFrame = 0;
-}
-
-// =====================================================
-// BATTERY
-// =====================================================
+// ====================== BATTERY ======================
 
 void drawBattery(int percent)
 {
-    int x = 10;
-    int y = 28;
+    int x = 12;
+    int y = 10;
 
-    gfx->fillRect(0, 28, 90, 24, BLACK);
+    gfx->fillRect(0, 0, 60, 22, BLACK);
 
-    // battery body
-    gfx->drawRoundRect(
-        x,
-        y,
-        26,
-        12,
-        3,
-        UI_WHITE
-    );
+    // body
+    gfx->drawRoundRect(x, y, 22, 10, 2, UI_WHITE);
 
     // terminal
-    gfx->fillRect(
-        x + 26,
-        y + 3,
-        3,
-        6,
-        UI_WHITE
-    );
+    gfx->fillRect(x + 22, y + 3, 2, 4, UI_WHITE);
 
-    // battery level
-    int fill = map(percent, 0, 100, 0, 22);
+    // fill
+    int fill = map(percent, 0, 100, 0, 18);
 
     gfx->fillRoundRect(
         x + 2,
         y + 2,
         fill,
-        8,
+        6,
         2,
         GREEN
     );
 
-    // percentage text
-    gfx->setTextColor(UI_WHITE);
+    // text
     gfx->setTextSize(1);
+    gfx->setTextColor(UI_WHITE);
 
-    gfx->setCursor(42, 31);
+    gfx->setCursor(38, 12);
     gfx->print(percent);
     gfx->print("%");
 }
 
-// =====================================================
-// LAMP INDICATOR
-// =====================================================
+// ====================== SIGNALS ======================
 
-void drawLamp()
+void drawSignals(bool leftOn, bool rightOn)
 {
-    gfx->fillRect(240, 28, 40, 24, BLACK);
+    gfx->fillRect(0, 0, 170, 18, BLACK);
 
-    gfx->setTextColor(YELLOW);
     gfx->setTextSize(2);
 
-    gfx->setCursor(266, 30);
-    gfx->print("*");
+    // LEFT
+    gfx->setCursor(8, 6);
+
+    if (leftOn)
+        gfx->setTextColor(YELLOW);
+    else
+        gfx->setTextColor(DARK);
+
+    gfx->print("<<<");
+
+    // RIGHT
+    gfx->setCursor(136, 6);
+
+    if (rightOn)
+        gfx->setTextColor(YELLOW);
+    else
+        gfx->setTextColor(DARK);
+
+    gfx->print(">>>");
 }
 
-// =====================================================
-// SPEED
-// =====================================================
+// ====================== STATIC UI ======================
 
-void drawSpeed(int speed)
+void drawStaticUI()
 {
-    char buf[4];
+    gfx->fillScreen(0x0000);
+    delay(50);
 
-    sprintf(buf, "%03d", speed);
+    // top line
+    gfx->drawFastHLine(48, 16, 74, DARK);
 
-    // clear speed area
-    gfx->fillRect(90, 56, 140, 44, BLACK);
+    // center box
+    gfx->drawRoundRect(
+        34,
+        34,
+        102,
+        52,
+        8,
+        DARK
+    );
 
-    // shadow
-    gfx->setTextColor(DARK);
-    gfx->setTextSize(4);
-
-    gfx->setCursor(104, 66);
-    gfx->print(buf);
-
-    // main text
-    gfx->setTextColor(SPEED_WHITE);
-
-    gfx->setCursor(102, 64);
-    gfx->print(buf);
-
-    // KM/H
-    gfx->setTextColor(UI_WHITE);
-    gfx->setTextSize(2);
-
-    gfx->setCursor(126, 102);
-    gfx->print("KM/H");
-}
-
-// =====================================================
-// SPEED BAR
-// =====================================================
-
-void drawBar(int value)
-{
-    // background
-    gfx->fillRoundRect(
-        22,
-        140,
-        276,
+    // rpm background
+    gfx->drawRoundRect(
+        18,
+        112,
+        134,
         6,
         3,
         DARK
     );
+}
 
-    // value
-    int width = map(value, 0, 120, 0, 276);
+// ====================== SPEED ======================
+
+void drawSpeed(int speed)
+{
+    gfx->fillRect(48, 48, 70, 26, BLACK);
+
+    gfx->setTextColor(SPEED_WHITE);
+    gfx->setTextSize(4);
+
+    gfx->setCursor(52, 50);
+
+    if (speed < 10) gfx->print("0");
+    if (speed < 100) gfx->print("0");
+
+    gfx->print(speed);
+
+    gfx->setTextSize(2);
+    gfx->setTextColor(UI_WHITE);
+
+    gfx->setCursor(61, 72);
+    gfx->print("KM/H");
+}
+
+// ====================== RPM BAR ======================
+
+void drawRPM(int value)
+{
+    gfx->fillRoundRect(
+        18,
+        112,
+        134,
+        6,
+        3,
+        BLACK
+    );
 
     gfx->fillRoundRect(
-        22,
-        140,
-        width,
+        18,
+        112,
+        value,
         6,
         3,
         CYAN
     );
 }
 
-// =====================================================
-// SETUP
-// =====================================================
+// ====================== SETUP ======================
 
 void setup()
 {
     Serial.begin(115200);
 
-    // BACKLIGHT
     pinMode(TFT_BL, OUTPUT);
     digitalWrite(TFT_BL, HIGH);
 
-    // DISPLAY
     gfx->begin();
 
-    // IMPORTANT
     gfx->setRotation(3);
 
-    gfx->invertDisplay(false);
-
     drawStaticUI();
-}
-
-// =====================================================
-// LOOP
-// =====================================================
-
-void loop()
-{
-    drawSignals();
 
     drawBattery(82);
 
-    drawLamp();
+    drawSignals(false, false);
+
+    drawSpeed(0);
+
+    drawRPM(0);
+}
+
+// ====================== LOOP ======================
+
+void loop()
+{
+    // animate speed
+    speedValue++;
+
+    if (speedValue > 180)
+        speedValue = 0;
 
     drawSpeed(speedValue);
 
-    drawBar(speedValue);
+    // rpm animation
+    rpmBar = map(speedValue, 0, 180, 0, 134);
 
-    speedValue++;
+    drawRPM(rpmBar);
 
-    if (speedValue > 120)
-        speedValue = 0;
+    // signal blink
+    if (millis() - signalMillis > 400)
+    {
+        signalMillis = millis();
 
-    delay(120);
+        blinkState = !blinkState;
+
+        drawSignals(blinkState, blinkState);
+    }
+
+    delay(40);
 }
