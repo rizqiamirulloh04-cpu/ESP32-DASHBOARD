@@ -35,9 +35,9 @@ int dir = 1;
 
 void setup()
 {
-    // Backlight
+    // Backlight redup
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 40);
+    ledcWrite(TFT_BL, 35);
 
     gfx->begin();
 
@@ -50,20 +50,20 @@ void setup()
     gfx->setTextColor(0x07E0);
     gfx->setTextSize(2);
 
-    gfx->setCursor(20, 10);
+    gfx->setCursor(75, 10);
     gfx->println("RC DASHBOARD");
 
     // ===== RGB BAR =====
 
-    gfx->fillRect(15, 145, 40, 10, 0xF800);
-    gfx->fillRect(65, 145, 40, 10, 0x07E0);
-    gfx->fillRect(115, 145, 40, 10, 0x001F);
+    gfx->fillRect(55, 150, 55, 10, 0xF800);
+    gfx->fillRect(132, 150, 55, 10, 0x07E0);
+    gfx->fillRect(209, 150, 55, 10, 0x001F);
 }
 
 void loop()
 {
     // Hapus area speed
-    gfx->fillRect(25, 45, 120, 60, 0x0000);
+    gfx->fillRect(50, 40, 220, 90, 0x0000);
 
     // Speed animasi
     speedValue += dir * 2;
@@ -81,36 +81,40 @@ void loop()
     // ===== SPEED =====
 
     gfx->setTextColor(0xFFFF);
-    gfx->setTextSize(4);
-
-    gfx->setCursor(35, 55);
+    gfx->setTextSize(6);
 
     if (speedValue < 10)
     {
+        gfx->setCursor(95, 55);
         gfx->print("00");
     }
     else if (speedValue < 100)
     {
+        gfx->setCursor(95, 55);
         gfx->print("0");
+    }
+    else
+    {
+        gfx->setCursor(75, 55);
     }
 
     gfx->print(speedValue);
 
-    // ===== KMH =====
+    // ===== KM/H =====
 
     gfx->setTextColor(0x07FF);
-    gfx->setTextSize(2);
+    gfx->setTextSize(3);
 
-    gfx->setCursor(55, 105);
+    gfx->setCursor(110, 115);
     gfx->println("KM/H");
 
-    // ===== SIMPLE RPM BAR =====
+    // ===== SPEED BAR =====
 
-    gfx->fillRect(10, 125, 152, 10, 0x2104);
+    gfx->fillRect(40, 135, 240, 12, 0x2104);
 
-    int bar = map(speedValue, 0, 120, 0, 152);
+    int bar = map(speedValue, 0, 120, 0, 240);
 
-    gfx->fillRect(10, 125, bar, 10, 0xF800);
+    gfx->fillRect(40, 135, bar, 12, 0xF800);
 
-    delay(30);
+    delay(25);
 }
