@@ -44,24 +44,14 @@ void setup()
     gfx->invertDisplay(false);
 
     gfx->fillScreen(0x0000);
-
-    // ===== TITLE =====
-
-    // kosongkan title
-
-    // ===== RGB BAR =====
-
-    gfx->fillRect(55, 150, 55, 10, 0xF800);
-    gfx->fillRect(132, 150, 55, 10, 0x07E0);
-    gfx->fillRect(209, 150, 55, 10, 0x001F);
 }
 
 void loop()
 {
     // Hapus area speed
-    gfx->fillRect( 0,  0, 320,130, 0x0000);
+    gfx->fillRect(0, 0, 320, 130, 0x0000);
 
-    // Speed animasi
+    // Animasi speed
     speedValue += dir * 2;
 
     if (speedValue >= 120)
@@ -81,17 +71,17 @@ void loop()
 
     if (speedValue < 10)
     {
-        gfx->setCursor(85, 45);
+        gfx->setCursor(95, 45);
         gfx->print("00");
     }
     else if (speedValue < 100)
     {
-        gfx->setCursor(95, 55);
+        gfx->setCursor(95, 45);
         gfx->print("0");
     }
     else
     {
-        gfx->setCursor(75, 55);
+        gfx->setCursor(75, 45);
     }
 
     gfx->print(speedValue);
@@ -106,11 +96,11 @@ void loop()
 
     // ===== SPEED BAR =====
 
-    gfx->fillRect(40, 135, 240, 12, 0x2104);
+    gfx->fillRect(40, 145, 240, 12, 0x2104);
 
     int bar = map(speedValue, 0, 120, 0, 240);
 
-    gfx->fillRect(40, 135, bar, 12, 0xF800);
+    gfx->fillRect(40, 145, bar, 12, 0xF800);
 
     delay(25);
 }
