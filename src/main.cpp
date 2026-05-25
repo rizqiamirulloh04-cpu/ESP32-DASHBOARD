@@ -29,7 +29,6 @@
 #define BLUE    0x001F
 #define YELLOW  0xFFE0
 #define CYAN    0x07FF
-#define GRAY    0x4208
 #define DARK    0x2104
 
 // ================= DISPLAY =================
@@ -64,38 +63,41 @@ bool blinkState = false;
 unsigned long blinkTimer = 0;
 
 // ======================================================
-// DRAW STATIC UI
+// STATIC UI
 // ======================================================
 
 void drawStaticUI()
 {
     gfx->fillScreen(BLACK);
 
-    // ===== TOP LINE =====
+    // ===== TOP CYAN LINE =====
 
-    gfx->drawFastHLine(22, 28, 128, CYAN);
+    gfx->drawFastHLine(34, 26, 104, CYAN);
 
-    // ===== SIDE ACCENTS =====
+    // ===== LEFT RED BAR =====
 
-    gfx->fillRect(18, 48, 4, 140, RED);
-    gfx->fillRect(132, 48, 4, 140, BLUE);
+    gfx->fillRect(18, 48, 4, 120, RED);
 
-    // ===== CENTER ARROW =====
+    // ===== RIGHT BLUE BAR =====
+
+    gfx->fillRect(150, 48, 4, 120, BLUE);
+
+    // ===== TOP CENTER INDICATOR =====
 
     gfx->fillTriangle(
-        86, 14,
-        74, 36,
-        98, 36,
+        86, 12,
+        74, 32,
+        98, 32,
         GREEN
     );
 
     // ===== RPM FRAME =====
 
-    gfx->drawRect(20, 245, 132, 16, WHITE);
+    gfx->drawRect(20, 240, 132, 16, WHITE);
 
     // ===== LOWER LINE =====
 
-    gfx->drawFastHLine(20, 230, 132, DARK);
+    gfx->drawFastHLine(20, 225, 132, DARK);
 }
 
 // ======================================================
@@ -144,15 +146,7 @@ void loop()
     if (throttlePWM == 0)
         throttlePWM = 1000;
 
-    // ===== DEBUG =====
-
-    Serial.print("STEER: ");
-    Serial.print(steerPWM);
-
-    Serial.print(" | THR: ");
-    Serial.println(throttlePWM);
-
-    // ===== SPEED MAP =====
+    // ===== MAP SPEED =====
 
     targetSpeed = map(throttlePWM, 1000, 2000, 0, 120);
 
@@ -178,16 +172,16 @@ void loop()
     // CLEAR CENTER AREA
     // ==================================================
 
-    gfx->fillRect(28, 60, 116, 100, BLACK);
+    gfx->fillRect(26, 58, 120, 110, BLACK);
 
     // ==================================================
     // SPEED NUMBER
     // ==================================================
 
-    gfx->setTextColor(0xDEDB);
+    gfx->setTextColor(WHITE);
     gfx->setTextSize(7);
 
-    gfx->setCursor(34, 72);
+    gfx->setCursor(28, 72);
 
     if (speedValue < 10)
         gfx->print("00");
@@ -203,21 +197,21 @@ void loop()
     gfx->setTextColor(CYAN);
     gfx->setTextSize(2);
 
-    gfx->setCursor(60, 150);
+    gfx->setCursor(58, 150);
     gfx->print("KM/H");
 
     // ==================================================
     // LEFT SIGNAL
     // ==================================================
 
-    gfx->fillRect(22, 92, 22, 22, BLACK);
+    gfx->fillRect(24, 95, 20, 20, BLACK);
 
     if (steerPWM < 1400 && blinkState)
     {
         gfx->fillTriangle(
-            22, 103,
-            42, 92,
-            42, 114,
+            24, 105,
+            42, 95,
+            42, 115,
             YELLOW
         );
     }
@@ -226,14 +220,14 @@ void loop()
     // RIGHT SIGNAL
     // ==================================================
 
-    gfx->fillRect(128, 92, 22, 22, BLACK);
+    gfx->fillRect(128, 95, 20, 20, BLACK);
 
     if (steerPWM > 1600 && blinkState)
     {
         gfx->fillTriangle(
-            150, 103,
-            130, 92,
-            130, 114,
+            148, 105,
+            130, 95,
+            130, 115,
             YELLOW
         );
     }
@@ -245,20 +239,22 @@ void loop()
     int rpmBar = map(speedValue, 0, 120, 0, 128);
 
     // Clear old bar
-    gfx->fillRect(22, 247, 128, 12, DARK);
+
+    gfx->fillRect(22, 242, 128, 12, DARK);
 
     // Dynamic color
+
     if (speedValue < 50)
     {
-        gfx->fillRect(22, 247, rpmBar, 12, GREEN);
+        gfx->fillRect(22, 242, rpmBar, 12, GREEN);
     }
     else if (speedValue < 90)
     {
-        gfx->fillRect(22, 247, rpmBar, 12, YELLOW);
+        gfx->fillRect(22, 242, rpmBar, 12, YELLOW);
     }
     else
     {
-        gfx->fillRect(22, 247, rpmBar, 12, RED);
+        gfx->fillRect(22, 242, rpmBar, 12, RED);
     }
 
     delay(15);
