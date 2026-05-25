@@ -26,7 +26,7 @@
 #define YELLOW       0xFFE0
 
 // =====================================================
-// DISPLAY
+// DISPLAY BUS
 // =====================================================
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
@@ -37,13 +37,19 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
     GFX_NOT_DEFINED
 );
 
+// =====================================================
+// ST7789 WITH OFFSET FIX
+// =====================================================
+
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    1,
+    0,
     true,
     170,
-    320
+    320,
+    35,
+    0
 );
 
 // =====================================================
@@ -59,17 +65,33 @@ int speedValue = 68;
 
 void drawStaticUI()
 {
-    gfx->fillScreen(BLACK);
+    gfx->fillScreen(0x0000);
 
-    // panel tengah
-    gfx->drawRoundRect(42, 34, 236, 90, 10, DARK);
+    delay(50);
 
-    // garis bawah
-    gfx->drawRoundRect(20, 138, 280, 10, 5, DARK);
+    // main center panel
+    gfx->drawRoundRect(
+        42,
+        34,
+        236,
+        90,
+        10,
+        DARK
+    );
+
+    // bottom bar outline
+    gfx->drawRoundRect(
+        20,
+        138,
+        280,
+        10,
+        5,
+        DARK
+    );
 }
 
 // =====================================================
-// SIGNALS
+// SIGNAL ANIMATION
 // =====================================================
 
 void drawSignals()
@@ -78,10 +100,10 @@ void drawSignals()
 
     gfx->setTextSize(2);
 
-    // kiri
+    // LEFT SIGNAL
     for (int i = 0; i < 4; i++)
     {
-        if (i <= signalFrame)
+        if (i >= (3 - signalFrame))
             gfx->setTextColor(YELLOW);
         else
             gfx->setTextColor(DARK);
@@ -90,7 +112,7 @@ void drawSignals()
         gfx->print("<");
     }
 
-    // kanan
+    // RIGHT SIGNAL
     for (int i = 0; i < 4; i++)
     {
         if (i <= signalFrame)
@@ -117,15 +139,28 @@ void drawBattery(int percent)
     int x = 10;
     int y = 28;
 
-    gfx->fillRect(0, 28, 110, 24, BLACK);
+    gfx->fillRect(0, 28, 90, 24, BLACK);
 
-    // body
-    gfx->drawRoundRect(x, y, 26, 12, 3, UI_WHITE);
+    // battery body
+    gfx->drawRoundRect(
+        x,
+        y,
+        26,
+        12,
+        3,
+        UI_WHITE
+    );
 
     // terminal
-    gfx->fillRect(x + 26, y + 3, 3, 6, UI_WHITE);
+    gfx->fillRect(
+        x + 26,
+        y + 3,
+        3,
+        6,
+        UI_WHITE
+    );
 
-    // fill
+    // battery level
     int fill = map(percent, 0, 100, 0, 22);
 
     gfx->fillRoundRect(
@@ -137,7 +172,7 @@ void drawBattery(int percent)
         GREEN
     );
 
-    // text
+    // percentage text
     gfx->setTextColor(UI_WHITE);
     gfx->setTextSize(1);
 
@@ -147,7 +182,7 @@ void drawBattery(int percent)
 }
 
 // =====================================================
-// LAMP
+// LAMP INDICATOR
 // =====================================================
 
 void drawLamp()
@@ -168,10 +203,11 @@ void drawLamp()
 void drawSpeed(int speed)
 {
     char buf[4];
+
     sprintf(buf, "%03d", speed);
 
-    // clear angka
-    gfx->fillRect(95, 58, 130, 40, BLACK);
+    // clear speed area
+    gfx->fillRect(90, 56, 140, 44, BLACK);
 
     // shadow
     gfx->setTextColor(DARK);
@@ -186,7 +222,7 @@ void drawSpeed(int speed)
     gfx->setCursor(102, 64);
     gfx->print(buf);
 
-    // KMH
+    // KM/H
     gfx->setTextColor(UI_WHITE);
     gfx->setTextSize(2);
 
@@ -195,11 +231,12 @@ void drawSpeed(int speed)
 }
 
 // =====================================================
-// BAR
+// SPEED BAR
 // =====================================================
 
 void drawBar(int value)
 {
+    // background
     gfx->fillRoundRect(
         22,
         140,
@@ -209,7 +246,8 @@ void drawBar(int value)
         DARK
     );
 
-    int width = map(value, 0, 100, 0, 276);
+    // value
+    int width = map(value, 0, 120, 0, 276);
 
     gfx->fillRoundRect(
         22,
@@ -229,13 +267,15 @@ void setup()
 {
     Serial.begin(115200);
 
-    // backlight aman
+    // BACKLIGHT
     pinMode(TFT_BL, OUTPUT);
     digitalWrite(TFT_BL, HIGH);
 
+    // DISPLAY
     gfx->begin();
 
-    gfx->setRotation(1);
+    // IMPORTANT
+    gfx->setRotation(3);
 
     gfx->invertDisplay(false);
 
