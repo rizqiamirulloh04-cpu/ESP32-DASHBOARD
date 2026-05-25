@@ -61,4 +61,48 @@ void setup()
 
 void loop()
 {
+    static int x = 20;
+    static int dir = 1;
+    static uint32_t last_fps = 0;
+    static uint32_t frames = 0;
+
+    // Hapus layar
+    gfx->fillScreen(0x0000);
+
+    // Bola bergerak
+    gfx->fillCircle(x, 80, 20, 0xF800);
+
+    // Text
+    gfx->setTextColor(0x07E0);
+    gfx->setTextSize(2);
+
+    gfx->setCursor(10, 10);
+    gfx->println("FPS TEST");
+
+    // Hitung FPS
+    frames++;
+
+    if (millis() - last_fps >= 1000)
+    {
+        gfx->fillRect(10, 35, 120, 20, 0x0000);
+
+        gfx->setCursor(10, 35);
+        gfx->printf("FPS: %lu", frames);
+
+        frames = 0;
+        last_fps = millis();
+    }
+
+    // Gerakan
+    x += dir * 4;
+
+    if (x >= 150)
+    {
+        dir = -1;
+    }
+
+    if (x <= 20)
+    {
+        dir = 1;
+    }
 }
