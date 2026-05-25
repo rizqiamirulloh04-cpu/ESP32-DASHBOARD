@@ -14,9 +14,9 @@
 // ====================== COLORS ======================
 
 #define BLACK        0x0000
-#define UI_WHITE     0xE71C
+#define UI_WHITE     0xDEFB
 #define SPEED_WHITE  0xFFFF
-#define DARK         0x3186
+#define DARK         0x39E7
 #define CYAN         0x867D
 #define GREEN        0x07E0
 #define YELLOW       0xFFE0
@@ -34,10 +34,12 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    1,
+    0,
     true,
     170,
-    320
+    320,
+    35,
+    0
 );
 
 // ====================== VAR ======================
@@ -52,22 +54,22 @@ bool blinkState = false;
 
 void drawBattery(int percent)
 {
-    int x = 8;
-    int y = 6;
+    int x = 10;
+    int y = 10;
 
-    gfx->fillRect(0, 0, 70, 20, BLACK);
+    gfx->fillRect(0, 0, 60, 20, BLACK);
 
-    gfx->drawRoundRect(x, y, 24, 11, 2, UI_WHITE);
+    gfx->drawRoundRect(x, y, 22, 10, 2, UI_WHITE);
 
-    gfx->fillRect(x + 24, y + 3, 2, 5, UI_WHITE);
+    gfx->fillRect(x + 22, y + 3, 2, 4, UI_WHITE);
 
-    int fill = map(percent, 0, 100, 0, 20);
+    int fill = map(percent, 0, 100, 0, 18);
 
     gfx->fillRoundRect(
         x + 2,
         y + 2,
         fill,
-        7,
+        6,
         2,
         GREEN
     );
@@ -75,7 +77,7 @@ void drawBattery(int percent)
     gfx->setTextSize(1);
     gfx->setTextColor(UI_WHITE);
 
-    gfx->setCursor(38, 8);
+    gfx->setCursor(38, 12);
     gfx->print(percent);
     gfx->print("%");
 }
@@ -87,7 +89,7 @@ void drawSignals(bool on)
     gfx->setTextSize(2);
 
     // kiri
-    gfx->setCursor(6, 2);
+    gfx->setCursor(8, 6);
 
     if (on)
         gfx->setTextColor(YELLOW);
@@ -97,7 +99,7 @@ void drawSignals(bool on)
     gfx->print("<<<");
 
     // kanan
-    gfx->setCursor(128, 2);
+    gfx->setCursor(136, 6);
 
     if (on)
         gfx->setTextColor(YELLOW);
@@ -107,7 +109,7 @@ void drawSignals(bool on)
     gfx->print(">>>");
 }
 
-// ====================== STATIC UI ======================
+// ====================== STATIC ======================
 
 void drawStaticUI()
 {
@@ -117,23 +119,23 @@ void drawStaticUI()
     // garis atas
     gfx->drawFastHLine(48, 22, 74, DARK);
 
-    // panel tengah
+    // panel speed
     gfx->drawRoundRect(
         34,
-        30,
+        34,
         102,
-        56,
+        52,
         8,
         DARK
     );
 
-    // progress bg
+    // rpm bg
     gfx->drawRoundRect(
         18,
-        104,
+        112,
         134,
-        8,
-        4,
+        6,
+        3,
         DARK
     );
 }
@@ -142,12 +144,12 @@ void drawStaticUI()
 
 void drawSpeed(int speed)
 {
-    gfx->fillRect(48, 44, 72, 34, BLACK);
+    gfx->fillRect(48, 48, 72, 30, BLACK);
 
     gfx->setTextColor(SPEED_WHITE);
     gfx->setTextSize(4);
 
-    gfx->setCursor(50, 44);
+    gfx->setCursor(52, 50);
 
     if (speed < 10) gfx->print("0");
     if (speed < 100) gfx->print("0");
@@ -157,7 +159,7 @@ void drawSpeed(int speed)
     gfx->setTextSize(2);
     gfx->setTextColor(UI_WHITE);
 
-    gfx->setCursor(58, 68);
+    gfx->setCursor(61, 72);
     gfx->print("KM/H");
 }
 
@@ -166,20 +168,20 @@ void drawSpeed(int speed)
 void drawRPM(int value)
 {
     gfx->fillRoundRect(
-        20,
-        106,
-        130,
-        4,
-        2,
+        18,
+        112,
+        134,
+        6,
+        3,
         BLACK
     );
 
     gfx->fillRoundRect(
-        20,
-        106,
+        18,
+        112,
         value,
-        4,
-        2,
+        6,
+        3,
         CYAN
     );
 }
@@ -195,7 +197,7 @@ void setup()
 
     gfx->begin();
 
-    gfx->setRotation(1);
+    gfx->setRotation(3);
 
     drawStaticUI();
 
@@ -219,7 +221,7 @@ void loop()
 
     drawSpeed(speedValue);
 
-    rpmBar = map(speedValue, 0, 180, 0, 130);
+    rpmBar = map(speedValue, 0, 180, 0, 134);
 
     drawRPM(rpmBar);
 
