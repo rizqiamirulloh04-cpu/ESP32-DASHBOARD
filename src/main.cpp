@@ -1,20 +1,13 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
 
-#define TFT_BL   15
+#define TFT_BL   22
 
 #define TFT_MOSI 6
 #define TFT_SCLK 7
-#define TFT_DC   8
-#define TFT_RST  9
 #define TFT_CS   14
-
-#define BLACK   0x0000
-#define WHITE   0xFFFF
-#define RED     0xF800
-#define GREEN   0x07E0
-#define BLUE    0x001F
-#define CYAN    0x07FF
+#define TFT_DC   15
+#define TFT_RST  21
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
@@ -27,69 +20,145 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    0,
+    3,
     true,
     172,
     320,
     34,
+    0,
+    34,
     0
 );
 
+int speedValue = 0;
+int dir = 1;
+
 void setup()
 {
-    pinMode(TFT_BL, OUTPUT);
-    digitalWrite(TFT_BL, HIGH);
+    // Backlight redup
+    ledcAttach(TFT_BL, 5000, 8);
+    ledcWrite(TFT_BL, 35);
 
     gfx->begin();
 
-    gfx->fillScreen(BLACK);
+    gfx->invertDisplay(false);
 
-    // TOP LINE
-    gfx->drawFastHLine(38, 26, 64, CYAN);
+    gfx->fillScreen(0x0000);
 
-    // TRIANGLE
-    gfx->fillTriangle(
-        70, 12,
-        62, 24,
-        78, 24,
-        GREEN
-    );
+    // KM/H static
+    gfx->setTextColor(0x07FF);
+    gfx->setTextSize(3);
 
-    // LEFT BAR
-    gfx->fillRoundRect(
-        22,
-        48,
-        5,
-        90,
-        3,
-        RED
-    );
+    gfx->setCursor(105, 110);
+    gfx->println("KM/H");
 
-    // RIGHT BAR
-    gfx->fillRoundRect(
-        145,
-        48,
-        5,
-        90,
-        3,
-        CYAN
-    );
-
-    // SPEED
-    gfx->setTextColor(WHITE);
-    gfx->setTextSize(4);
-
-    gfx->setCursor(38, 76);
-    gfx->print("000");
-
-    // KM/H
-    gfx->setTextColor(CYAN);
-    gfx->setTextSize(2);
-
-    gfx->setCursor(50, 132);
-    gfx->print("KM/H");
+    // Bar background static
+    gfx->fillRect(40, 145, 240, 12, 0x2104);
 }
 
 void loop()
 {
+    static int steering = -100;
+    static int steeringDir = 1;
+
+    // ===== SPEED =====
+
+    speedValue += dir * 2;
+
+    if (speedValue >= 120)
+    {
+        dir = -1;
+    }
+
+    if (speedValue <= 0)
+    {
+        dir = 1;
+    }
+
+    // ===== STEERING ANIMATION =====
+
+    steering += steeringDir * 8;
+
+    if (steering >= 100)
+    {
+        steeringDir = -1;
+    }
+
+    if (steering <= -100)
+    {
+        steeringDir = 1;
+    }
+
+    // ===== CLEAR SPEED AREA =====
+
+    gfx->fillRect(60, 35, 210, 60, 0x0000);
+
+    // ===== CLEAR ARROW AREA =====
+
+    gfx->fillRect(0, 45, 55, 50, 0x0000);
+    gfx->fillRect(265, 45, 55, 50, 0x0000);
+
+    // ===== LEFT ARROW =====
+
+    uint16_t leftColor = 0x4208;
+
+    if (steering < -20)
+    {
+        leftColor = 0x07E0;
+    }
+
+    gfx->fillTriangle(
+        20, 70,
+        45, 55,
+        45, 85,
+        leftColor
+    );
+
+    // ===== RIGHT ARROW =====
+
+    uint16_t rightColor = 0x4208;
+
+    if (steering > 20)
+    {
+        rightColor = 0x07E0;
+    }
+
+    gfx->fillTriangle(
+        300, 70,
+        275, 55,
+        275, 85,
+        rightColor
+    );
+
+    // ===== DRAW SPEED =====
+
+    gfx->setTextColor(0xFFFF);
+    gfx->setTextSize(6);
+
+    if (speedValue < 10)
+    {
+        gfx->setCursor(95, 45);
+        gfx->print("00");
+    }
+    else if (speedValue < 100)
+    {
+        gfx->setCursor(95, 45);
+        gfx->print("0");
+    }
+    else
+    {
+        gfx->setCursor(75, 45);
+    }
+
+    gfx->print(speedValue);
+
+    // ===== RPM BAR =====
+
+    int bar = map(speedValue, 0, 120, 0, 240);
+
+    gfx->fillRect(40, 145, 240, 12, 0x2104);
+
+    gfx->fillRect(40, 145, bar, 12, 0xF800);
+
+    delay(20);
 }
