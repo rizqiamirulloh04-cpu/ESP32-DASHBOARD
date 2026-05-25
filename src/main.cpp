@@ -182,7 +182,7 @@ gfx->setTextColor(WHITE);
 gfx->setTextSize(5);
 
 // lebih center
-gfx->setCursor(24, 70);
+gfx->setCursor(34, 70);
 
 // format 3 digit
 if (speedValue < 10)
