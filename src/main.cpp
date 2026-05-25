@@ -45,7 +45,7 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 
 #define BLACK   0x0000
 
-// Soft white OEM style
+// Soft OEM white
 #define WHITE   0xE71C
 
 #define RED     0xF800
@@ -122,63 +122,16 @@ void drawScale()
 }
 
 // =====================================================
-// STATIC UI
+// STATIC ARC BACKGROUND
 // =====================================================
 
-void drawStaticUI()
+void drawArcBackground()
 {
-    gfx->fillScreen(BLACK);
-
-    drawPanel();
-
-    drawStatus();
-
-    drawScale();
-
-    // RPM background
-    gfx->fillRoundRect(
-        35,
-        145,
-        250,
-        8,
-        4,
-        GRAY
-    );
-
-    gfx->drawRoundRect(
-        35,
-        145,
-        250,
-        8,
-        4,
-        DARK
-    );
-}
-
-// =====================================================
-// DRAW ARC
-// =====================================================
-
-void drawArc()
-{
-    // Clear arc area only
-    gfx->fillRect(
-        70,
-        18,
-        180,
-        80,
-        BLACK
-    );
-
-    // Redraw scale after clear
-    drawScale();
-
     int cx = 160;
     int cy = 84;
 
     int radius = 58;
 
-    // Background arc
     for (int i = -150; i <= -30; i += 1)
     {
         float rad = i * 0.0174533;
@@ -197,6 +150,33 @@ void drawArc()
             DARK
         );
     }
+}
+
+// =====================================================
+// ACTIVE ARC ONLY
+// =====================================================
+
+void drawActiveArc()
+{
+    // clear active arc area only
+    gfx->fillRect(
+        82,
+        18,
+        160,
+        60,
+        BLACK
+    );
+
+    // redraw background arc
+    drawArcBackground();
+
+    // redraw scale
+    drawScale();
+
+    int cx = 160;
+    int cy = 84;
+
+    int radius = 58;
 
     int active = map(
         (int)displaySpeed,
@@ -206,7 +186,6 @@ void drawArc()
         -30
     );
 
-    // Active arc
     for (int i = -150; i <= active; i += 1)
     {
         float rad = i * 0.0174533;
@@ -244,6 +223,14 @@ void drawArc()
 
 void drawNeedle()
 {
+    // clear center area
+    gfx->fillCircle(
+        160,
+        84,
+        35,
+        BLACK
+    );
+
     int cx = 160;
     int cy = 84;
 
@@ -291,12 +278,12 @@ void drawNeedle()
 
 void drawSpeed()
 {
-    // Clear speed area only
+    // clear speed area only
     gfx->fillRect(
-        95,
-        55,
-        130,
-        70,
+        100,
+        52,
+        120,
+        74,
         BLACK
     );
 
@@ -319,15 +306,15 @@ void drawSpeed()
 
     int y = 68;
 
-    // Shadow
     gfx->setTextSize(4);
 
+    // shadow
     gfx->setTextColor(DARK);
 
     gfx->setCursor(x + 2, y + 2);
     gfx->print(speedText);
 
-    // Main
+    // main
     gfx->setTextColor(WHITE);
 
     gfx->setCursor(x, y);
@@ -343,12 +330,12 @@ void drawSpeed()
 }
 
 // =====================================================
-// DRAW RPM BAR
+// RPM BAR
 // =====================================================
 
 void drawRPM()
 {
-    // Clear bar area only
+    // clear bar only
     gfx->fillRect(
         35,
         145,
@@ -357,7 +344,7 @@ void drawRPM()
         BLACK
     );
 
-    // Background redraw
+    // background
     gfx->fillRoundRect(
         35,
         145,
@@ -386,7 +373,7 @@ void drawRPM()
     else
         color = RED;
 
-    // Active bar
+    // active bar
     gfx->fillRoundRect(
         35,
         145,
@@ -396,7 +383,43 @@ void drawRPM()
         color
     );
 
-    // Outline redraw
+    // outline
+    gfx->drawRoundRect(
+        35,
+        145,
+        250,
+        8,
+        4,
+        DARK
+    );
+}
+
+// =====================================================
+// STATIC UI
+// =====================================================
+
+void drawStaticUI()
+{
+    gfx->fillScreen(BLACK);
+
+    drawPanel();
+
+    drawStatus();
+
+    drawScale();
+
+    drawArcBackground();
+
+    // rpm background
+    gfx->fillRoundRect(
+        35,
+        145,
+        250,
+        8,
+        4,
+        GRAY
+    );
+
     gfx->drawRoundRect(
         35,
         145,
@@ -413,7 +436,7 @@ void drawRPM()
 
 void drawDashboard()
 {
-    drawArc();
+    drawActiveArc();
 
     drawNeedle();
 
@@ -428,9 +451,14 @@ void drawDashboard()
 
 void setup()
 {
-    pinMode(TFT_BL, OUTPUT);
+    // PWM brightness
+    ledcAttachPin(TFT_BL, 1);
 
-    digitalWrite(TFT_BL, HIGH);
+    ledcSetup(1, 5000, 8);
+
+    // 0-255
+    // 90 = premium soft brightness
+    ledcWrite(1, 90);
 
     Serial.begin(115200);
 
@@ -449,16 +477,16 @@ void setup()
 
 void loop()
 {
-    // Smooth animation
+    // smoother animation
     displaySpeed +=
-        (targetSpeed - displaySpeed) * 0.08;
+        (targetSpeed - displaySpeed) * 0.18;
 
     drawDashboard();
 
-    // Demo animation
+    // demo animation
     if (upDir)
     {
-        targetSpeed++;
+        targetSpeed += 1;
 
         if (targetSpeed >= 120)
         {
@@ -467,7 +495,7 @@ void loop()
     }
     else
     {
-        targetSpeed--;
+        targetSpeed -= 1;
 
         if (targetSpeed <= 0)
         {
@@ -475,5 +503,6 @@ void loop()
         }
     }
 
+    // ~60 FPS
     delay(16);
 }
