@@ -72,15 +72,15 @@ void drawStaticUI()
 
     // ===== TOP CYAN LINE =====
 
-    gfx->drawFastHLine(36, 24, 96, CYAN);
+    gfx->drawFastHLine(40, 24, 90, CYAN);
 
     // ===== LEFT RED BAR =====
 
-    gfx->fillRect(24, 42, 5, 135, RED);
+    gfx->fillRect(24, 50, 4, 118, RED);
 
     // ===== RIGHT BLUE BAR =====
 
-    gfx->fillRect(143, 42, 5, 135, BLUE);
+    gfx->fillRect(144, 50, 4, 118, BLUE);
 
     // ===== TOP CENTER INDICATOR =====
 
@@ -182,7 +182,7 @@ gfx->setTextColor(WHITE);
 gfx->setTextSize(5);
 
 // lebih center
-gfx->setCursor(42, 70);
+gfx->setCursor(34, 76);
 
 // format 3 digit
 if (speedValue < 10)
@@ -199,7 +199,7 @@ gfx->print(speedValue);
 gfx->setTextColor(CYAN);
 gfx->setTextSize(2);
 
-gfx->setCursor(52, 132);
+gfx->setCursor(56, 136);
 gfx->print("KM/H");
 
 // ==================================================
