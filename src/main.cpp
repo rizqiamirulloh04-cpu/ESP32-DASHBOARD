@@ -6,8 +6,15 @@
 #define TFT_MOSI 6
 #define TFT_SCLK 7
 #define TFT_DC   8
-#define TFT_CS   14
 #define TFT_RST  9
+#define TFT_CS   14
+
+#define BLACK   0x0000
+#define WHITE   0xFFFF
+#define RED     0xF800
+#define GREEN   0x07E0
+#define BLUE    0x001F
+#define CYAN    0x07FF
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
@@ -20,7 +27,7 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    1,
+    0,
     true,
     172,
     320,
@@ -30,38 +37,57 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 
 void setup()
 {
-    Serial.begin(115200);
-
     pinMode(TFT_BL, OUTPUT);
     digitalWrite(TFT_BL, HIGH);
 
-    // HARD RESET LCD
-    pinMode(TFT_RST, OUTPUT);
-
-    digitalWrite(TFT_RST, LOW);
-    delay(100);
-
-    digitalWrite(TFT_RST, HIGH);
-    delay(200);
-
     gfx->begin();
-
-    delay(200);
 
     gfx->fillScreen(BLACK);
 
-    delay(1000);
+    // TOP LINE
+    gfx->drawFastHLine(38, 26, 64, CYAN);
 
-    gfx->fillScreen(RED);
-    delay(1000);
+    // TRIANGLE
+    gfx->fillTriangle(
+        70, 12,
+        62, 24,
+        78, 24,
+        GREEN
+    );
 
-    gfx->fillScreen(GREEN);
-    delay(1000);
+    // LEFT BAR
+    gfx->fillRoundRect(
+        22,
+        48,
+        5,
+        90,
+        3,
+        RED
+    );
 
-    gfx->fillScreen(BLUE);
-    delay(1000);
+    // RIGHT BAR
+    gfx->fillRoundRect(
+        145,
+        48,
+        5,
+        90,
+        3,
+        CYAN
+    );
 
-    gfx->fillScreen(WHITE);
+    // SPEED
+    gfx->setTextColor(WHITE);
+    gfx->setTextSize(4);
+
+    gfx->setCursor(38, 76);
+    gfx->print("000");
+
+    // KM/H
+    gfx->setTextColor(CYAN);
+    gfx->setTextSize(2);
+
+    gfx->setCursor(50, 132);
+    gfx->print("KM/H");
 }
 
 void loop()
