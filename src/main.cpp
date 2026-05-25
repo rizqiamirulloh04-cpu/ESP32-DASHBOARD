@@ -43,18 +43,21 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 // COLORS
 // =====================================================
 
-#define BLACK   0x0000
+#define BLACK        0x0000
 
-// Soft OEM White
-#define WHITE   0xE71C
+// Soft UI white
+#define WHITE        0xE71C
 
-#define RED     0xF800
-#define CYAN    0x07FF
-#define GREEN   0x07E0
-#define YELLOW  0xFFE0
+// Bright speed number
+#define SPEED_WHITE  0xFFFF
 
-#define GRAY    0x4208
-#define DARK    0x18C3
+#define RED          0xF800
+#define CYAN         0x07FF
+#define GREEN        0x07E0
+#define YELLOW       0xFFE0
+
+#define GRAY         0x4208
+#define DARK         0x18C3
 
 // =====================================================
 // VARIABLES
@@ -257,7 +260,7 @@ void drawNeedle()
         cx,
         cy,
         3,
-        WHITE
+        SPEED_WHITE
     );
 
     gfx->drawCircle(
@@ -303,19 +306,28 @@ void drawSpeed()
 
     gfx->setTextSize(4);
 
-    // Shadow
+    // =================================================
+    // SHADOW
+    // =================================================
+
     gfx->setTextColor(DARK);
 
     gfx->setCursor(x + 2, y + 2);
     gfx->print(speedText);
 
-    // Main
-    gfx->setTextColor(WHITE);
+    // =================================================
+    // MAIN SPEED TEXT
+    // =================================================
+
+    gfx->setTextColor(SPEED_WHITE);
 
     gfx->setCursor(x, y);
     gfx->print(speedText);
 
+    // =================================================
     // KM/H
+    // =================================================
+
     gfx->setTextSize(2);
 
     gfx->setTextColor(CYAN);
@@ -338,7 +350,6 @@ void drawRPM()
         BLACK
     );
 
-    // Background
     gfx->fillRoundRect(
         35,
         145,
@@ -367,7 +378,6 @@ void drawRPM()
     else
         color = RED;
 
-    // Active bar
     gfx->fillRoundRect(
         35,
         145,
@@ -377,7 +387,6 @@ void drawRPM()
         color
     );
 
-    // Outline
     gfx->drawRoundRect(
         35,
         145,
@@ -404,7 +413,6 @@ void drawStaticUI()
 
     drawArcBackground();
 
-    // RPM background
     gfx->fillRoundRect(
         35,
         145,
@@ -453,11 +461,11 @@ void setup()
 
     pinMode(TFT_BL, OUTPUT);
 
-    // ESP32-C6 NEW LEDC API
     ledcAttach(TFT_BL, 5000, 8);
 
-    // Brightness 0-255
-    // 90 = soft premium
+    // 0 - 255
+    // 90 = premium brightness
+
     ledcWrite(TFT_BL, 90);
 
     // =================================================
@@ -480,12 +488,14 @@ void setup()
 void loop()
 {
     // Smooth animation
+
     displaySpeed +=
         (targetSpeed - displaySpeed) * 0.18;
 
     drawDashboard();
 
     // Demo animation
+
     if (upDir)
     {
         targetSpeed += 1;
@@ -506,5 +516,6 @@ void loop()
     }
 
     // ~60 FPS
+
     delay(16);
 }
