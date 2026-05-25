@@ -47,11 +47,7 @@ void setup()
 
     // ===== TITLE =====
 
-    gfx->setTextColor(0x07E0);
-    gfx->setTextSize(2);
-
-    gfx->setCursor(75, 10);
-    gfx->println("RC DASHBOARD");
+    // kosongkan title
 
     // ===== RGB BAR =====
 
@@ -63,7 +59,7 @@ void setup()
 void loop()
 {
     // Hapus area speed
-    gfx->fillRect(50, 40, 220, 90, 0x0000);
+    gfx->fillRect( 0,  0, 320,130, 0x0000);
 
     // Speed animasi
     speedValue += dir * 2;
@@ -85,7 +81,7 @@ void loop()
 
     if (speedValue < 10)
     {
-        gfx->setCursor(95, 55);
+        gfx->setCursor(85, 45);
         gfx->print("00");
     }
     else if (speedValue < 100)
@@ -105,7 +101,7 @@ void loop()
     gfx->setTextColor(0x07FF);
     gfx->setTextSize(3);
 
-    gfx->setCursor(110, 115);
+    gfx->setCursor(105, 110);
     gfx->println("KM/H");
 
     // ===== SPEED BAR =====
