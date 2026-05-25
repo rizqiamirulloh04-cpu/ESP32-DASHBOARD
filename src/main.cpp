@@ -59,39 +59,27 @@ void setup()
     gfx->fillRect(220, 140, 80, 20, 0x001F); // biru
 }
 
-void loop()
+ void loop()
 {
     static int x = 20;
+    static int old_x = 20;
     static int dir = 1;
-    static uint32_t last_fps = 0;
-    static uint32_t frames = 0;
 
-    // Hapus layar
-    gfx->fillScreen(0x0000);
+    // Hapus bola lama saja
+    gfx->fillCircle(old_x, 80, 20, 0x0000);
 
-    // Bola bergerak
+    // Gambar bola baru
     gfx->fillCircle(x, 80, 20, 0xF800);
 
-    // Text
+    // Text tetap
     gfx->setTextColor(0x07E0);
     gfx->setTextSize(2);
 
     gfx->setCursor(10, 10);
     gfx->println("FPS TEST");
 
-    // Hitung FPS
-    frames++;
-
-    if (millis() - last_fps >= 1000)
-    {
-        gfx->fillRect(10, 35, 120, 20, 0x0000);
-
-        gfx->setCursor(10, 35);
-        gfx->printf("FPS: %lu", frames);
-
-        frames = 0;
-        last_fps = millis();
-    }
+    // Simpan posisi lama
+    old_x = x;
 
     // Gerakan
     x += dir * 4;
@@ -105,4 +93,6 @@ void loop()
     {
         dir = 1;
     }
+
+    delay(10);
 }
