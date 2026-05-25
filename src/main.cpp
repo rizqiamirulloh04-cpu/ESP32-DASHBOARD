@@ -34,8 +34,9 @@ void setup()
 {
     // Backlight redup
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 80);
+    ledcWrite(TFT_BL, 40);
 
+    // Init display
     gfx->begin();
 
     gfx->invertDisplay(false);
@@ -45,60 +46,55 @@ void setup()
 
     // Text hijau
     gfx->setTextColor(0x07E0);
-    gfx->setTextSize(3);
 
-    gfx->setCursor(30, 40);
-    gfx->println("ESP32-C6");
-
-    gfx->setCursor(30, 90);
-    gfx->println("LANDSCAPE");
-
-    // Kotak warna
-    gfx->fillRect(20, 140, 80, 20, 0xF800); // merah
-    gfx->fillRect(120, 140, 80, 20, 0x07E0); // hijau
-    gfx->fillRect(220, 140, 80, 20, 0x001F); // biru
-}
-
- void loop()
-{
-    static int x = 20;
-    static int old_x = 20;
-    static int dir = 1;
-
-    // Hapus bola lama saja
-    gfx->fillCircle(old_x, 80, 18, 0x0000);
-
-    // Text static
-    gfx->setTextColor(0x07E0);
+    // Ukuran text
     gfx->setTextSize(2);
 
+    // Judul
     gfx->setCursor(5, 5);
     gfx->println("FPS TEST");
 
     gfx->setCursor(35, 25);
     gfx->println("ESP32-C6");
 
-    // Gambar bola baru
-    gfx->fillCircle(x, 80, 18, 0xF800);
+    gfx->setCursor(25, 50);
+    gfx->println("LANDSCAPE");
 
-    // RGB bar
+    // RGB Bar
     gfx->fillRect(15, 120, 40, 15, 0xF800);
     gfx->fillRect(65, 120, 40, 15, 0x07E0);
     gfx->fillRect(115, 120, 40, 15, 0x001F);
+}
 
+void loop()
+{
+    static int x = 20;
+    static int old_x = 20;
+    static int dir = 1;
+
+    // Hapus bola lama
+    gfx->fillCircle(old_x, 85, 18, 0x0000);
+
+    // Gambar bola baru
+    gfx->fillCircle(x, 85, 18, 0xF800);
+
+    // Simpan posisi lama
     old_x = x;
 
+    // Gerakkan bola
     x += dir * 4;
 
+    // Pantul kanan
     if (x >= 150)
     {
         dir = -1;
     }
 
+    // Pantul kiri
     if (x <= 20)
     {
         dir = 1;
     }
 
-    delay(8);
+    delay(10);
 }
