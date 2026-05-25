@@ -45,7 +45,7 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 
 #define BLACK   0x0000
 
-// Soft OEM white
+// Soft OEM White
 #define WHITE   0xE71C
 
 #define RED     0xF800
@@ -66,7 +66,7 @@ float targetSpeed  = 0;
 bool upDir = true;
 
 // =====================================================
-// DRAW PANEL
+// PANEL
 // =====================================================
 
 void drawPanel()
@@ -82,7 +82,7 @@ void drawPanel()
 }
 
 // =====================================================
-// DRAW STATUS
+// STATUS
 // =====================================================
 
 void drawStatus()
@@ -99,7 +99,7 @@ void drawStatus()
 }
 
 // =====================================================
-// DRAW SCALE
+// SCALE
 // =====================================================
 
 void drawScale()
@@ -122,7 +122,7 @@ void drawScale()
 }
 
 // =====================================================
-// STATIC ARC BACKGROUND
+// ARC BACKGROUND
 // =====================================================
 
 void drawArcBackground()
@@ -153,12 +153,11 @@ void drawArcBackground()
 }
 
 // =====================================================
-// ACTIVE ARC ONLY
+// ACTIVE ARC
 // =====================================================
 
 void drawActiveArc()
 {
-    // clear active arc area only
     gfx->fillRect(
         82,
         18,
@@ -167,10 +166,8 @@ void drawActiveArc()
         BLACK
     );
 
-    // redraw background arc
     drawArcBackground();
 
-    // redraw scale
     drawScale();
 
     int cx = 160;
@@ -218,12 +215,11 @@ void drawActiveArc()
 }
 
 // =====================================================
-// DRAW NEEDLE
+// NEEDLE
 // =====================================================
 
 void drawNeedle()
 {
-    // clear center area
     gfx->fillCircle(
         160,
         84,
@@ -273,12 +269,11 @@ void drawNeedle()
 }
 
 // =====================================================
-// DRAW SPEED
+// SPEED TEXT
 // =====================================================
 
 void drawSpeed()
 {
-    // clear speed area only
     gfx->fillRect(
         100,
         52,
@@ -308,13 +303,13 @@ void drawSpeed()
 
     gfx->setTextSize(4);
 
-    // shadow
+    // Shadow
     gfx->setTextColor(DARK);
 
     gfx->setCursor(x + 2, y + 2);
     gfx->print(speedText);
 
-    // main
+    // Main
     gfx->setTextColor(WHITE);
 
     gfx->setCursor(x, y);
@@ -335,7 +330,6 @@ void drawSpeed()
 
 void drawRPM()
 {
-    // clear bar only
     gfx->fillRect(
         35,
         145,
@@ -344,7 +338,7 @@ void drawRPM()
         BLACK
     );
 
-    // background
+    // Background
     gfx->fillRoundRect(
         35,
         145,
@@ -373,7 +367,7 @@ void drawRPM()
     else
         color = RED;
 
-    // active bar
+    // Active bar
     gfx->fillRoundRect(
         35,
         145,
@@ -383,7 +377,7 @@ void drawRPM()
         color
     );
 
-    // outline
+    // Outline
     gfx->drawRoundRect(
         35,
         145,
@@ -410,7 +404,7 @@ void drawStaticUI()
 
     drawArcBackground();
 
-    // rpm background
+    // RPM background
     gfx->fillRoundRect(
         35,
         145,
@@ -451,16 +445,24 @@ void drawDashboard()
 
 void setup()
 {
-    // PWM brightness
-    ledcAttachPin(TFT_BL, 1);
-
-    ledcSetup(1, 5000, 8);
-
-    // 0-255
-    // 90 = premium soft brightness
-    ledcWrite(1, 90);
-
     Serial.begin(115200);
+
+    // =================================================
+    // BACKLIGHT PWM
+    // =================================================
+
+    pinMode(TFT_BL, OUTPUT);
+
+    // ESP32-C6 NEW LEDC API
+    ledcAttach(TFT_BL, 5000, 8);
+
+    // Brightness 0-255
+    // 90 = soft premium
+    ledcWrite(TFT_BL, 90);
+
+    // =================================================
+    // DISPLAY
+    // =================================================
 
     gfx->begin();
 
@@ -477,13 +479,13 @@ void setup()
 
 void loop()
 {
-    // smoother animation
+    // Smooth animation
     displaySpeed +=
         (targetSpeed - displaySpeed) * 0.18;
 
     drawDashboard();
 
-    // demo animation
+    // Demo animation
     if (upDir)
     {
         targetSpeed += 1;
