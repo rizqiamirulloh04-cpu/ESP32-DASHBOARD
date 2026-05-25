@@ -60,7 +60,7 @@ int speedValue = 0;
 bool upDir = true;
 
 // =====================================================
-// DRAW HUD ARC
+// DRAW ARC
 // =====================================================
 
 void drawArc()
@@ -68,7 +68,8 @@ void drawArc()
     int cx = 160;
     int cy = 92;
 
-    int radius = 52;
+    // Arc lebih besar
+    int radius = 58;
 
     // Background arc
     for (int i = -150; i <= -30; i += 2)
@@ -124,7 +125,7 @@ void drawNeedle()
     float rad = angle * 0.0174533;
 
     // Jarum lebih pendek
-    int r = 38;
+    int r = 30;
 
     int x = cx + cos(rad) * r;
     int y = cy + sin(rad) * r;
@@ -143,43 +144,44 @@ void drawScale()
     gfx->setTextSize(1);
     gfx->setTextColor(WHITE);
 
-    gfx->setCursor(74, 88);
+    gfx->setCursor(58, 96);
     gfx->print("0");
 
-    gfx->setCursor(112, 38);
+    gfx->setCursor(102, 34);
     gfx->print("40");
 
-    gfx->setCursor(198, 38);
+    gfx->setCursor(198, 34);
     gfx->print("80");
 
-    gfx->setCursor(246, 88);
+    gfx->setCursor(252, 96);
     gfx->print("120");
 }
 
 // =====================================================
-// DRAW SPEED TEXT
+// DRAW SPEED
 // =====================================================
 
 void drawSpeed()
 {
     gfx->setTextColor(WHITE);
 
-    // Angka lebih kecil & center
     gfx->setTextSize(4);
 
+    // Posisi angka lebih center
     if (speedValue < 10)
     {
-        gfx->setCursor(138, 58);
+        gfx->setCursor(134, 64);
     }
     else if (speedValue < 100)
     {
-        gfx->setCursor(126, 58);
+        gfx->setCursor(122, 64);
     }
     else
     {
-        gfx->setCursor(114, 58);
+        gfx->setCursor(110, 64);
     }
 
+    // Leading zero
     if (speedValue < 10)
         gfx->print("00");
 
@@ -188,11 +190,11 @@ void drawSpeed()
 
     gfx->print(speedValue);
 
-    // KM/H
+    // KM/H turun sedikit
     gfx->setTextSize(2);
     gfx->setTextColor(CYAN);
 
-    gfx->setCursor(122, 105);
+    gfx->setCursor(122, 112);
     gfx->print("KM/H");
 }
 
