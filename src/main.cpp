@@ -49,7 +49,7 @@ Arduino_GFX *gfx = new Arduino_ST7789(
     320,    // height
     34,     // col offset
     0,      // row offset
-    34,     // col offset 2
+    35,     // col offset 2
     0       // row offset 2
 );
 
