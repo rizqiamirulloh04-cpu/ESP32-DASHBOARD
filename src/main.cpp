@@ -185,9 +185,9 @@ void loop()
     // ==================================================
 
     gfx->setTextColor(0xDEDB);
-    gfx->setTextSize(5);
+    gfx->setTextSize(7);
 
-    gfx->setCursor(36, 78);
+    gfx->setCursor(22, 72);
 
     if (speedValue < 10)
         gfx->print("00");
