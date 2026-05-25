@@ -22,12 +22,12 @@ Arduino_GFX *gfx = new Arduino_ST7789(
     TFT_RST,
     3,
     true,
-    320,
     172,
-    0,
+    320,
     34,
     0,
-    34
+    34,
+    0
 );
 
 void setup()
