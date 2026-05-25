@@ -1,10 +1,16 @@
+// ============================================================
+// MINI OEM SPEED HUD
+// ESP32-C6 + ST7789 240x135
+// Arduino_GFX
+// ============================================================
+
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
 #include <math.h>
 
-// =====================================================
-// LCD PINS
-// =====================================================
+// ============================================================
+// PINS
+// ============================================================
 
 #define TFT_BL   22
 
@@ -14,9 +20,9 @@
 #define TFT_DC   15
 #define TFT_RST  21
 
-// =====================================================
+// ============================================================
 // DISPLAY
-// =====================================================
+// ============================================================
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
@@ -31,206 +37,219 @@ Arduino_GFX *gfx = new Arduino_ST7789(
     TFT_RST,
     1,
     true,
-    172,
-    320,
-    34,
-    0,
-    34,
-    0
+    135,
+    240
 );
 
-// =====================================================
+// ============================================================
 // COLORS
-// =====================================================
+// ============================================================
 
-#define BLACK          0x0000
+#define BLACK        0x0000
+#define DARK         0x2104
+#define WHITE        0xE71C
+#define SPEED_WHITE  0xFFFF
 
-#define WHITE          0xE71C
-#define SPEED_WHITE    0xFFFF
+#define CYAN         0x07FF
+#define BLUEGRAY     0x8410
 
-#define RED            0xF800
-#define CYAN           0x07FF
-#define GREEN          0x07E0
-#define YELLOW         0xFFE0
+#define YELLOW       0xFFE0
+#define ORANGE       0xFD20
 
-#define DARK           0x18C3
-#define GRAY           0x4208
+#define GREEN        0x07E0
+#define RED          0xF800
 
-#define SIGNAL_COLOR   0x87F0
-#define BATTERY_GREEN  0x87F0
-#define LIGHT_ICON     0xFD20
-
-// =====================================================
+// ============================================================
 // VARIABLES
-// =====================================================
+// ============================================================
 
 float displaySpeed = 0;
 float targetSpeed  = 0;
 
-bool upDir = true;
+int battery = 82;
 
-// =====================================================
-// SIGNAL ANIMATION
-// =====================================================
+unsigned long lastBlink = 0;
+bool blinkState = true;
 
-bool leftSignal  = true;
-bool rightSignal = true;
+int animOffset = 0;
 
-int signalFrame = 0;
+// ============================================================
+// DRAW BATTERY
+// ============================================================
 
-unsigned long signalTimer = 0;
-
-// =====================================================
-// PANEL
-// =====================================================
-
-void drawPanel()
+void drawBattery(int x, int y, int level)
 {
-    gfx->drawRoundRect(
-        55,
-        28,
-        210,
-        100,
-        12,
-        DARK
+    // clear area
+    gfx->fillRect(x, y, 52, 16, BLACK);
+
+    // body
+    gfx->drawRoundRect(x, y, 24, 12, 3, WHITE);
+
+    // terminal
+    gfx->fillRect(x + 24, y + 3, 3, 6, WHITE);
+
+    // fill
+    int fillWidth = map(level, 0, 100, 0, 20);
+
+    uint16_t color = GREEN;
+
+    if (level < 30)
+        color = ORANGE;
+
+    if (level < 15)
+        color = RED;
+
+    gfx->fillRoundRect(
+        x + 2,
+        y + 2,
+        fillWidth,
+        8,
+        2,
+        color
     );
+
+    // text
+    gfx->setTextSize(1);
+    gfx->setTextColor(WHITE);
+
+    gfx->setCursor(x + 32, y + 2);
+    gfx->print(level);
+    gfx->print("%");
 }
 
-// =====================================================
-// SIGNALS
-// =====================================================
+// ============================================================
+// DRAW SPOTLIGHT ICON
+// ============================================================
 
-void drawSignals()
+void drawLampIcon(int x, int y)
 {
-    // clear top area
-    gfx->fillRect(
-        0,
-        0,
-        320,
-        18,
-        BLACK
-    );
+    gfx->fillRect(x, y, 20, 16, BLACK);
 
+    gfx->setTextColor(YELLOW);
     gfx->setTextSize(2);
 
-    gfx->setTextColor(SIGNAL_COLOR);
-
-    // =================================================
-    // LEFT SIGNAL
-    // =================================================
-
-    if (leftSignal)
-    {
-        switch(signalFrame)
-        {
-            case 0:
-                gfx->setCursor(8, 2);
-                gfx->print("<");
-                break;
-
-            case 1:
-                gfx->setCursor(8, 2);
-                gfx->print("<<");
-                break;
-
-            case 2:
-                gfx->setCursor(8, 2);
-                gfx->print("<<<");
-                break;
-
-            case 3:
-                gfx->setCursor(8, 2);
-                gfx->print("<<<<");
-                break;
-        }
-    }
-
-    // =================================================
-    // RIGHT SIGNAL
-    // =================================================
-
-    if (rightSignal)
-    {
-        switch(signalFrame)
-        {
-            case 0:
-                gfx->setCursor(288, 2);
-                gfx->print(">");
-                break;
-
-            case 1:
-                gfx->setCursor(280, 2);
-                gfx->print(">>");
-                break;
-
-            case 2:
-                gfx->setCursor(272, 2);
-                gfx->print(">>>");
-                break;
-
-            case 3:
-                gfx->setCursor(264, 2);
-                gfx->print(">>>>");
-                break;
-        }
-    }
-}
-
-// =====================================================
-// BATTERY + LIGHT ICON
-// =====================================================
-
-void drawTopInfo()
-{
-    gfx->setTextSize(1);
-
-    // Battery
-    gfx->setTextColor(BATTERY_GREEN);
-
-    gfx->setCursor(8, 24);
-    gfx->print("BAT 82%");
-
-    // Light icon
-    gfx->setTextColor(LIGHT_ICON);
-
-    gfx->setCursor(296, 24);
+    gfx->setCursor(x, y);
     gfx->print("*");
 }
 
-// =====================================================
-// SCALE
-// =====================================================
+// ============================================================
+// DRAW SIGNALS
+// ============================================================
 
-void drawScale()
+void drawSignals()
 {
-    gfx->setTextSize(1);
+    if (millis() - lastBlink > 120)
+    {
+        lastBlink = millis();
 
-    gfx->setTextColor(WHITE);
+        animOffset++;
 
-    gfx->setCursor(58, 88);
-    gfx->print("0");
+        if (animOffset > 3)
+            animOffset = 0;
+    }
 
-    gfx->setCursor(102, 28);
-    gfx->print("40");
+    // CLEAR AREA
+    gfx->fillRect(0, 0, 240, 22, BLACK);
 
-    gfx->setCursor(198, 28);
-    gfx->print("80");
+    gfx->setTextSize(2);
 
-    gfx->setCursor(252, 88);
-    gfx->print("120");
+    // ========================================================
+    // LEFT SIGNAL
+    // outward animation
+    // ========================================================
+
+    for (int i = 0; i < 4; i++)
+    {
+        int brightness = (i == animOffset) ? YELLOW : ORANGE;
+
+        gfx->setTextColor(brightness);
+
+        gfx->setCursor(10 + (i * 10), 2);
+        gfx->print("<");
+    }
+
+    // ========================================================
+    // RIGHT SIGNAL
+    // outward animation
+    // ========================================================
+
+    for (int i = 0; i < 4; i++)
+    {
+        int brightness = (i == animOffset) ? YELLOW : ORANGE;
+
+        gfx->setTextColor(brightness);
+
+        gfx->setCursor(190 + (i * 10), 2);
+        gfx->print(">");
+    }
 }
 
-// =====================================================
-// ARC BACKGROUND
-// =====================================================
+// ============================================================
+// STATIC UI
+// ============================================================
 
-void drawArcBackground()
+void drawStaticUI()
 {
-    int cx = 160;
-    int cy = 84;
+    gfx->fillScreen(BLACK);
 
-    int radius = 58;
+    // PANEL
+    gfx->drawRoundRect(
+        55,
+        28,
+        130,
+        70,
+        10,
+        DARK
+    );
 
+    // SCALE
+    gfx->setTextSize(1);
+    gfx->setTextColor(WHITE);
+
+    gfx->setCursor(92, 36);
+    gfx->print("40");
+
+    gfx->setCursor(154, 36);
+    gfx->print("80");
+
+    gfx->setCursor(55, 68);
+    gfx->print("0");
+
+    gfx->setCursor(194, 68);
+    gfx->print("120");
+
+    // RPM BAR BACKGROUND
+    gfx->fillRoundRect(
+        25,
+        112,
+        190,
+        8,
+        4,
+        BLUEGRAY
+    );
+
+    // BATTERY
+    drawBattery(8, 22, battery);
+
+    // LAMP
+    drawLampIcon(214, 18);
+}
+
+// ============================================================
+// ACTIVE ARC
+// ============================================================
+
+void drawArc()
+{
+    // clear arc area
+    gfx->fillRect(70, 32, 100, 40, BLACK);
+
+    int cx = 120;
+    int cy = 72;
+
+    int radius = 38;
+
+    // background arc
     for (int i = -150; i <= -30; i += 1)
     {
         float rad = i * 0.0174533;
@@ -238,326 +257,133 @@ void drawArcBackground()
         int x1 = cx + cos(rad) * radius;
         int y1 = cy + sin(rad) * radius;
 
-        int x2 = cx + cos(rad) * (radius - 14);
-        int y2 = cy + sin(rad) * (radius - 14);
+        int x2 = cx + cos(rad) * (radius - 10);
+        int y2 = cy + sin(rad) * (radius - 10);
 
-        gfx->drawLine(
-            x1,
-            y1,
-            x2,
-            y2,
-            DARK
-        );
+        gfx->drawLine(x1, y1, x2, y2, DARK);
     }
-}
 
-// =====================================================
-// ACTIVE ARC
-// =====================================================
+    // active arc
+    int activeAngle = map(displaySpeed, 0, 120, -150, -30);
 
-void drawActiveArc()
-{
-    gfx->fillRect(
-        82,
-        18,
-        160,
-        60,
-        BLACK
-    );
-
-    drawArcBackground();
-
-    drawScale();
-
-    int cx = 160;
-    int cy = 84;
-
-    int radius = 58;
-
-    int active = map(
-        (int)displaySpeed,
-        0,
-        120,
-        -150,
-        -30
-    );
-
-    for (int i = -150; i <= active; i += 1)
+    for (int i = -150; i <= activeAngle; i += 1)
     {
         float rad = i * 0.0174533;
 
         int x1 = cx + cos(rad) * radius;
         int y1 = cy + sin(rad) * radius;
 
-        int x2 = cx + cos(rad) * (radius - 14);
-        int y2 = cy + sin(rad) * (radius - 14);
+        int x2 = cx + cos(rad) * (radius - 10);
+        int y2 = cy + sin(rad) * (radius - 10);
 
-        uint16_t color;
-
-        if (i < -90)
-            color = CYAN;
-
-        else if (i < -60)
-            color = YELLOW;
-
-        else
-            color = RED;
-
-        gfx->drawLine(
-            x1,
-            y1,
-            x2,
-            y2,
-            color
-        );
+        gfx->drawLine(x1, y1, x2, y2, WHITE);
     }
 }
 
-// =====================================================
-// NEEDLE
-// =====================================================
-
-void drawNeedle()
-{
-    gfx->fillCircle(
-        160,
-        84,
-        35,
-        BLACK
-    );
-
-    int cx = 160;
-    int cy = 84;
-
-    int angle = map(
-        (int)displaySpeed,
-        0,
-        120,
-        -150,
-        -30
-    );
-
-    float rad = angle * 0.0174533;
-
-    int r = 30;
-
-    int x = cx + cos(rad) * r;
-    int y = cy + sin(rad) * r;
-
-    gfx->drawLine(
-        cx,
-        cy,
-        x,
-        y,
-        RED
-    );
-
-    gfx->fillCircle(
-        cx,
-        cy,
-        3,
-        SPEED_WHITE
-    );
-
-    gfx->drawCircle(
-        cx,
-        cy,
-        6,
-        CYAN
-    );
-}
-
-// =====================================================
-// SPEED TEXT
-// =====================================================
+// ============================================================
+// SPEED
+// ============================================================
 
 void drawSpeed()
 {
-    gfx->fillRect(
-        100,
-        52,
-        120,
-        74,
-        BLACK
-    );
+    gfx->fillRect(75, 52, 90, 40, BLACK);
 
-    int speed = (int)displaySpeed;
+    char speedText[8];
+    sprintf(speedText, "%03d", (int)displaySpeed);
 
-    char speedText[4];
+    int x = 92;
+    int y = 56;
 
-    sprintf(speedText, "%03d", speed);
-
-    int x;
-
-    if (speed < 10)
-        x = 134;
-
-    else if (speed < 100)
-        x = 122;
-
-    else
-        x = 110;
-
-    int y = 68;
-
-    gfx->setTextSize(4);
-
-    // Shadow
+    // shadow
     gfx->setTextColor(DARK);
+    gfx->setTextSize(3);
 
     gfx->setCursor(x + 2, y + 2);
     gfx->print(speedText);
 
-    // Main
+    // main
     gfx->setTextColor(SPEED_WHITE);
 
     gfx->setCursor(x, y);
     gfx->print(speedText);
 
-    // KM/H
+    // KMH
     gfx->setTextSize(2);
+    gfx->setTextColor(WHITE);
 
-    gfx->setTextColor(CYAN);
-
-    gfx->setCursor(122, 112);
+    gfx->setCursor(100, 84);
     gfx->print("KM/H");
 }
 
-// =====================================================
+// ============================================================
 // RPM BAR
-// =====================================================
+// ============================================================
 
 void drawRPM()
 {
-    gfx->fillRect(
-        35,
-        145,
-        250,
+    gfx->fillRoundRect(
+        25,
+        112,
+        190,
         8,
-        BLACK
+        4,
+        BLUEGRAY
     );
+
+    int width = map(displaySpeed, 0, 120, 0, 190);
 
     gfx->fillRoundRect(
-        35,
-        145,
-        250,
+        25,
+        112,
+        width,
         8,
         4,
-        GRAY
-    );
-
-    int bar = map(
-        (int)displaySpeed,
-        0,
-        120,
-        0,
-        250
-    );
-
-    uint16_t color;
-
-    if (displaySpeed < 70)
-        color = CYAN;
-
-    else if (displaySpeed < 100)
-        color = YELLOW;
-
-    else
-        color = RED;
-
-    gfx->fillRoundRect(
-        35,
-        145,
-        bar,
-        8,
-        4,
-        color
-    );
-
-    gfx->drawRoundRect(
-        35,
-        145,
-        250,
-        8,
-        4,
-        DARK
+        CYAN
     );
 }
 
-// =====================================================
-// STATIC UI
-// =====================================================
-
-void drawStaticUI()
-{
-    gfx->fillScreen(BLACK);
-
-    drawPanel();
-
-    drawTopInfo();
-
-    drawScale();
-
-    drawArcBackground();
-
-    gfx->fillRoundRect(
-        35,
-        145,
-        250,
-        8,
-        4,
-        GRAY
-    );
-
-    gfx->drawRoundRect(
-        35,
-        145,
-        250,
-        8,
-        4,
-        DARK
-    );
-}
-
-// =====================================================
+// ============================================================
 // DASHBOARD
-// =====================================================
+// ============================================================
 
 void drawDashboard()
 {
     drawSignals();
 
-    drawActiveArc();
-
-    drawNeedle();
+    drawArc();
 
     drawSpeed();
 
     drawRPM();
+
+    drawBattery(8, 22, battery);
+
+    drawLampIcon(214, 18);
 }
 
-// =====================================================
+// ============================================================
 // SETUP
-// =====================================================
+// ============================================================
 
 void setup()
 {
     Serial.begin(115200);
 
-    // =================================================
+    // ========================================================
     // BACKLIGHT PWM
-    // =================================================
+    // ========================================================
 
     pinMode(TFT_BL, OUTPUT);
 
     ledcAttach(TFT_BL, 5000, 8);
 
-    // 0 - 255
-    ledcWrite(TFT_BL, 55);
+    // brightness 0-255
+    // 70-90 = premium soft
+    ledcWrite(TFT_BL, 75);
 
-    // =================================================
+    // ========================================================
     // DISPLAY
-    // =================================================
+    // ========================================================
 
     gfx->begin();
 
@@ -568,57 +394,21 @@ void setup()
     drawStaticUI();
 }
 
-// =====================================================
+// ============================================================
 // LOOP
-// =====================================================
+// ============================================================
 
 void loop()
 {
-    // =================================================
-    // SIGNAL ANIMATION
-    // =================================================
+    // demo animation
+    targetSpeed =
+        (sin(millis() * 0.0015) + 1.0) * 60.0;
 
-    if (millis() - signalTimer > 120)
-    {
-        signalFrame++;
-
-        if (signalFrame > 3)
-            signalFrame = 0;
-
-        signalTimer = millis();
-    }
-
-    // =================================================
-    // SPEED SMOOTHING
-    // =================================================
-
+    // smoothing
     displaySpeed +=
-        (targetSpeed - displaySpeed) * 0.18;
+        (targetSpeed - displaySpeed) * 0.22;
 
     drawDashboard();
-
-    // =================================================
-    // DEMO ANIMATION
-    // =================================================
-
-    if (upDir)
-    {
-        targetSpeed += 1;
-
-        if (targetSpeed >= 120)
-        {
-            upDir = false;
-        }
-    }
-    else
-    {
-        targetSpeed -= 1;
-
-        if (targetSpeed <= 0)
-        {
-            upDir = true;
-        }
-    }
 
     delay(16);
 }
