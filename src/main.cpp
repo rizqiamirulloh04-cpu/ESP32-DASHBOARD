@@ -43,21 +43,22 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 // COLORS
 // =====================================================
 
-#define BLACK        0x0000
+#define BLACK          0x0000
 
-// Soft UI white
-#define WHITE        0xE71C
+#define WHITE          0xE71C
+#define SPEED_WHITE    0xFFFF
 
-// Bright speed number
-#define SPEED_WHITE  0xFFFF
+#define RED            0xF800
+#define CYAN           0x07FF
+#define GREEN          0x07E0
+#define YELLOW         0xFFE0
 
-#define RED          0xF800
-#define CYAN         0x07FF
-#define GREEN        0x07E0
-#define YELLOW       0xFFE0
+#define DARK           0x18C3
+#define GRAY           0x4208
 
-#define GRAY         0x4208
-#define DARK         0x18C3
+#define SIGNAL_COLOR   0x87F0
+#define BATTERY_GREEN  0x87F0
+#define LIGHT_ICON     0xFD20
 
 // =====================================================
 // VARIABLES
@@ -67,6 +68,17 @@ float displaySpeed = 0;
 float targetSpeed  = 0;
 
 bool upDir = true;
+
+// =====================================================
+// SIGNAL ANIMATION
+// =====================================================
+
+bool leftSignal  = true;
+bool rightSignal = true;
+
+int signalFrame = 0;
+
+unsigned long signalTimer = 0;
 
 // =====================================================
 // PANEL
@@ -85,20 +97,104 @@ void drawPanel()
 }
 
 // =====================================================
-// STATUS
+// SIGNALS
 // =====================================================
 
-void drawStatus()
+void drawSignals()
+{
+    // clear top area
+    gfx->fillRect(
+        0,
+        0,
+        320,
+        18,
+        BLACK
+    );
+
+    gfx->setTextSize(2);
+
+    gfx->setTextColor(SIGNAL_COLOR);
+
+    // =================================================
+    // LEFT SIGNAL
+    // =================================================
+
+    if (leftSignal)
+    {
+        switch(signalFrame)
+        {
+            case 0:
+                gfx->setCursor(8, 2);
+                gfx->print("<");
+                break;
+
+            case 1:
+                gfx->setCursor(8, 2);
+                gfx->print("<<");
+                break;
+
+            case 2:
+                gfx->setCursor(8, 2);
+                gfx->print("<<<");
+                break;
+
+            case 3:
+                gfx->setCursor(8, 2);
+                gfx->print("<<<<");
+                break;
+        }
+    }
+
+    // =================================================
+    // RIGHT SIGNAL
+    // =================================================
+
+    if (rightSignal)
+    {
+        switch(signalFrame)
+        {
+            case 0:
+                gfx->setCursor(288, 2);
+                gfx->print(">");
+                break;
+
+            case 1:
+                gfx->setCursor(280, 2);
+                gfx->print(">>");
+                break;
+
+            case 2:
+                gfx->setCursor(272, 2);
+                gfx->print(">>>");
+                break;
+
+            case 3:
+                gfx->setCursor(264, 2);
+                gfx->print(">>>>");
+                break;
+        }
+    }
+}
+
+// =====================================================
+// BATTERY + LIGHT ICON
+// =====================================================
+
+void drawTopInfo()
 {
     gfx->setTextSize(1);
 
-    gfx->setTextColor(GREEN);
+    // Battery
+    gfx->setTextColor(BATTERY_GREEN);
 
-    gfx->setCursor(8, 8);
-    gfx->print("SPORT");
+    gfx->setCursor(8, 24);
+    gfx->print("BAT 82%");
 
-    gfx->setCursor(262, 8);
-    gfx->print("READY");
+    // Light icon
+    gfx->setTextColor(LIGHT_ICON);
+
+    gfx->setCursor(296, 24);
+    gfx->print("*");
 }
 
 // =====================================================
@@ -306,28 +402,19 @@ void drawSpeed()
 
     gfx->setTextSize(4);
 
-    // =================================================
-    // SHADOW
-    // =================================================
-
+    // Shadow
     gfx->setTextColor(DARK);
 
     gfx->setCursor(x + 2, y + 2);
     gfx->print(speedText);
 
-    // =================================================
-    // MAIN SPEED TEXT
-    // =================================================
-
+    // Main
     gfx->setTextColor(SPEED_WHITE);
 
     gfx->setCursor(x, y);
     gfx->print(speedText);
 
-    // =================================================
     // KM/H
-    // =================================================
-
     gfx->setTextSize(2);
 
     gfx->setTextColor(CYAN);
@@ -407,7 +494,7 @@ void drawStaticUI()
 
     drawPanel();
 
-    drawStatus();
+    drawTopInfo();
 
     drawScale();
 
@@ -438,6 +525,8 @@ void drawStaticUI()
 
 void drawDashboard()
 {
+    drawSignals();
+
     drawActiveArc();
 
     drawNeedle();
@@ -464,9 +553,7 @@ void setup()
     ledcAttach(TFT_BL, 5000, 8);
 
     // 0 - 255
-    // 90 = premium brightness
-
-    ledcWrite(TFT_BL, 40);
+    ledcWrite(TFT_BL, 55);
 
     // =================================================
     // DISPLAY
@@ -487,14 +574,32 @@ void setup()
 
 void loop()
 {
-    // Smooth animation
+    // =================================================
+    // SIGNAL ANIMATION
+    // =================================================
+
+    if (millis() - signalTimer > 120)
+    {
+        signalFrame++;
+
+        if (signalFrame > 3)
+            signalFrame = 0;
+
+        signalTimer = millis();
+    }
+
+    // =================================================
+    // SPEED SMOOTHING
+    // =================================================
 
     displaySpeed +=
         (targetSpeed - displaySpeed) * 0.18;
 
     drawDashboard();
 
-    // Demo animation
+    // =================================================
+    // DEMO ANIMATION
+    // =================================================
 
     if (upDir)
     {
@@ -514,8 +619,6 @@ void loop()
             upDir = true;
         }
     }
-
-    // ~60 FPS
 
     delay(16);
 }
