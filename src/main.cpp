@@ -40,13 +40,24 @@ void setup()
 
     gfx->invertDisplay(false);
 
+    // Background hitam
     gfx->fillScreen(0x0000);
 
-gfx->setTextColor(0x07E0);
+    // Text hijau
+    gfx->setTextColor(0x07E0);
+    gfx->setTextSize(3);
 
-gfx->fillRect(20, 140, 80, 20, 0xF800);
-gfx->fillRect(120, 140, 80, 20, 0x07E0);
-gfx->fillRect(220, 140, 80, 20, 0x001F);
+    gfx->setCursor(30, 40);
+    gfx->println("ESP32-C6");
+
+    gfx->setCursor(30, 90);
+    gfx->println("LANDSCAPE");
+
+    // Kotak warna
+    gfx->fillRect(20, 140, 80, 20, 0xF800); // merah
+    gfx->fillRect(120, 140, 80, 20, 0x07E0); // hijau
+    gfx->fillRect(220, 140, 80, 20, 0x001F); // biru
+}
 
 void loop()
 {
