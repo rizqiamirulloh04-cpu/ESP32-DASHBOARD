@@ -1,7 +1,11 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
+#include <lvgl.h>
 
-// ====================== PIN CONFIG ======================
+//
+// ===================== LCD CONFIG =====================
+// WAVESHARE ESP32-C6-LCD-1.47
+//
 
 #define TFT_BL   22
 
@@ -11,17 +15,23 @@
 #define TFT_DC   15
 #define TFT_RST  21
 
-// ====================== COLORS ======================
+#define SCR_W 172
+#define SCR_H 320
 
-#define BLACK        0x0000
-#define UI_WHITE     0xDEFB
-#define SPEED_WHITE  0xFFFF
-#define DARK         0x39E7
-#define CYAN         0x867D
-#define GREEN        0x07E0
-#define YELLOW       0xFEE0
+//
+// ===================== RGB COLORS =====================
+//
 
-// ====================== DISPLAY ======================
+#define CYAN      lv_color_hex(0x00D5FF)
+#define BLUE2     lv_color_hex(0x0088FF)
+#define DARK_BG   lv_color_hex(0x02060A)
+#define GREEN2    lv_color_hex(0x00FF66)
+#define RED2      lv_color_hex(0xFF2020)
+#define WHITE2    lv_color_hex(0xFFFFFF)
+
+//
+// ===================== DISPLAY =====================
+//
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
@@ -36,163 +46,261 @@ Arduino_GFX *gfx = new Arduino_ST7789(
     TFT_RST,
     0,
     true,
-    170,
-    320,
-    0,
-    35
+    SCR_W,
+    SCR_H
 );
 
-// ====================== VARIABLES ======================
+//
+// ===================== LVGL =====================
+//
+
+static lv_disp_draw_buf_t draw_buf;
+static lv_color_t buf1[SCR_W * 40];
+
+lv_obj_t *speedLabel;
+lv_obj_t *rpmBar;
+lv_obj_t *batteryLabel;
+lv_obj_t *tempLabel;
+lv_obj_t *arc;
 
 int speedValue = 0;
-int rpmBar = 0;
+int rpmValue = 0;
+int batteryValue = 89;
+int tempValue = 36;
 
-unsigned long signalMillis = 0;
-bool blinkState = false;
+//
+// ===================== FLUSH =====================
+//
 
-// ====================== BATTERY ======================
-
-void drawBattery(int percent)
+void my_flush_cb(lv_disp_drv_t *disp,
+                 const lv_area_t *area,
+                 lv_color_t *color_p)
 {
-    int x = 8;
-    int y = 8;
+    uint32_t w = area->x2 - area->x1 + 1;
+    uint32_t h = area->y2 - area->y1 + 1;
 
-    gfx->fillRect(0, 0, 70, 20, BLACK);
-
-    // body
-    gfx->drawRoundRect(x, y, 20, 9, 2, UI_WHITE);
-
-    // terminal
-    gfx->fillRect(x + 20, y + 3, 2, 3, UI_WHITE);
-
-    // fill
-    int fill = map(percent, 0, 100, 0, 16);
-
-    gfx->fillRoundRect(
-        x + 2,
-        y + 2,
-        fill,
-        5,
-        2,
-        GREEN
+    gfx->draw16bitRGBBitmap(
+        area->x1,
+        area->y1,
+        (uint16_t *)&color_p->full,
+        w,
+        h
     );
 
-    gfx->setTextSize(1);
-    gfx->setTextColor(UI_WHITE);
-
-    gfx->setCursor(34, 9);
-    gfx->print(percent);
-    gfx->print("%");
+    lv_disp_flush_ready(disp);
 }
 
-// ====================== SIGNALS ======================
+//
+// ===================== UI =====================
+//
 
-void drawSignals(bool on)
+void createUI()
 {
-    gfx->setTextSize(2);
+    lv_obj_set_style_bg_color(lv_scr_act(), DARK_BG, 0);
+    lv_obj_set_style_bg_opa(lv_scr_act(), LV_OPA_COVER, 0);
 
-    // LEFT
-    gfx->setCursor(6, 2);
-    gfx->setTextColor(on ? YELLOW : DARK);
-    gfx->print("<<<");
+    //
+    // TITLE
+    //
 
-    // RIGHT
-    gfx->setCursor(132, 2);
-    gfx->setTextColor(on ? YELLOW : DARK);
-    gfx->print(">>>");
+    lv_obj_t *title = lv_label_create(lv_scr_act());
+    lv_label_set_text(title, "SPORT MODE");
+    lv_obj_set_style_text_color(title, CYAN, 0);
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 8);
+
+    //
+    // ARC SPEEDOMETER
+    //
+
+    arc = lv_arc_create(lv_scr_act());
+
+    lv_obj_set_size(arc, 220, 220);
+    lv_obj_center(arc);
+
+    lv_arc_set_rotation(arc, 135);
+    lv_arc_set_bg_angles(arc, 0, 270);
+
+    lv_obj_remove_style(arc, NULL, LV_PART_KNOB);
+
+    lv_obj_set_style_arc_width(arc, 10, LV_PART_MAIN);
+    lv_obj_set_style_arc_width(arc, 12, LV_PART_INDICATOR);
+
+    lv_obj_set_style_arc_color(
+        arc,
+        lv_color_hex(0x222222),
+        LV_PART_MAIN
+    );
+
+    lv_obj_set_style_arc_color(
+        arc,
+        CYAN,
+        LV_PART_INDICATOR
+    );
+
+    lv_arc_set_range(arc, 0, 120);
+
+    //
+    // SPEED LABEL
+    //
+
+    speedLabel = lv_label_create(lv_scr_act());
+
+    lv_label_set_text(speedLabel, "000");
+
+    lv_obj_set_style_text_font(
+        speedLabel,
+        &lv_font_montserrat_48,
+        0
+    );
+
+    lv_obj_set_style_text_color(
+        speedLabel,
+        WHITE2,
+        0
+    );
+
+    lv_obj_align(speedLabel, LV_ALIGN_CENTER, 0, -20);
+
+    //
+    // KMH
+    //
+
+    lv_obj_t *kmh = lv_label_create(lv_scr_act());
+
+    lv_label_set_text(kmh, "KM/H");
+
+    lv_obj_set_style_text_color(kmh, WHITE2, 0);
+
+    lv_obj_set_style_text_font(
+        kmh,
+        &lv_font_montserrat_20,
+        0
+    );
+
+    lv_obj_align(kmh, LV_ALIGN_CENTER, 0, 40);
+
+    //
+    // RPM BAR
+    //
+
+    rpmBar = lv_bar_create(lv_scr_act());
+
+    lv_obj_set_size(rpmBar, 120, 14);
+
+    lv_obj_align(rpmBar, LV_ALIGN_BOTTOM_MID, 0, -22);
+
+    lv_bar_set_range(rpmBar, 0, 100);
+
+    lv_obj_set_style_bg_color(
+        rpmBar,
+        lv_color_hex(0x222222),
+        LV_PART_MAIN
+    );
+
+    lv_obj_set_style_bg_color(
+        rpmBar,
+        GREEN2,
+        LV_PART_INDICATOR
+    );
+
+    //
+    // BATTERY PANEL
+    //
+
+    lv_obj_t *batPanel = lv_obj_create(lv_scr_act());
+
+    lv_obj_set_size(batPanel, 70, 48);
+
+    lv_obj_align(batPanel, LV_ALIGN_TOP_RIGHT, -8, 36);
+
+    lv_obj_set_style_bg_color(
+        batPanel,
+        lv_color_hex(0x081018),
+        0
+    );
+
+    lv_obj_set_style_border_color(
+        batPanel,
+        CYAN,
+        0
+    );
+
+    batteryLabel = lv_label_create(batPanel);
+
+    lv_label_set_text(batteryLabel, "89%");
+
+    lv_obj_set_style_text_color(
+        batteryLabel,
+        GREEN2,
+        0
+    );
+
+    lv_obj_center(batteryLabel);
+
+    //
+    // TEMP PANEL
+    //
+
+    lv_obj_t *tempPanel = lv_obj_create(lv_scr_act());
+
+    lv_obj_set_size(tempPanel, 70, 48);
+
+    lv_obj_align(tempPanel, LV_ALIGN_BOTTOM_RIGHT, -8, -8);
+
+    lv_obj_set_style_bg_color(
+        tempPanel,
+        lv_color_hex(0x081018),
+        0
+    );
+
+    lv_obj_set_style_border_color(
+        tempPanel,
+        CYAN,
+        0
+    );
+
+    tempLabel = lv_label_create(tempPanel);
+
+    lv_label_set_text(tempLabel, "36C");
+
+    lv_obj_set_style_text_color(
+        tempLabel,
+        RED2,
+        0
+    );
+
+    lv_obj_center(tempLabel);
 }
 
-// ====================== STATIC UI ======================
+//
+// ===================== UPDATE UI =====================
+//
 
-void drawStaticUI()
+void updateUI()
 {
-    gfx->fillScreen(BLACK);
-    delay(50);
+    speedValue++;
 
-    // top line
-    gfx->drawFastHLine(50, 16, 70, DARK);
+    if (speedValue > 120)
+        speedValue = 0;
 
-    // center speed box
-    gfx->drawRoundRect(
-        34,
-        28,
-        102,
-        58,
-        8,
-        DARK
-    );
+    rpmValue = map(speedValue, 0, 120, 0, 100);
 
-    // arc accent
-    gfx->fillArc(
-        85,
-        48,
-        24,
-        16,
-        200,
-        340,
-        CYAN
-    );
+    lv_arc_set_value(arc, speedValue);
 
-    // rpm background
-    gfx->drawRoundRect(
-        20,
-        102,
-        130,
-        8,
-        4,
-        DARK
-    );
+    char buf[16];
+
+    sprintf(buf, "%03d", speedValue);
+    lv_label_set_text(speedLabel, buf);
+
+    lv_bar_set_value(rpmBar, rpmValue, LV_ANIM_ON);
+
+    lv_timer_handler();
 }
 
-// ====================== SPEED ======================
-
-void drawSpeed(int speed)
-{
-    gfx->fillRect(48, 46, 74, 28, BLACK);
-
-    gfx->setTextColor(SPEED_WHITE);
-    gfx->setTextSize(4);
-
-    gfx->setCursor(50, 50);
-
-    if (speed < 10) gfx->print("0");
-    if (speed < 100) gfx->print("0");
-
-    gfx->print(speed);
-
-    gfx->setTextSize(2);
-    gfx->setTextColor(UI_WHITE);
-
-    gfx->setCursor(61, 72);
-    gfx->print("KM/H");
-}
-
-// ====================== RPM BAR ======================
-
-void drawRPM(int value)
-{
-    if (value > 130) value = 130;
-
-    gfx->fillRoundRect(
-        20,
-        102,
-        130,
-        8,
-        4,
-        BLACK
-    );
-
-    gfx->fillRoundRect(
-        20,
-        102,
-        value,
-        8,
-        4,
-        CYAN
-    );
-}
-
-// ====================== SETUP ======================
+//
+// ===================== SETUP =====================
+//
 
 void setup()
 {
@@ -203,43 +311,40 @@ void setup()
 
     gfx->begin();
 
-    gfx->setRotation(1);
+    gfx->fillScreen(BLACK);
 
-    drawStaticUI();
+    lv_init();
 
-    drawBattery(88);
+    lv_disp_draw_buf_init(
+        &draw_buf,
+        buf1,
+        NULL,
+        SCR_W * 40
+    );
 
-    drawSignals(true);
+    static lv_disp_drv_t disp_drv;
 
-    drawSpeed(0);
+    lv_disp_drv_init(&disp_drv);
 
-    drawRPM(0);
+    disp_drv.hor_res = SCR_W;
+    disp_drv.ver_res = SCR_H;
+
+    disp_drv.flush_cb = my_flush_cb;
+
+    disp_drv.draw_buf = &draw_buf;
+
+    lv_disp_drv_register(&disp_drv);
+
+    createUI();
 }
 
-// ====================== LOOP ======================
+//
+// ===================== LOOP =====================
+//
 
 void loop()
 {
-    speedValue++;
+    updateUI();
 
-    if (speedValue > 180)
-        speedValue = 0;
-
-    drawSpeed(speedValue);
-
-    rpmBar = map(speedValue, 0, 180, 0, 130);
-
-    drawRPM(rpmBar);
-
-    // blink signal
-    if (millis() - signalMillis > 500)
-    {
-        signalMillis = millis();
-
-        blinkState = !blinkState;
-
-        drawSignals(blinkState);
-    }
-
-    delay(35);
+    delay(30);
 }
