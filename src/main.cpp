@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// CANVAS SPEEDOMETER - COMPILER FIX (getFramebuffer)
+// PERFECT CENTERED CANVAS SPEEDOMETER (NO TRUNCATION)
 // ======================================================
 
 #define TFT_BL 22
@@ -20,7 +20,7 @@
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED            0xF800
-#define GREEN          0x07E0 // Hijau Terang Utama
+#define GREEN          0x07E0 
 #define YELLOW         0xFFE0
 
 // GRADIENT BLUE BACKGROUND
@@ -32,9 +32,9 @@
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 
-// UKURAN KANVAS UNTUK AREA ANGKA
-#define CANVAS_W 140
-#define CANVAS_H 60
+// UKURAN KANVAS DIPERBARUI (Lebih lebar agar 3 digit angka muat sempurna)
+#define CANVAS_W 160
+#define CANVAS_H 64
 Arduino_Canvas *canvas = new Arduino_Canvas(CANVAS_W, CANVAS_H, gfx);
 
 int speedValue = 0; 
@@ -87,14 +87,14 @@ void setup() {
 }
 
 void loop() {
-    // Membaca PWM dengan timeout pendek (20ms) agar loop tetap responsif
+    // Membaca PWM dari remot dengan pembatasan waktu agar tidak lag
     int steerPWM = pulseIn(STEER_PIN, HIGH, 20000);
     int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 20000);
 
     if (steerPWM == 0)     steerPWM = 1500;
     if (throttlePWM == 0)  throttlePWM = 1500; 
 
-    // FILTER GAS
+    // FILTER DAN AKURASI GAS (MAJU / MUNDUR)
     if (throttlePWM < 1490) {
         targetSpeed = map(throttlePWM, 1500, 1000, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
@@ -105,7 +105,7 @@ void loop() {
         targetSpeed = 0;
     }
 
-    // SPEED SMOOTHING
+    // SPEED SMOOTHING (Pergerakan angka naik turun dibuat mulus)
     if (speedValue < targetSpeed) {
         speedValue += 4; 
         if (speedValue > targetSpeed) speedValue = targetSpeed;
@@ -121,17 +121,20 @@ void loop() {
         blinkState = !blinkState;
     }
 
-    // REFRESH AREA SEIN
+    // REFRESH AREA SEIN (Kanan & Kiri ujung layar)
     gfx->fillRect(15, 50, 45, 55, BLACK);  
     gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
-    // PROSES BUFFER KANVAS (SUPER RINGAN & ANTI-KOTAK)
+    // PROSES DETAILED KANVAS ANGKA (CENTERED & FULL DIGIT)
     // ==================================================
     if (speedValue != lastSpeedValue) {
         
-        // 1. Gambar gradasi pusat di dalam memori kanvas
+        // 1. Reset isi kanvas memori
         canvas->fillScreen(BLACK);
+        
+        // 2. Gambar ulang potongan pusat lingkaran gradasi biru di dalam kanvas
+        // Koordinat disesuaikan dengan posisi tengah baru (Pusat Layar 160 -> Pusat Kanvas 80)
         for (int r = 85; r > 0; r -= 4) {
             uint16_t glowColor = BLACK;
             if (r > 65)       glowColor = GLOW_BLUE_1;
@@ -139,15 +142,15 @@ void loop() {
             else if (r > 25)  glowColor = GLOW_BLUE_3;
             else              glowColor = GLOW_BLUE_4;
             
-            // Koordinat relatif di dalam kanvas (160-90 = 70, 80-45 = 35)
-            canvas->fillCircle(70, 35, r, glowColor);
+            canvas->fillCircle(80, 32, r, glowColor);
         }
 
-        // 2. Cetak angka HIJAU TERANG di atas kanvas secara transparan murni
+        // 3. Cetak angka dengan posisi X yang sudah digeser ke tengah kanvas (X: 18)
         canvas->setTextColor(GREEN); 
         canvas->setTextSize(7); 
-        canvas->setCursor(15, 5); 
+        canvas->setCursor(18, 5); 
 
+        // Cetak format 3-digit agar presisi
         if (speedValue < 10) {
             canvas->print("00");
         } else if (speedValue < 100) {
@@ -155,13 +158,13 @@ void loop() {
         }
         canvas->print(speedValue);
 
-        // 3. Kirim hasil kanvas ke layar utama (getFramebuffer sudah diperbaiki)
-        gfx->draw16bitRGBBitmap(90, 45, canvas->getFramebuffer(), CANVAS_W, CANVAS_H);
+        // 4. Kirim bitmap kanvas ke layar utama secara pas (X posisi digeser ke 80 agar simetris)
+        gfx->draw16bitRGBBitmap(80, 42, canvas->getFramebuffer(), CANVAS_W, CANVAS_H);
 
         lastSpeedValue = speedValue;
     }
 
-    // DYNAMIC NEON BAR
+    // DYNAMIC NEON BAR (Garis parameter warna di bawah angka)
     int barWidth = map(speedValue, 0, 120, 0, 120); 
     for (int i = 0; i < barWidth; i++) {
         uint16_t segmentColor;
@@ -176,7 +179,7 @@ void loop() {
         gfx->fillRect(100 + barWidth, 114, 120 - barWidth, 4, GLOW_BLUE_3);
     }
 
-    // SEIN
+    // LOGIKA LAMPU SEIN KANAN / KIRI
     if (steerPWM < 1400 && blinkState) {
         gfx->fillTriangle(25, 75, 55, 55, 55, 95, YELLOW);
     }
