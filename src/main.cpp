@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// RACING DASHBOARD WITH RAINBOW NEON LINE
+// RACING DASHBOARD WITH DYNAMIC NEON SPEED BAR
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -74,16 +74,8 @@ void drawStaticUI()
     // KM/H TEXT
     gfx->setTextColor(CYAN);
     gfx->setTextSize(2);
-    gfx->setCursor(136, 125); // Diturunkan sedikit (dari 120 ke 125) agar tidak menabrak garis neon tebal
+    gfx->setCursor(136, 125); 
     gfx->print("KM/H");
-
-    // ==================================================
-    // NEON RAINBOW LINE (Garis Neon Warna-Warni)
-    // Digambar statis di awal dengan ketebalan 3 piksel
-    // ==================================================
-    gfx->fillRect(95, 112, 40, 3, GREEN);   // Segmen Hijau (Kiri)
-    gfx->fillRect(135, 112, 40, 3, YELLOW); // Segmen Kuning (Tengah)
-    gfx->fillRect(175, 112, 40, 3, RED);    // Segmen Merah (Kanan)
 }
 
 // ======================================================
@@ -184,6 +176,33 @@ void loop()
         gfx->print("0");
     }
     gfx->print(speedValue);
+
+    // ==================================================
+    // LOGIKA NEON BERJALAN DINAMIS (DYNAMIC BAR)
+    // Panjang total bar = 120 piksel (Mulai dari X=100 sampai X=220)
+    // ==================================================
+    // Mengonversi nilai speedValue (0-120) menjadi panjang pixel (0-120 pixel)
+    int barWidth = map(speedValue, 0, 120, 0, 120); 
+
+    // Gambar segmen warna neon yang aktif sesuai panjang gas
+    for (int i = 0; i < barWidth; i++) 
+    {
+        uint16_t segmentColor;
+        if (i < 40) {
+            segmentColor = GREEN;   // 40 piksel pertama warna hijau
+        } else if (i < 80) {
+            segmentColor = YELLOW;  // 40 piksel kedua warna kuning
+        } else {
+            segmentColor = RED;     // Sisanya warna merah
+        }
+        // Gambar garis vertikal tipis setinggi 4 piksel untuk membentuk bar
+        gfx->drawFastVLine(100 + i, 112, 4, segmentColor);
+    }
+
+    // Hapus sisa bar di sebelah kanan agar saat lepas gas, neonnya ikut mundur memendek
+    if (barWidth < 120) {
+        gfx->fillRect(100 + barWidth, 112, 120 - barWidth, 4, BLACK);
+    }
 
     // ==================================================
     // LEFT SIGNAL
