@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// FINAL RACING DASHBOARD (NO-FLICKER & LIGHTWEIGHT NO CANVAS)
+// RE-FIXED RESPONSIVE RACING DASHBOARD (ANTI-FLICKER)
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -58,16 +58,14 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 // ======================================================
 // VARIABLES
 // ======================================================
-int speedValue = -1; // Set ke -1 agar saat startup langsung menggambar angka pertama
+int speedValue = 0; // Mulai dari 0 (Aman dari bug locking)
 int targetSpeed = 0;
 
 bool blinkState = false;
 unsigned long blinkTimer = 0;
-bool lastLeftSignal = false;
-bool lastRightSignal = false;
 
 // ======================================================
-// STATIC UI (Digambar sekali saja di awal)
+// STATIC UI (Digambar sekali di awal)
 // ======================================================
 void drawStaticUI()
 {
@@ -118,41 +116,41 @@ void setup()
 void loop()
 {
     // ==================================================
-    // READ PWM
+    // READ PWM (Deteksi langsung dari Receiver)
     // ==================================================
     int steerPWM = pulseIn(STEER_PIN, HIGH, 25000);
     int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 25000);
 
-    // FAILSAFE
+    // FAILSAFE (Jika kabel lepas/sinyal hilang)
     if (steerPWM == 0)     steerPWM = 1500;
     if (throttlePWM == 0)  throttlePWM = 1500; 
 
     // ==================================================
-    // DUAL MAPPING (MAJU 0-120, MUNDUR 0-50)
+    // LOGIKA FILTER GAS MAJU / MUNDUR (Lebih Luas & Stabil)
     // ==================================================
-    int currentTarget = 0;
-    if (throttlePWM < 1480) 
+    if (throttlePWM < 1490) 
     {
-        currentTarget = map(throttlePWM, 1500, 1000, 0, 120);
-        currentTarget = constrain(currentTarget, 0, 120);
+        // MAJU: Sinyal mengecil dari 1500 ke 1000 (0-120 km)
+        targetSpeed = map(throttlePWM, 1500, 1000, 0, 120);
+        targetSpeed = constrain(targetSpeed, 0, 120);
     } 
-    else if (throttlePWM > 1520) 
+    else if (throttlePWM > 1510) 
     {
-        currentTarget = map(throttlePWM, 1500, 2000, 0, 50);
-        currentTarget = constrain(currentTarget, 0, 50);
+        // MUNDUR: Sinyal membesar dari 1500 ke 2000 (0-50 km)
+        targetSpeed = map(throttlePWM, 1500, 2000, 0, 50);
+        targetSpeed = constrain(targetSpeed, 0, 50);
     } 
     else 
     {
-        currentTarget = 0;
+        // NETRAL PAS DI TENGAH
+        targetSpeed = 0;
     }
-    targetSpeed = currentTarget;
 
-    // SMOOTHING
-    int lastSpeed = speedValue;
+    // SMOOTHING (Pergerakan angka naik turun)
     if (speedValue < targetSpeed) speedValue++;
     if (speedValue > targetSpeed) speedValue--;
 
-    // BLINK TIMER
+    // TIMER KEDIP SEIN
     if (millis() - blinkTimer > 350)
     {
         blinkTimer = millis();
@@ -160,54 +158,44 @@ void loop()
     }
 
     // ==================================================
-    // ANTI-FLICKER SPEED NUMBER RENDERING
+    // REFRESH AREA SEIN (Hapus kotak hitam tipis sebelum digambar)
+    // Ditulis langsung tanpa 'if' penahan agar responsif instan
     // ==================================================
-    // Angka hanya digambar ulang jika nilainya benar-benar berubah
-    if (speedValue != lastSpeed) 
-    {
-        // Trik utama: setTextColor(WARNA_TEKS, WARNA_BACKGROUND_HITAM)
-        // Ini akan otomatis menghapus sisa angka lama tanpa perlu fillRect kotak hitam
-        gfx->setTextColor(ICE, BLACK);
-        gfx->setTextSize(7); 
+    gfx->fillRect(15, 50, 45, 55, BLACK);  // Hapus area kiri
+    gfx->fillRect(260, 50, 50, 55, BLACK); // Hapus area kanan
 
-        if (speedValue < 10) {
-            gfx->setCursor(110, 50);
-            gfx->print("00");
-        } else if (speedValue < 100) {
-            gfx->setCursor(110, 50);
-            gfx->print("0");
-        } else {
-            gfx->setCursor(90, 50);
-        }
-        gfx->print(speedValue);
+    // ==================================================
+    // SPEED NUMBER RENDERING (ANTI-FLICKER)
+    // ==================================================
+    // Menggunakan trik menulis teks sekalian menimpa warna background hitamnya
+    gfx->setTextColor(ICE, BLACK);
+    gfx->setTextSize(7); 
+
+    if (speedValue < 10) {
+        gfx->setCursor(110, 50);
+        gfx->print("00");
+    } else if (speedValue < 100) {
+        gfx->setCursor(110, 50);
+        gfx->print("0");
+    } else {
+        gfx->setCursor(90, 50);
+    }
+    gfx->print(speedValue);
+
+    // ==================================================
+    // LEFT SIGNAL (Belok Kiri)
+    // ==================================================
+    if (steerPWM < 1400 && blinkState)
+    {
+        gfx->fillTriangle(25, 75, 55, 55, 55, 95, YELLOW);
     }
 
     // ==================================================
-    // LOGIKA SEIN KIRI (Hanya digambar saat status berubah)
+    // RIGHT SIGNAL (Belok Kanan)
     // ==================================================
-    bool currentLeftSignal = (steerPWM < 1400 && blinkState);
-    if (currentLeftSignal != lastLeftSignal) 
+    if (steerPWM > 1600 && blinkState)
     {
-        if (currentLeftSignal) {
-            gfx->fillTriangle(25, 75, 55, 55, 55, 95, YELLOW);
-        } else {
-            gfx->fillRect(15, 50, 45, 55, BLACK);  // Hapus bersih jika mati
-        }
-        lastLeftSignal = currentLeftSignal;
-    }
-
-    // ==================================================
-    // LOGIKA SEIN KANAN (Hanya digambar saat status berubah)
-    // ==================================================
-    bool currentRightSignal = (steerPWM > 1600 && blinkState);
-    if (currentRightSignal != lastRightSignal) 
-    {
-        if (currentRightSignal) {
-            gfx->fillTriangle(295, 75, 265, 55, 265, 95, YELLOW);
-        } else {
-            gfx->fillRect(260, 50, 50, 55, BLACK); // Hapus bersih jika mati
-        }
-        lastRightSignal = currentRightSignal;
+        gfx->fillTriangle(295, 75, 265, 55, 265, 95, YELLOW);
     }
 
     delay(15);
