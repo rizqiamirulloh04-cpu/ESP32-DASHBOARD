@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// FINAL RACING DASHBOARD (BRIGHTNESS 50% & THROTTLE FIX)
+// FINAL RACING DASHBOARD (DUAL MODE: FORWARD & REVERSE)
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -80,7 +80,7 @@ void setup()
     Serial.begin(115200);
 
     // ==================================================
-    // BACKLIGHT (Diset ke 128 untuk kecerahan ~50%)
+    // BACKLIGHT (Kecerahan 50%)
     // ==================================================
     ledcAttach(TFT_BL, 5000, 8);
     ledcWrite(TFT_BL, 128); 
@@ -114,13 +114,28 @@ void loop()
 
     // FAILSAFE
     if (steerPWM == 0)     steerPWM = 1500;
-    if (throttlePWM == 0)  throttlePWM = 1500; // Posisi netral tengah
+    if (throttlePWM == 0)  throttlePWM = 1500; 
 
     // ==================================================
-    // THROTTLE MAPPING (Tengah = 0 KM/H, Gas Mentok = 120 KM/H)
+    // DUAL MAPPING (MAJU 0-120, MUNDUR 0-50)
     // ==================================================
-    targetSpeed = map(throttlePWM, 1500, 2000, 0, 120);
-    targetSpeed = constrain(targetSpeed, 0, 120);
+    if (throttlePWM < 1480) 
+    {
+        // MODE MAJU: Sinyal mengecil dari 1500 ke 1000
+        targetSpeed = map(throttlePWM, 1500, 1000, 0, 120);
+        targetSpeed = constrain(targetSpeed, 0, 120);
+    } 
+    else if (throttlePWM > 1520) 
+    {
+        // MODE MUNDUR: Sinyal membesar dari 1500 ke 2000
+        targetSpeed = map(throttlePWM, 1500, 2000, 0, 50);
+        targetSpeed = constrain(targetSpeed, 0, 50);
+    } 
+    else 
+    {
+        // POSISI NETRAL (Tengah)
+        targetSpeed = 0;
+    }
 
     // SMOOTHING
     if (speedValue < targetSpeed) speedValue++;
@@ -134,7 +149,7 @@ void loop()
     }
 
     // ==================================================
-    // REFRESH AREA (Hapus per bagian secara bersih)
+    // REFRESH AREA
     // ==================================================
     // 1. Hapus area angka kecepatan & KM/H di tengah
     gfx->fillRect(80, 45, 160, 110, BLACK);
