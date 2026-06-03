@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// FAST-RESPONSIVE SPEEDOMETER (FIXED TEXT & FAST SMOOTHING)
+// PERFECTLY CENTERED RACING DASHBOARD
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -143,17 +143,14 @@ void loop()
         targetSpeed = 0;
     }
 
-    // ==================================================
-    // PERBAIKAN: SMOOTHING DIIPERCEPAT
-    // Nilai lompatan diubah dari 1 menjadi 4 agar angka mengejar lebih cepat
-    // ==================================================
+    // SMOOTHING DIPERCEPAT
     if (speedValue < targetSpeed) {
         speedValue += 4; 
-        if (speedValue > targetSpeed) speedValue = targetSpeed; // Kunci agar tidak kelewatan
+        if (speedValue > targetSpeed) speedValue = targetSpeed;
     }
     if (speedValue > targetSpeed) {
         speedValue -= 4;
-        if (speedValue < targetSpeed) speedValue = targetSpeed; // Kunci agar tidak kurang
+        if (speedValue < targetSpeed) speedValue = targetSpeed;
     }
 
     // TIMER KEDIP SEIN
@@ -170,11 +167,13 @@ void loop()
     gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
-    // SPEED NUMBER RENDERING (FIXED COORDINATE)
+    // SPEED NUMBER RENDERING (CENTERED COORDINATE)
     // ==================================================
     gfx->setTextColor(ICE, BLACK);
     gfx->setTextSize(7); 
-    gfx->setCursor(90, 50); 
+    
+    // Digeser ke X=105 agar posisi 3 digit pas di tengah-tengah layar
+    gfx->setCursor(105, 50); 
 
     if (speedValue < 10) {
         gfx->print("00");
