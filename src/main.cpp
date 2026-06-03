@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// FINAL RACING DASHBOARD (CLEAN GRAPHICS FIX)
+// FINAL RACING DASHBOARD (BRIGHTNESS 50% & THROTTLE FIX)
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -80,10 +80,10 @@ void setup()
     Serial.begin(115200);
 
     // ==================================================
-    // BACKLIGHT
+    // BACKLIGHT (Diset ke 128 untuk kecerahan ~50%)
     // ==================================================
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 30); 
+    ledcWrite(TFT_BL, 128); 
 
     // ==================================================
     // DISPLAY INITIALIZATION
@@ -114,10 +114,12 @@ void loop()
 
     // FAILSAFE
     if (steerPWM == 0)     steerPWM = 1500;
-    if (throttlePWM == 0)  throttlePWM = 1000;
+    if (throttlePWM == 0)  throttlePWM = 1500; // Posisi netral tengah
 
-    // SPEED MAP
-    targetSpeed = map(throttlePWM, 1000, 2000, 0, 120);
+    // ==================================================
+    // THROTTLE MAPPING (Tengah = 0 KM/H, Gas Mentok = 120 KM/H)
+    // ==================================================
+    targetSpeed = map(throttlePWM, 1500, 2000, 0, 120);
     targetSpeed = constrain(targetSpeed, 0, 120);
 
     // SMOOTHING
@@ -132,15 +134,15 @@ void loop()
     }
 
     // ==================================================
-    // REFRESH AREA (Hapus per bagian agar bersih total)
+    // REFRESH AREA (Hapus per bagian secara bersih)
     // ==================================================
     // 1. Hapus area angka kecepatan & KM/H di tengah
     gfx->fillRect(80, 45, 160, 110, BLACK);
     
-    // 2. Hapus area sein kiri (Ukuran X dilebarkan dari 15 ke 60 agar menutup sisa panah)
+    // 2. Hapus area sein kiri 
     gfx->fillRect(15, 50, 45, 55, BLACK);  
     
-    // 3. Hapus area sein kanan (Ukuran X dilebarkan hingga ujung kanan layar)
+    // 3. Hapus area sein kanan
     gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
@@ -174,7 +176,7 @@ void loop()
     gfx->drawFastHLine(110, 110, 100, DARK);
 
     // ==================================================
-    // LEFT SIGNAL (Tengah Kiri)
+    // LEFT SIGNAL 
     // ==================================================
     if (steerPWM < 1400 && blinkState)
     {
@@ -187,7 +189,7 @@ void loop()
     }
 
     // ==================================================
-    // RIGHT SIGNAL (Tengah Kanan)
+    // RIGHT SIGNAL
     // ==================================================
     if (steerPWM > 1600 && blinkState)
     {
