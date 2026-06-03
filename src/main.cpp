@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// FINAL RACING DASHBOARD (DUAL MODE: FORWARD & REVERSE)
+// FLICKER-FREE RACING DASHBOARD (USING CANVAS)
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -32,7 +32,7 @@
 #define ICE     0xCE79
 
 // ======================================================
-// DISPLAY CONFIGURATION
+// DISPLAY & CANVAS CONFIGURATION
 // ======================================================
 Arduino_DataBus *bus = new Arduino_ESP32SPI(
     TFT_DC,
@@ -55,6 +55,9 @@ Arduino_GFX *gfx = new Arduino_ST7789(
     0      
 );
 
+// Membuat Canvas sebesar resolusi layar (320x172) di memori internal ESP32
+Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
+
 // ======================================================
 // VARIABLES
 // ======================================================
@@ -63,14 +66,6 @@ int targetSpeed = 0;
 
 bool blinkState = false;
 unsigned long blinkTimer = 0;
-
-// ======================================================
-// STATIC UI
-// ======================================================
-void drawStaticUI()
-{
-    gfx->fillScreen(BLACK);
-}
 
 // ======================================================
 // SETUP
@@ -86,19 +81,13 @@ void setup()
     ledcWrite(TFT_BL, 128); 
 
     // ==================================================
-    // DISPLAY INITIALIZATION
+    // DISPLAY & CANVAS INITIALIZATION
     // ==================================================
     gfx->begin();
     gfx->invertDisplay(false);
     gfx->setRotation(1); 
 
-    drawStaticUI();
-
-    // ==================================================
-    // INPUT
-    // ==================================================
-    pinMode(STEER_PIN, INPUT);
-    pinMode(THROTTLE_PIN, INPUT);
+    canvas->begin(); // Mengaktifkan canvas memory
 }
 
 // ======================================================
@@ -121,19 +110,16 @@ void loop()
     // ==================================================
     if (throttlePWM < 1480) 
     {
-        // MODE MAJU: Sinyal mengecil dari 1500 ke 1000
         targetSpeed = map(throttlePWM, 1500, 1000, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
     } 
     else if (throttlePWM > 1520) 
     {
-        // MODE MUNDUR: Sinyal membesar dari 1500 ke 2000
         targetSpeed = map(throttlePWM, 1500, 2000, 0, 50);
         targetSpeed = constrain(targetSpeed, 0, 50);
     } 
     else 
     {
-        // POSISI NETRAL (Tengah)
         targetSpeed = 0;
     }
 
@@ -149,72 +135,54 @@ void loop()
     }
 
     // ==================================================
-    // REFRESH AREA
+    // PROSES MENGGAMBAR DI CANVAS (BELUM TAMPIL DI LAYAR)
+    // Semua perintah di bawah menggunakan 'canvas->' bukan 'gfx->'
     // ==================================================
-    // 1. Hapus area angka kecepatan & KM/H di tengah
-    gfx->fillRect(80, 45, 160, 110, BLACK);
     
-    // 2. Hapus area sein kiri 
-    gfx->fillRect(15, 50, 45, 55, BLACK);  
-    
-    // 3. Hapus area sein kanan
-    gfx->fillRect(260, 50, 50, 55, BLACK); 
+    // 1. Bersihkan seluruh canvas background jadi hitam bersih
+    canvas->fillScreen(BLACK);
 
-    // ==================================================
-    // SPEED NUMBER
-    // ==================================================
-    gfx->setTextColor(ICE);
-    gfx->setTextSize(7); 
+    // 2. SPEED NUMBER
+    canvas->setTextColor(ICE);
+    canvas->setTextSize(7); 
 
     if (speedValue < 10) {
-        gfx->setCursor(110, 50);
-        gfx->print("00");
+        canvas->setCursor(110, 50);
+        canvas->print("00");
     } else if (speedValue < 100) {
-        gfx->setCursor(110, 50);
-        gfx->print("0");
+        canvas->setCursor(110, 50);
+        canvas->print("0");
     } else {
-        gfx->setCursor(90, 50);
+        canvas->setCursor(90, 50);
     }
-    gfx->print(speedValue);
+    canvas->print(speedValue);
 
-    // ==================================================
-    // KM/H TEXT
-    // ==================================================
-    gfx->setTextColor(CYAN);
-    gfx->setTextSize(2);
-    gfx->setCursor(136, 120); 
-    gfx->print("KM/H");
+    // 3. KM/H TEXT
+    canvas->setTextColor(CYAN);
+    canvas->setTextSize(2);
+    canvas->setCursor(136, 120); 
+    canvas->print("KM/H");
 
-    // ==================================================
-    // GLOW LINE
-    // ==================================================
-    gfx->drawFastHLine(110, 110, 100, DARK);
+    // 4. GLOW LINE
+    canvas->drawFastHLine(110, 110, 100, DARK);
 
-    // ==================================================
-    // LEFT SIGNAL 
-    // ==================================================
+    // 5. LEFT SIGNAL
     if (steerPWM < 1400 && blinkState)
     {
-        gfx->fillTriangle(
-            25, 75,   // Ujung panah paling kiri
-            55, 55,   // Kanan atas
-            55, 95,   // Kanan bawah
-            YELLOW
-        );
+        canvas->fillTriangle(25, 75, 55, 55, 55, 95, YELLOW);
     }
 
-    // ==================================================
-    // RIGHT SIGNAL
-    // ==================================================
+    // 6. RIGHT SIGNAL
     if (steerPWM > 1600 && blinkState)
     {
-        gfx->fillTriangle(
-            295, 75,  // Ujung panah paling kanan
-            265, 55,  // Kiri atas
-            265, 95,  // Kiri bawah
-            YELLOW
-        );
+        canvas->fillTriangle(295, 75, 265, 55, 265, 95, YELLOW);
     }
 
-    delay(15);
+    // ==================================================
+    // KIRIM HASIL AKHIR KE LAYAR UTAMA (FLUSH)
+    // ==================================================
+    // Perintah ini menyalin seluruh isi canvas ke fisik layar sekaligus
+    canvas->flush();
+
+    delay(10); // Jeda diperkecil sedikit agar animasi fps terasa makin fluid
 }
