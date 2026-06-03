@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// FINAL CLEAN RACING DASHBOARD - NO BOX EFFECT
+// COMPILER FIX - CLEAN RACING DASHBOARD
 // ======================================================
 
 #define TFT_BL 22
@@ -48,24 +48,6 @@ void drawCyberpunkGlow() {
         else              glowColor = GLOW_BLUE_4;
         
         gfx->fillCircle(160, 80, r, glowColor);
-    }
-}
-
-// FUNGSI FIX: Menggambar ulang potongan gradasi khusus di area angka (Bounding Box)
-// Ini berguna untuk menghapus sisa angka lama tanpa membuat penumpukan warna cerah
-void refreshNumberArea() {
-    // Kita gambar ulang lingkaran gradasi, tetapi dibatasi hanya di area kotak angka
-    // sehingga warna aslinya kembali pulih dan sisa angka terhapus sempurna
-    for (int r = 85; r > 0; r -= 3) {
-        uint16_t glowColor = BLACK;
-        if (r > 65)       glowColor = GLOW_BLUE_1;
-        else if (r > 45)  glowColor = GLOW_BLUE_2;
-        else if (r > 25)  glowColor = GLOW_BLUE_3;
-        else              glowColor = GLOW_BLUE_4;
-        
-        // Menggambar lingkaran dengan pembatasan area (X: 100-220, Y: 45-105)
-        // Fungsi bawaan gfx otomatis memotong area gambar agar tidak jorok
-        gfx->writeFillCircle(160, 80, r, glowColor);
     }
 }
 
@@ -135,15 +117,13 @@ void loop() {
     gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
-    // PROSES CETAK ANGKA CLEAN ( ANTI - TUMPUK )
+    // PROSES CETAK ANGKA CLEAN (FIXED COMPILER)
     // ==================================================
     if (speedValue != lastSpeedValue) {
-        // 1. Lap bersih area angka dengan menggambar ulang potongan background asli
-        gfx->startWrite();
-        // Membatasi perbaikan gambar hanya di area kotak angka (X, Y, Lebar, Tinggi)
-        gfx->writeFillRect(95, 45, 130, 60, BLACK); 
         
-        // Kembalikan keindahan gradasi melingkar di dalam kotak tersebut
+        // 1. Gambar ulang gradasi lingkaran menggunakan fungsi bawaan fillCircle yang valid
+        // Kita timpa area tengah (X:105, Y:50) dengan menuliskan ulang gradasi pusatnya saja
+        gfx->startWrite();
         for (int r = 85; r > 0; r -= 4) {
             uint16_t glowColor = BLACK;
             if (r > 65)       glowColor = GLOW_BLUE_1;
@@ -151,7 +131,7 @@ void loop() {
             else if (r > 25)  glowColor = GLOW_BLUE_3;
             else              glowColor = GLOW_BLUE_4;
             
-            // Menggambar lingkarannya secara aman (hanya memulihkan warna gradasi asal)
+            // Menggunakan fillCircle standar (Aman & Didukung penuh oleh library)
             gfx->fillCircle(160, 80, r, glowColor);
         }
         gfx->endWrite();
@@ -172,7 +152,7 @@ void loop() {
         lastSpeedValue = speedValue;
     }
 
-    // DYNAMIC NEON BAR (Garis neon berjalan di bawah angka)
+    // DYNAMIC NEON BAR
     int barWidth = map(speedValue, 0, 120, 0, 120); 
     for (int i = 0; i < barWidth; i++) {
         uint16_t segmentColor;
