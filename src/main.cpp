@@ -26,55 +26,66 @@
 // Dimensi Piksel Per Angka Gothic (Lebar: 30, Tinggi: 55)
 #define IMG_W 30
 #define IMG_H 55
+#define TOTAL_PIXELS (IMG_W * IMG_H) // 1650 piksel per angka
 
 // ======================================================================
 // DATA BINAR GAMBAR ANGKA GOTHIC KUSTOM (RGB565 - 16BIT)
 // ======================================================================
-// Catatan: Ganti isi dalam kurung kurawal {...} dengan data biner asli hasil konversi gambarmu.
+// Catatan: Jika kamu sudah punya data hex asli hasil konversi gambarmu, 
+// kamu bisa mengganti baris angka di dalam kurung kurawal {...} di bawah ini.
 
-const uint16_t gothic_0[] PROGMEM = {
-    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x18c3, 0x3186, 0x4208, 0x4208, 0x4208, 0x4a49, 0x4208, 0x4208, 0x4208, 0x39c7, 0x2104, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    // ... (masukkan sisa data biner angka 0 milikmu)
-    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x2104, 0x5aeb, 0xad75, 0xdedb, 0xef7d, 0xf7be, 0xf7be, 0xef7d, 0xdedb, 0xdedb, 0xef7d, 0xf7be, 0xf7be, 0xef7d, 0xdedb, 0xad75, 0x5aeb, 0x2104, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000
+const uint16_t gothic_0[TOTAL_PIXELS] PROGMEM = {
+    0x0000, 0x18c3, 0x3186, 0x4208, 0x4208, 0x4208, 0x4a49, 0x4208, 0x4208, 0x39c7,
+    // ... data diulang atau diteruskan sampai total 1650 elemen (30x55)
+    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 // Inisialisasi sisa piksel dengan warna hitam aman
 };
 
-const uint16_t gothic_1[] PROGMEM = { 
-    // Masukkan data hex biner angka 1 di sini
+const uint16_t gothic_1[TOTAL_PIXELS] PROGMEM = { 
+    0xFFFF, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
 };
 
-const uint16_t gothic_2[] PROGMEM = { 
-    // Masukkan data hex biner angka 2 di sini
+const uint16_t gothic_2[TOTAL_PIXELS] PROGMEM = { 
+    0xFFFF, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
 };
 
-const uint16_t gothic_3[] PROGMEM = { 
-    // Masukkan data hex biner angka 3 di sini
+const uint16_t gothic_3[TOTAL_PIXELS] PROGMEM = { 
+    0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
 };
 
-const uint16_t gothic_4[] PROGMEM = { 
-    // Masukkan data hex biner angka 4 di sini
+const uint16_t gothic_4[TOTAL_PIXELS] PROGMEM = { 
+    0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
 };
 
-const uint16_t gothic_5[] PROGMEM = { 
-    // Masukkan data hex biner angka 5 di sini
+const uint16_t gothic_5[TOTAL_PIXELS] PROGMEM = { 
+    0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
 };
 
-const uint16_t gothic_6[] PROGMEM = { 
-    // Masukkan data hex biner angka 6 di sini
+const uint16_t gothic_6[TOTAL_PIXELS] PROGMEM = { 
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000,
+    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
 };
 
-const uint16_t gothic_7[] PROGMEM = { 
-    // Masukkan data hex biner angka 7 di sini
+const uint16_t gothic_7[TOTAL_PIXELS] PROGMEM = { 
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000,
+    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
 };
 
-const uint16_t gothic_8[] PROGMEM = { 
-    // Masukkan data hex biner angka 8 di sini
+const uint16_t gothic_8[TOTAL_PIXELS] PROGMEM = { 
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000,
+    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
 };
 
-const uint16_t gothic_9[] PROGMEM = { 
-    // Masukkan data hex biner angka 9 di sini
+const uint16_t gothic_9[TOTAL_PIXELS] PROGMEM = { 
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000,
+    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
 };
 
-// Array penampung pointer gothic ke indeks 0-9 (Sudah diarahkan ke array masing-masing angka)
+// Array penampung pointer gothic ke indeks 0-9 
 const uint16_t* const gothicNumbers[10] PROGMEM = {
     gothic_0, gothic_1, gothic_2, gothic_3, gothic_4,
     gothic_5, gothic_6, gothic_7, gothic_8, gothic_9
@@ -97,7 +108,7 @@ int lastSpeedValue = -1;
 int targetSpeed = 0;
 bool blinkState = false;
 unsigned long blinkTimer = 0;
-int lastSteerState = 0; // Menyimpan status posisi kemudi sebelumnya
+int lastSteerState = 0; 
 
 // Fungsi menggambar pendaran lingkaran biru khas dasbor cyberpunk
 void drawCyberpunkGlow() {
@@ -171,7 +182,7 @@ void loop() {
     if (millis() - blinkTimer > 350) {
         blinkTimer = millis();
         blinkState = !blinkState;
-        toggleBlink = true; // Menandakan status kedip sedang berubah (On ke Off atau sebaliknya)
+        toggleBlink = true; 
     }
 
     // Deteksi arah kemudi: 0 = Lurus, 1 = Belok Kiri, 2 = Belok Kanan
@@ -243,5 +254,5 @@ void loop() {
         gfx->fillTriangle(295, 75, 265, 55, 265, 95, YELLOW);
     }
 
-    delay(5); // Jeda kecil untuk stabilitas sistem pembacaan pulseIn
+    delay(5); 
 }
