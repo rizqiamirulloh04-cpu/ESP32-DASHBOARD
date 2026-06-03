@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// COMPILER FIX - CLEAN RACING DASHBOARD
+// HIGH-PERFORMANCE CANVAS SPEEDOMETER (FIXED RC INPUT)
 // ======================================================
 
 #define TFT_BL 22
@@ -32,13 +32,18 @@
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 
+// UKURAN KANVAS UNTUK AREA ANGKA (X: 90 s/d 230, Y: 45 s/d 105)
+#define CANVAS_W 140
+#define CANVAS_H 60
+Arduino_Canvas *canvas = new Arduino_Canvas(CANVAS_W, CANVAS_H, gfx);
+
 int speedValue = 0; 
 int lastSpeedValue = -1; 
 int targetSpeed = 0;
 bool blinkState = false;
 unsigned long blinkTimer = 0;
 
-// FUNGSI UTAMA: Menggambar Lingkaran Gradasi Latar Belakang
+// FUNGSI UTAMA: Menggambar Lingkaran Gradasi Latar Belakang Layar
 void drawCyberpunkGlow() {
     for (int r = 85; r > 0; r -= 3) {
         uint16_t glowColor = BLACK;
@@ -72,6 +77,9 @@ void setup() {
     gfx->invertDisplay(false);
     gfx->setRotation(1); 
 
+    // Alokasikan memori untuk kanvas angka
+    canvas->begin();
+
     drawStaticUI();
 
     pinMode(STEER_PIN, INPUT);
@@ -79,8 +87,9 @@ void setup() {
 }
 
 void loop() {
-    int steerPWM = pulseIn(STEER_PIN, HIGH, 25000);
-    int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 25000);
+    // Membaca PWM dengan timeout pendek (20ms) agar loop tetap responsif
+    int steerPWM = pulseIn(STEER_PIN, HIGH, 20000);
+    int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 20000);
 
     if (steerPWM == 0)     steerPWM = 1500;
     if (throttlePWM == 0)  throttlePWM = 1500; 
@@ -106,7 +115,7 @@ void loop() {
         if (speedValue < targetSpeed) speedValue = targetSpeed;
     }
 
-    // TIMER KEDIP
+    // TIMER KEDIP SEIN
     if (millis() - blinkTimer > 350) {
         blinkTimer = millis();
         blinkState = !blinkState;
@@ -117,13 +126,12 @@ void loop() {
     gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
-    // PROSES CETAK ANGKA CLEAN (FIXED COMPILER)
+    // PROSES BUFFER KANVAS (SUPER RINGAN & ANTI-KOTAK)
     // ==================================================
     if (speedValue != lastSpeedValue) {
         
-        // 1. Gambar ulang gradasi lingkaran menggunakan fungsi bawaan fillCircle yang valid
-        // Kita timpa area tengah (X:105, Y:50) dengan menuliskan ulang gradasi pusatnya saja
-        gfx->startWrite();
+        // 1. Gambar gradasi pusat di dalam memori kanvas
+        canvas->fillScreen(BLACK);
         for (int r = 85; r > 0; r -= 4) {
             uint16_t glowColor = BLACK;
             if (r > 65)       glowColor = GLOW_BLUE_1;
@@ -131,24 +139,25 @@ void loop() {
             else if (r > 25)  glowColor = GLOW_BLUE_3;
             else              glowColor = GLOW_BLUE_4;
             
-            // Menggunakan fillCircle standar (Aman & Didukung penuh oleh library)
-            gfx->fillCircle(160, 80, r, glowColor);
+            // Gambar koordinat lingkaran disesuaikan dengan pusat kanvas (160-90 = 70, 80-45 = 35)
+            canvas->fillCircle(70, 35, r, glowColor);
         }
-        gfx->endWrite();
 
-        // 2. Cetak angka baru warna HIJAU TERANG secara transparan murni
-        gfx->setTextColor(GREEN); 
-        gfx->setTextSize(7); 
-        gfx->setCursor(105, 50); 
+        // 2. Cetak angka HIJAU TERANG di atas kanvas secara transparan murni
+        canvas->setTextColor(GREEN); 
+        canvas->setTextSize(7); 
+        canvas->setCursor(15, 5); // Posisi relatif di dalam kanvas
 
         if (speedValue < 10) {
-            gfx->print("00");
+            canvas->print("00");
         } else if (speedValue < 100) {
-            gfx->print("0");
+            canvas->print("0");
         }
-        gfx->print(speedValue);
+        canvas->print(speedValue);
 
-        // Kunci nilai terakhir
+        // 3. Kirim hasil kanvas jadi ke posisi layar utama (X: 90, Y: 45)
+        gfx->draw16bitRGBBitmap(90, 45, canvas->getBuffer(), CANVAS_W, CANVAS_H);
+
         lastSpeedValue = speedValue;
     }
 
@@ -175,5 +184,6 @@ void loop() {
         gfx->fillTriangle(295, 75, 265, 55, 265, 95, YELLOW);
     }
 
-    delay(15);
+    // Delay diturunkan sedikit agar pembacaan pulseIn lebih sinkron dan responsif
+    delay(5);
 }
