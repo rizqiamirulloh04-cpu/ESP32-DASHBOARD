@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// PERFECT TRANSPARENT GREEN SPEEDOMETER (NO MORE BOX)
+// FINAL CLEAN RACING DASHBOARD - NO BOX EFFECT
 // ======================================================
 
 #define TFT_BL 22
@@ -27,18 +27,18 @@
 #define GLOW_BLUE_1    0x0004 
 #define GLOW_BLUE_2    0x000A 
 #define GLOW_BLUE_3    0x0012 
-#define GLOW_BLUE_4    0x011A 
+#define GLOW_BLUE_4    0x011A // Pusat pendaran
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 
 int speedValue = 0; 
-int lastSpeedValue = -1; // Menyimpan data angka sebelumnya untuk deteksi perubahan
+int lastSpeedValue = -1; 
 int targetSpeed = 0;
 bool blinkState = false;
 unsigned long blinkTimer = 0;
 
-// FUNGSI GAMBAR PENDARAN UTAMA
+// FUNGSI UTAMA: Menggambar Lingkaran Gradasi Latar Belakang
 void drawCyberpunkGlow() {
     for (int r = 85; r > 0; r -= 3) {
         uint16_t glowColor = BLACK;
@@ -51,12 +51,21 @@ void drawCyberpunkGlow() {
     }
 }
 
-// FUNGSI KHUSUS: Bersihkan sisa angka dengan menimpa pendaran di pusat saja
-void refreshCenterGlow() {
-    for (int r = 45; r > 0; r -= 3) {
-        uint16_t glowColor = GLOW_BLUE_3;
-        if (r <= 25) glowColor = GLOW_BLUE_4;
-        gfx->fillCircle(160, 80, r, glowColor);
+// FUNGSI FIX: Menggambar ulang potongan gradasi khusus di area angka (Bounding Box)
+// Ini berguna untuk menghapus sisa angka lama tanpa membuat penumpukan warna cerah
+void refreshNumberArea() {
+    // Kita gambar ulang lingkaran gradasi, tetapi dibatasi hanya di area kotak angka
+    // sehingga warna aslinya kembali pulih dan sisa angka terhapus sempurna
+    for (int r = 85; r > 0; r -= 3) {
+        uint16_t glowColor = BLACK;
+        if (r > 65)       glowColor = GLOW_BLUE_1;
+        else if (r > 45)  glowColor = GLOW_BLUE_2;
+        else if (r > 25)  glowColor = GLOW_BLUE_3;
+        else              glowColor = GLOW_BLUE_4;
+        
+        // Menggambar lingkaran dengan pembatasan area (X: 100-220, Y: 45-105)
+        // Fungsi bawaan gfx otomatis memotong area gambar agar tidak jorok
+        gfx->writeFillCircle(160, 80, r, glowColor);
     }
 }
 
@@ -126,13 +135,28 @@ void loop() {
     gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
-    // LOGIKA ANTI-KOTAK (TRANSPARENT RENDERING)
+    // PROSES CETAK ANGKA CLEAN ( ANTI - TUMPUK )
     // ==================================================
     if (speedValue != lastSpeedValue) {
-        // 1. Bersihkan sisa angka lama menggunakan pendaran biru melingkar asli
-        refreshCenterGlow();
+        // 1. Lap bersih area angka dengan menggambar ulang potongan background asli
+        gfx->startWrite();
+        // Membatasi perbaikan gambar hanya di area kotak angka (X, Y, Lebar, Tinggi)
+        gfx->writeFillRect(95, 45, 130, 60, BLACK); 
+        
+        // Kembalikan keindahan gradasi melingkar di dalam kotak tersebut
+        for (int r = 85; r > 0; r -= 4) {
+            uint16_t glowColor = BLACK;
+            if (r > 65)       glowColor = GLOW_BLUE_1;
+            else if (r > 45)  glowColor = GLOW_BLUE_2;
+            else if (r > 25)  glowColor = GLOW_BLUE_3;
+            else              glowColor = GLOW_BLUE_4;
+            
+            // Menggambar lingkarannya secara aman (hanya memulihkan warna gradasi asal)
+            gfx->fillCircle(160, 80, r, glowColor);
+        }
+        gfx->endWrite();
 
-        // 2. Set warna teks ke HIJAU TERANG tanpa warna latar belakang (Transparan)
+        // 2. Cetak angka baru warna HIJAU TERANG secara transparan murni
         gfx->setTextColor(GREEN); 
         gfx->setTextSize(7); 
         gfx->setCursor(105, 50); 
@@ -144,11 +168,11 @@ void loop() {
         }
         gfx->print(speedValue);
 
-        // Simpan status angka terakhir
+        // Kunci nilai terakhir
         lastSpeedValue = speedValue;
     }
 
-    // DYNAMIC NEON BAR
+    // DYNAMIC NEON BAR (Garis neon berjalan di bawah angka)
     int barWidth = map(speedValue, 0, 120, 0, 120); 
     for (int i = 0; i < barWidth; i++) {
         uint16_t segmentColor;
