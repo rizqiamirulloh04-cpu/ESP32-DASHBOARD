@@ -83,7 +83,7 @@ void setup()
     // BACKLIGHT
     // ==================================================
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 18); 
+    ledcWrite(TFT_BL, 30); 
 
     // ==================================================
     // DISPLAY INITIALIZATION
