@@ -15,8 +15,8 @@
 #define TFT_DC   15
 #define TFT_RST  21
 
-#define SCR_W 172
-#define SCR_H 320
+#define SCR_W 320
+#define SCR_H 172
 
 //
 // ===================== RGB COLORS =====================
@@ -310,6 +310,7 @@ void setup()
     digitalWrite(TFT_BL, HIGH);
 
     gfx->begin();
+    gfx->setRotation(1);
 
     gfx->fillScreen(0x0000);
 
