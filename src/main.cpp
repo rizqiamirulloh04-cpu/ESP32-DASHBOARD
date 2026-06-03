@@ -2,7 +2,7 @@
 #include <Arduino_GFX_Library.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - STANDARD FONT FIXED (NO EXTERNAL DEPENDENCY)
+// WAVESHARE ESP32-C6 1.47" - FIXED ARC SCALE WITH '100' ADDED
 // ======================================================================
 
 #define TFT_BL 22
@@ -167,7 +167,7 @@ void loop() {
     // RENDER UTAMA KE INTERNAL CANVAS
     // ==================================================================
     canvas->fillScreen(BLACK); 
-    canvas->setFont(NULL); // Pastikan menggunakan font bawaan agar tidak minta file eksternal
+    canvas->setFont(NULL); 
 
     // ---- A. GARIS DEKORASI HEADER ATAS ----
     canvas->setTextColor(CYAN);
@@ -226,33 +226,37 @@ void loop() {
         }
     }
     
-    // ---- POSISI ANGKA DI BAWAH GARIS LENGKUNG (DI LUAR BUSUR) ----
+    // ---- PERBAIKAN: RE-KALIBRASI ANGKA SKALA MELINGKAR DI LUAR BUSUR ----
+    // Titik pusat busur ada di X: 160, Y: 88. Radius luar busur adalah 73.
+    // Kita tempatkan teks angka di radius luar (~83 sampai 86 piksel dari pusat) agar melingkar rapi.
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
-    canvas->setCursor(76, 124);  canvas->print("0");    
-    canvas->setCursor(74, 88);   canvas->print("20");   
-    canvas->setCursor(92, 52);   canvas->print("40");   
-    canvas->setCursor(154, 42);  canvas->print("60");   
-    canvas->setCursor(214, 52);  canvas->print("80");   
-    canvas->setCursor(232, 88);  canvas->print("120");  
+    
+    canvas->setCursor(76, 122);  canvas->print("0");    // Kiri bawah (Mepet pangkal 0)
+    canvas->setCursor(72, 84);   canvas->print("20");   // Sisi kiri luar
+    canvas->setCursor(95, 48);   canvas->print("40");   // Sisi kiri atas luar
+    canvas->setCursor(154, 34);  canvas->print("60");   // Tepat di puncak atas (Dinaikkan agar tidak tabrakan)
+    canvas->setCursor(212, 48);  canvas->print("80");   // Sisi kanan atas luar
+    canvas->setCursor(236, 84);  canvas->print("100");  // *BARU*: Angka 100 di sisi kanan luar
+    canvas->setCursor(232, 122); canvas->print("120");  // Kanan bawah (Mepet ujung 120)
 
-    // Label SPEED
+    // Geser label SPEED agak ke bawah (ke Y:56) supaya di dalam bulatan dan terpisah dari angka 60
     canvas->setTextColor(CYAN);
-    canvas->setCursor(145, 54);
+    canvas->setCursor(145, 56);
     canvas->print("SPEED");
 
-    // ---- E. DIGIT ANGKA KECEPATAN UTAMA DI TENGAH (FIXED SIZE 4 - ANTI PECAH) ----
+    // ---- E. DIGIT ANGKA KECEPATAN UTAMA DI TENGAH (SIZE 4) ----
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     
-    canvas->setTextSize(4); // Size 4 sangat aman, jernih, tebal, dan bebas dari corrupt pepatah kotak-kotak
+    canvas->setTextSize(4); 
     // Shadow belakang
     canvas->setTextColor(DARK_BLUE);
-    canvas->setCursor(123, 71); canvas->print(speedText);
-    canvas->setCursor(125, 73); canvas->print(speedText);
+    canvas->setCursor(123, 73); canvas->print(speedText);
+    canvas->setCursor(125, 75); canvas->print(speedText);
     // Angka utama
     canvas->setTextColor(WHITE);
-    canvas->setCursor(124, 72); 
+    canvas->setCursor(124, 74); 
     canvas->print(speedText);
 
     // Teks KM/H di bawah angka utama
