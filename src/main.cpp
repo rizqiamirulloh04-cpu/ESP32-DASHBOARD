@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// FINAL RACING DASHBOARD (FULL FIX)
+// FINAL RACING DASHBOARD (CLEAN GRAPHICS FIX)
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -69,7 +69,6 @@ unsigned long blinkTimer = 0;
 // ======================================================
 void drawStaticUI()
 {
-    // Membersihkan layar menjadi hitam pekat tanpa garis tepi tambahan
     gfx->fillScreen(BLACK);
 }
 
@@ -133,14 +132,16 @@ void loop()
     }
 
     // ==================================================
-    // REFRESH AREA (Hapus per bagian agar tidak menabrak sein)
+    // REFRESH AREA (Hapus per bagian agar bersih total)
     // ==================================================
     // 1. Hapus area angka kecepatan & KM/H di tengah
     gfx->fillRect(80, 45, 160, 110, BLACK);
     
-    // 2. Hapus area kedipan sein kiri & kanan agar bersih
-    gfx->fillRect(20, 50, 35, 50, BLACK);  
-    gfx->fillRect(265, 50, 35, 50, BLACK); 
+    // 2. Hapus area sein kiri (Ukuran X dilebarkan dari 15 ke 60 agar menutup sisa panah)
+    gfx->fillRect(15, 50, 45, 55, BLACK);  
+    
+    // 3. Hapus area sein kanan (Ukuran X dilebarkan hingga ujung kanan layar)
+    gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
     // SPEED NUMBER
@@ -178,7 +179,7 @@ void loop()
     if (steerPWM < 1400 && blinkState)
     {
         gfx->fillTriangle(
-            25, 75,   // Ujung panah kiri
+            25, 75,   // Ujung panah paling kiri
             55, 55,   // Kanan atas
             55, 95,   // Kanan bawah
             YELLOW
@@ -191,7 +192,7 @@ void loop()
     if (steerPWM > 1600 && blinkState)
     {
         gfx->fillTriangle(
-            295, 75,  // Ujung panah kanan
+            295, 75,  // Ujung panah paling kanan
             265, 55,  // Kiri atas
             265, 95,  // Kiri bawah
             YELLOW
