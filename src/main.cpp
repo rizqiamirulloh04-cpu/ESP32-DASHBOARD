@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// FINAL CYBERPUNK DASHBOARD (PERFECT ORIENTATION)
+// RACING DASHBOARD - BRIGHT GREEN NUMBER (FIXED BACKGROUND)
 // ======================================================
 
 #define TFT_BL 22
@@ -20,14 +20,14 @@
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED            0xF800
+#define GREEN          0x07E0 // Warna Hijau Terang Utama
 #define YELLOW         0xFFE0
-#define NEON_ORANGE    0xFC00 
 
-// GRADIENT BLUE
+// GRADIENT BLUE BACKGROUND
 #define GLOW_BLUE_1    0x0004 
 #define GLOW_BLUE_2    0x000A 
 #define GLOW_BLUE_3    0x0012 
-#define GLOW_BLUE_4    0x011A 
+#define GLOW_BLUE_4    0x011A // Warna pusat lingkaran terlembut
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
@@ -55,7 +55,7 @@ void drawStaticUI() {
     gfx->fillScreen(BLACK);
     drawCyberpunkGlow();
 
-    // KM/H TEXT (Dipastikan lurus di mode landscape)
+    // KM/H TEXT
     gfx->setTextColor(WHITE); 
     gfx->setTextSize(2);
     gfx->setCursor(136, 125); 
@@ -69,7 +69,7 @@ void setup() {
 
     gfx->begin();
     gfx->invertDisplay(false);
-    gfx->setRotation(1); // Mengunci mode landscape tidur
+    gfx->setRotation(1); // Tetap Landscape (Tidur)
 
     drawStaticUI();
 
@@ -115,8 +115,11 @@ void loop() {
     gfx->fillRect(15, 50, 45, 55, BLACK);  
     gfx->fillRect(260, 50, 50, 55, BLACK); 
 
-    // SPEED NUMBER
-    gfx->setTextColor(NEON_ORANGE, GLOW_BLUE_4);
+    // ==================================================
+    // PERBAIKAN UTAMA: ANGKA HIJAU TERANG & BEBAS KOTAK
+    // ==================================================
+    // Latar belakang teks disamakan dengan GLOW_BLUE_4 agar kotak birunya hilang total
+    gfx->setTextColor(GREEN, GLOW_BLUE_4);
     gfx->setTextSize(7); 
     gfx->setCursor(105, 50); 
 
@@ -127,13 +130,13 @@ void loop() {
     }
     gfx->print(speedValue);
 
-    // DYNAMIC NEON BAR
+    // DYNAMIC NEON BAR (Ikut menggunakan Hijau Terang di awal)
     int barWidth = map(speedValue, 0, 120, 0, 120); 
     for (int i = 0; i < barWidth; i++) {
         uint16_t segmentColor;
-        if (i < 50)       segmentColor = NEON_ORANGE; 
-        else if (i < 90)  segmentColor = YELLOW;      
-        else              segmentColor = RED;         
+        if (i < 50)       segmentColor = GREEN;  // Hijau terang saat kecepatan rendah-sedang
+        else if (i < 90)  segmentColor = YELLOW; // Transisi Kuning
+        else              segmentColor = RED;    // Merah saat top speed
         
         gfx->drawFastVLine(100 + i, 114, 4, segmentColor);
     }
