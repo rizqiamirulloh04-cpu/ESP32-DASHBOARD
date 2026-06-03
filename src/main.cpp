@@ -1,8 +1,11 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
 
+// Me-load font kustom tebal berkualitas tinggi untuk angka besar
+#include <Fonts/FreeSansBold18pt7b.h>
+
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - PREMIUM CYBERPUNK DASHBOARD (PERBAIKAN SKALA)
+// WAVESHARE ESP32-C6 1.47" - SCALE POSITION FIXED (OUTSIDE THE ARC)
 // ======================================================================
 
 #define TFT_BL 22
@@ -48,9 +51,32 @@ int temperature = 38;
 unsigned long sensorTimer = 0;
 
 // ======================================================================
-// FUNGSI UNTUK MENGGAMBAR ELEMEN GRAFIS CUSTOM (IKON & CIRI KHAS)
+// FUNGSI GRADASI PIKSEL (MENGALIR DARI PINK KE MERAH TUA)
 // ======================================================================
+uint16_t getArcGradientColor(int currentAngle, int startAngle, int endAngle) {
+    float ratio = (float)(currentAngle - startAngle) / (float)(endAngle - startAngle);
+    if (ratio < 0.0) ratio = 0.0;
+    if (ratio > 1.0) ratio = 1.0;
 
+    // Pink / Merah Muda Cerah ke Merah Tua
+    uint8_t startR = 31; 
+    uint8_t startG = 26; 
+    uint8_t startB = 22; 
+
+    uint8_t endR = 14;  
+    uint8_t endG = 0;   
+    uint8_t endB = 2;   
+
+    uint8_t r = startR + (endR - startR) * ratio;
+    uint8_t g = startG + (endG - startG) * ratio;
+    uint8_t b = startB + (endB - startB) * ratio;
+
+    return (r << 11) | (g << 5) | b;
+}
+
+// ======================================================================
+// FUNGSI UNTUK MENGGAMBAR ELEMEN GRAFIS CUSTOM (IKON)
+// ======================================================================
 void drawSignalIcon(int x, int y) {
     canvas->fillCircle(x + 10, y + 12, 2, CYAN);
     canvas->drawArc(x + 10, y + 12, 5, 4, 220, 320, CYAN);
@@ -145,6 +171,9 @@ void loop() {
     // ==================================================================
     canvas->fillScreen(BLACK); 
 
+    // Gunakan font default standar untuk teks menu kecil agar pas
+    canvas->setFont(NULL);
+
     // ---- A. GARIS DEKORASI HEADER ATAS ----
     canvas->setTextColor(CYAN);
     canvas->setTextSize(1);
@@ -169,7 +198,6 @@ void loop() {
 
     // ---- C. INDIKATOR LAMPU SEIN ----
     canvas->setTextSize(1);
-    // Sein Kiri
     uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN : DARK_BLUE;
     canvas->fillTriangle(18, 52, 30, 40, 30, 64, leftArrowColor);
     canvas->fillRect(30, 47, 12, 10, leftArrowColor);
@@ -177,7 +205,6 @@ void loop() {
     canvas->setCursor(20, 72); canvas->print("LEFT");
     drawSteeringIcon(28, 100);
 
-    // Sein Kanan
     uint16_t rightArrowColor = (currentSteerState == 2 && blinkState) ? GREEN : DARK_BLUE;
     canvas->fillTriangle(302, 52, 290, 40, 290, 64, rightArrowColor);
     canvas->fillRect(278, 47, 12, 10, rightArrowColor);
@@ -185,44 +212,58 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 100);
 
-    // ---- D. LENGKUNGAN BUSUR UTAMA SPEEDOMETER (ARC) ----
-    int arcBlank = 120; 
-    int currentArcLength = map(speedValue, 0, 120, 0, 360 - arcBlank);
+    // ---- D. LENGKUNGAN BUSUR SPEEDOMETER DENGAN GRADASI PIKSEL MENGALIR ----
+    int startAngle = 150;
+    int endAngle = 390;
+    int totalArcLength = endAngle - startAngle; 
+    int currentArcLength = map(speedValue, 0, 120, 0, totalArcLength);
 
     for (int r = 73; r > 68; r--) { 
-        canvas->drawArc(160, 88, r, r - 1, 150, 390, DARK_BLUE); 
-        if (currentArcLength > 0) {
-            canvas->drawArc(160, 88, r, r - 1, 150, 150 + currentArcLength, CYAN);
+        canvas->drawArc(160, 88, r, r - 1, startAngle, endAngle, DARK_BLUE); 
+    }
+
+    if (currentArcLength > 0) {
+        for (int angle = startAngle; angle < (startAngle + currentArcLength); angle++) {
+            uint16_t pixelColor = getArcGradientColor(angle, startAngle, endAngle);
+            for (int r = 73; r > 68; r--) {
+                canvas->drawArc(160, 88, r, r - 1, angle, angle + 1, pixelColor);
+            }
         }
     }
     
-    // ---- KALIBRASI POSISI ANGKA DI BAWAH GARIS BUSUR ----
+    // ---- PERBAIKAN: KALIBRASI POSISI ANGKA DI LUAR (PAS DI BAWAH GARIS LENGKUNG) ----
     canvas->setTextColor(GRAY);
-    canvas->setCursor(104, 114); canvas->print("0");   // Masuk ke dalam bawah kiri
-    canvas->setCursor(106, 88);  canvas->print("20");  // Masuk ke dalam kiri tengah
-    canvas->setCursor(120, 64);  canvas->print("40");  // Masuk ke dalam kiri atas
-    canvas->setCursor(154, 56);  canvas->print("60");  // Tepat di bawah puncak garis (tengah atas)
-    canvas->setCursor(185, 64);  canvas->print("80");  // Masuk ke dalam kanan atas
-    canvas->setCursor(196, 88);  canvas->print("120"); // Masuk ke dalam kanan tengah
+    canvas->setTextSize(1);
+    canvas->setCursor(76, 124);  canvas->print("0");    // Di luar ujung kiri bawah busur
+    canvas->setCursor(74, 88);   canvas->print("20");   // Di luar sisi kiri busur
+    canvas->setCursor(92, 52);   canvas->print("40");   // Di luar kurva kiri atas busur
+    canvas->setCursor(154, 42);  canvas->print("60");   // Tepat di luar puncak paling atas busur
+    canvas->setCursor(214, 52);  canvas->print("80");   // Di luar kurva kanan atas busur
+    canvas->setCursor(232, 88);  canvas->print("120");  // Di luar sisi kanan busur
 
-    // Teks Label "SPEED" disesuaikan posisinya agar proporsional
+    // Geser label "SPEED" agak ke bawah sedikit biar tidak tabrakan dengan angka 60
     canvas->setTextColor(CYAN);
-    canvas->setCursor(145, 42);
+    canvas->setCursor(145, 54);
     canvas->print("SPEED");
 
-    // ---- E. DIGIT ANGKA KECEPATAN BESAR DI TENGAH DASBOR ----
+    // ---- E. DIGIT ANGKA KECEPATAN UTAMA (FONT CUSTOM ANTI-GLITCH) ----
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     
-    canvas->setTextSize(5); 
-    // Efek pendaran teks belakang
+    // Aktifkan font kustom tebal berkualitas tinggi
+    canvas->setFont(&FreeSansBold18pt7b);
+    canvas->setTextSize(1); 
+
+    // Shadow belakang
     canvas->setTextColor(DARK_BLUE);
-    canvas->setCursor(117, 69); canvas->print(speedText);
-    canvas->setCursor(119, 71); canvas->print(speedText);
+    canvas->setCursor(119, 101); canvas->print(speedText);
     // Angka Utama Putih Jernih
     canvas->setTextColor(WHITE);
-    canvas->setCursor(118, 70); 
+    canvas->setCursor(120, 100); 
     canvas->print(speedText);
+
+    // Kembalikan ke font standar untuk merender teks footer bawah
+    canvas->setFont(NULL);
 
     // Teks KM/H di bawah angka utama
     canvas->setTextSize(1);
