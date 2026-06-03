@@ -1,11 +1,8 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
 
-// Mengimport Font Kustom Bergaya Miring & Tebal dari Library GFX
-#include <Fonts/FreeSansBoldItalic18pt7b.h>
-
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - ITALIC SPORTY PREMIUM DASHBOARD
+// WAVESHARE ESP32-C6 1.47" - CUSTOM HIGH-PREMIUM CYBERPUNK DASHBOARD
 // ======================================================================
 
 #define TFT_BL 22
@@ -27,88 +24,78 @@
 #define GREEN          0x07E0 
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
-#define DARK_BLUE      0x0010
-#define GRAY           0x4208
+#define DARK_BLUE      0x0012
+#define GRAY           0x5AEB
+#define RED_REDUPM     0x7800
 
 // INITIALISASI HARDWARE DISPLAY
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 
-// Canvas internal untuk area tengah (Speedometer Busur + Angka Miring)
-#define CANVAS_W 160
-#define CANVAS_H 100
-Arduino_Canvas *canvas = new Arduino_Canvas(CANVAS_W, CANVAS_H, gfx);
+// Canvas Utama Ukuran Penuh (320x172) 16-bit untuk sistem Dobel Buffer (Anti-Kedip Total)
+Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
 int speedValue = 0; 
-int lastSpeedValue = -1; 
 int targetSpeed = 0;
 int topSpeed = 0;
 bool blinkState = false;
 unsigned long blinkTimer = 0;
-int lastSteerState = 0; 
+int currentSteerState = 0;
 
-// Variabel Sensor
+// Nilai Sensor Analog
 int batteryPercent = 89;
 int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// Fungsi menggambar elemen dekorasi statis saat pertama kali menyala
-void drawStaticDashboard() {
-    gfx->fillScreen(BLACK);
+// ======================================================================
+// FUNGSI UNTUK MENGGAMBAR ELEMEN GRAFIS CUSTOM (IKON & CIRI KHAS)
+// ======================================================================
 
-    // 1. Header Atas
-    gfx->setTextColor(CYAN);
-    gfx->setTextSize(1);
-    gfx->setCursor(125, 8);
-    gfx->print("SPORT MODE");
-
-    // Garis dekorasi atas mirip gambar asli
-    gfx->drawLine(10, 20, 110, 20, CYAN);
-    gfx->drawLine(110, 20, 120, 10, CYAN);
-    gfx->drawLine(120, 10, 200, 10, CYAN);
-    gfx->drawLine(200, 10, 210, 20, CYAN);
-    gfx->drawLine(210, 20, 310, 20, CYAN);
-
-    // 2. Info Sinyal & Baterai Atas
-    gfx->setTextColor(WHITE);
-    gfx->setCursor(15, 8);
-    gfx->printf("%d dBm", signalDbm);
-    
-    gfx->setCursor(275, 8);
-    gfx->printf("%d%%", batteryPercent);
-
-    // 3. Label Lampu Sein
-    gfx->setTextSize(1);
-    gfx->setTextColor(GRAY);
-    gfx->setCursor(20, 75);  gfx->print("LEFT");
-    gfx->setCursor(275, 75); gfx->print("RIGHT");
-
-    // 4. Footer Bawah (Top Speed & Temperature)
-    gfx->drawRect(115, 133, 90, 24, GRAY);
-    gfx->setTextColor(CYAN);
-    gfx->setCursor(130, 137); gfx->print("TOP SPEED");
-
-    gfx->setTextColor(WHITE);
-    gfx->setCursor(265, 140); gfx->printf("%d 'C", temperature);
+// Menggambar ikon Sinyal Wifi/Batang di kiri atas
+void drawSignalIcon(int x, int y) {
+    canvas->fillCircle(x + 10, y + 12, 2, CYAN);
+    canvas->drawArc(x + 10, y + 12, 5, 4, 220, 320, CYAN);
+    canvas->drawArc(x + 10, y + 12, 9, 8, 220, 320, CYAN);
 }
 
+// Menggambar ikon Baterai Kotak Hijau di kanan atas
+void drawBatteryIcon(int x, int y) {
+    canvas->drawRect(x, y + 3, 18, 10, GRAY);
+    canvas->fillRect(x + 18, y + 6, 2, 4, GRAY);
+    canvas->fillRect(x + 2, y + 5, 14, 6, GREEN);
+}
+
+// Menggambar bentuk ikon Setir Mobil kecil (di bawah lampu sein)
+void drawSteeringIcon(int x, int y) {
+    canvas->drawCircle(x, y, 12, GRAY);
+    canvas->drawCircle(x, y, 2, GRAY);
+    canvas->drawLine(x - 11, y, x + 11, y, GRAY);
+    canvas->drawLine(x, y + 2, x, y + 11, GRAY);
+}
+
+// Menggambar ikon Termometer Suhu di kanan bawah
+void drawThermometerIcon(int x, int y) {
+    canvas->drawCircle(x + 4, y + 12, 4, CYAN);
+    canvas->fillRect(x + 3, y, 3, 10, CYAN);
+    canvas->fillRect(x + 4, y + 3, 1, 10, RED);
+}
+
+// ======================================================================
+// MAIN SETUP
+// ======================================================================
 void setup() {
     Serial.begin(115200);
     
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 140); 
+    ledcWrite(TFT_BL, 150); // Set kecerahan layar tinggi
 
     gfx->begin();
     gfx->invertDisplay(false);
-    gfx->setRotation(1); 
+    gfx->setRotation(1); // Mode Landscape
 
     canvas->begin();
-    
-    // Set Font kustom untuk kanvas internal sejak awal
-    canvas->setFont(&FreeSansBoldItalic18pt7b);
-
-    drawStaticDashboard();
+    canvas->fillScreen(BLACK);
 
     pinMode(STEER_PIN, INPUT);
     pinMode(THROTTLE_PIN, INPUT);
@@ -116,15 +103,18 @@ void setup() {
     pinMode(SIGNAL_PIN, INPUT);
 }
 
+// ======================================================================
+// MAIN LOOP
+// ======================================================================
 void loop() {
-    // Sinyal PWM dari Remote RC
+    // 1. Membaca Sinyal PWM dari Remote RC
     int steerPWM = pulseIn(STEER_PIN, HIGH, 20000);
     int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 20000);
 
     if (steerPWM == 0)     steerPWM = 1500;
     if (throttlePWM == 0)  throttlePWM = 1500; 
 
-    // Logika gas
+    // Logika pembacaan Gas
     if (throttlePWM < 1490) { 
         targetSpeed = map(throttlePWM, 1500, 1000, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
@@ -135,130 +125,164 @@ void loop() {
         targetSpeed = 0; 
     }
 
-    // Pergerakan angka smooth
+    // Pergerakan akselerasi angka smooth
     if (speedValue < targetSpeed) speedValue += 4;
     if (speedValue > targetSpeed) speedValue -= 4;
     if (abs(speedValue - targetSpeed) < 4) speedValue = targetSpeed;
 
-    // Catat Top Speed tertinggi selama dimainkan
-    if (speedValue > topSpeed) {
-        topSpeed = speedValue;
-        gfx->fillRect(120, 146, 80, 10, BLACK);
-        gfx->setTextColor(WHITE);
-        gfx->setCursor(138, 146);
-        gfx->printf("%d KM/H", topSpeed);
-    }
+    if (speedValue > topSpeed) topSpeed = speedValue;
 
-    // Timer Kedipan Lampu Sein
-    bool toggleBlink = false;
+    // Timer Deteksi Lampu Sein
     if (millis() - blinkTimer > 350) {
         blinkTimer = millis();
         blinkState = !blinkState;
-        toggleBlink = true; 
     }
 
-    // Arah kemudi
-    int currentSteerState = 0; 
+    // Kondisi kemudi
+    currentSteerState = 0; 
     if (steerPWM < 1400)      currentSteerState = 1; // Kiri
     else if (steerPWM > 1600) currentSteerState = 2; // Kanan
 
-    // Logika hapus/gambar ulang lampu sein
-    if (currentSteerState != lastSteerState || toggleBlink) {
-        if (!blinkState || currentSteerState == 0) {
-            gfx->fillRect(15, 45, 35, 25, BLACK);  
-            gfx->fillRect(270, 45, 35, 25, BLACK); 
-            
-            gfx->fillTriangle(35, 57, 45, 45, 45, 69, DARK_BLUE);
-            gfx->fillRect(15, 52, 20, 10, DARK_BLUE);
-            gfx->fillTriangle(285, 57, 275, 45, 275, 69, DARK_BLUE);
-            gfx->fillRect(285, 52, 20, 10, DARK_BLUE);
-        }
-        lastSteerState = currentSteerState;
-    }
-
-    if (currentSteerState == 1 && blinkState) {
-        gfx->fillTriangle(35, 57, 45, 45, 45, 69, GREEN);
-        gfx->fillRect(15, 52, 20, 10, GREEN);
-    }
-    if (currentSteerState == 2 && blinkState) {
-        gfx->fillTriangle(285, 57, 275, 45, 275, 69, GREEN);
-        gfx->fillRect(285, 52, 20, 10, GREEN);
-    }
-
-    // Update data sensor bat & sinyal
+    // Update data sensor berkala dari Pin Analog ESP32-C6
     if (millis() - sensorTimer > 500) {
         sensorTimer = millis();
         int rawBat = analogRead(BATTERY_PIN);
         batteryPercent = map(rawBat, 0, 4095, 0, 100);
         batteryPercent = constrain(batteryPercent, 0, 100);
-        
-        gfx->fillRect(275, 8, 35, 10, BLACK);
-        gfx->setTextColor(WHITE);
-        gfx->setTextSize(1);
-        gfx->setCursor(275, 8);
-        gfx->printf("%d%%", batteryPercent);
     }
 
     // ==================================================================
-    // RENDER AREA TENGAH (SPEEDOMETER BUSUR + ANGKA TEKS MIRING)
+    // RENDER UTAMA KE INTERNAL CANVAS (PROSES DRAWING GRAPHICS)
     // ==================================================================
-    if (speedValue != lastSpeedValue) {
-        canvas->fillScreen(BLACK);
+    canvas->fillScreen(BLACK); // Bersihkan kanvas memori sebelum digambar ulang
 
-        // 1. Menggambar Busur Mengikuti Nilai Kecepatan (Speed Arc)
-        int arcBlankDegree = 120; 
-        int speedArcValue = map(speedValue, 0, 120, 0, 360 - arcBlankDegree);
+    // ---- A. GARIS DEKORASI HEADER ATAS ----
+    canvas->setTextColor(CYAN);
+    canvas->setTextSize(1);
+    canvas->setCursor(130, 8);
+    canvas->print("SPORT MODE");
 
-        for (int r = 48; r > 44; r--) {
-            canvas->drawArc(80, 50, r, r - 1, 150, 390, GRAY); // Latar dasar
-            if (speedArcValue > 0) {
-                canvas->drawArc(80, 50, r, r - 1, 150, 150 + speedArcValue, CYAN); // Jalur aktif
-            }
+    canvas->drawLine(10, 20, 115, 20, CYAN);
+    canvas->drawLine(115, 20, 123, 11, CYAN);
+    canvas->drawLine(123, 11, 197, 11, CYAN);
+    canvas->drawLine(197, 11, 205, 20, CYAN);
+    canvas->drawLine(205, 20, 310, 20, CYAN);
+
+    // ---- B. INFO SINYAL & BATERAI ATAS ----
+    drawSignalIcon(15, 5);
+    canvas->setTextColor(WHITE);
+    canvas->setCursor(40, 8);
+    canvas->printf("%d dBm", signalDbm);
+    
+    drawBatteryIcon(250, 5);
+    canvas->setCursor(275, 8);
+    canvas->printf("%d%%", batteryPercent);
+
+    // ---- C. INDIKATOR LAMPU SEIN (PANAH SOLID KANAN & KIRI) ----
+    canvas->setTextSize(1);
+    // Sein Kiri
+    uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN : DARK_BLUE;
+    canvas->fillTriangle(18, 52, 30, 40, 30, 64, leftArrowColor);
+    canvas->fillRect(30, 47, 12, 10, leftArrowColor);
+    canvas->setTextColor(leftArrowColor == GREEN ? GREEN : GRAY);
+    canvas->setCursor(20, 72); canvas->print("LEFT");
+    drawSteeringIcon(28, 100);
+
+    // Sein Kanan
+    uint16_t rightArrowColor = (currentSteerState == 2 && blinkState) ? GREEN : DARK_BLUE;
+    canvas->fillTriangle(302, 52, 290, 40, 290, 64, rightArrowColor);
+    canvas->fillRect(278, 47, 12, 10, rightArrowColor);
+    canvas->setTextColor(rightArrowColor == GREEN ? GREEN : GRAY);
+    canvas->setCursor(278, 72); canvas->print("RIGHT");
+    drawSteeringIcon(292, 100);
+
+    // ---- D. LENGKUNGAN BUSUR UTAMA SPEEDOMETER (ARC TINGKAT LINGKARAN) ----
+    int arcBlank = 120; 
+    int currentArcLength = map(speedValue, 0, 120, 0, 360 - arcBlank);
+
+    for (int r = 68; r > 62; r--) {
+        // Garis lingkar dasar abu-abu redup
+        canvas->drawArc(160, 85, r, r - 1, 150, 390, DARK_BLUE); 
+        // Garis laju warna Cyan aktif
+        if (currentArcLength > 0) {
+            canvas->drawArc(160, 85, r, r - 1, 150, 150 + currentArcLength, CYAN);
         }
-
-        // 2. Format Teks 3 Digit
-        char speedText[4];
-        sprintf(speedText, "%03d", speedValue);
-
-        // 3. Render Angka Utama Menggunakan Font Miring Kustom
-        // Menggunakan ukuran/skala teks 2 agar tebal dan pas di tengah lingkaran busur
-        canvas->setTextSize(2); 
-
-        // Efek bayangan pendaran luar (Glow effect sekeliling angka)
-        canvas->setTextColor(DARK_BLUE);
-        canvas->setCursor(21, 59); canvas->print(speedText);
-        canvas->setCursor(23, 59); canvas->print(speedText);
-        canvas->setCursor(22, 58); canvas->print(speedText);
-        canvas->setCursor(22, 60); canvas->print(speedText);
-
-        // Angka Utama Putih Tajam dengan Font Miring Kustom
-        canvas->setTextColor(WHITE);
-        canvas->setCursor(22, 59); // Sumbu Y disesuaikan (59) karena baseline GFX font berbeda dengan font standar
-        canvas->print(speedText);
-
-        // 4. Mengembalikan Font ke Mode Standar Khusus untuk Teks KM/H kecil di bawahnya
-        canvas->setFont(NULL); 
-        canvas->setTextSize(1);
-        canvas->setTextColor(CYAN);
-        canvas->setCursor(67, 72);
-        canvas->print("KM/H");
-
-        // Kembalikan ke font kustom miring untuk siklus render loop berikutnya
-        canvas->setFont(&FreeSansBoldItalic18pt7b);
-
-        // 5. RPM Bar Kecil Horizontal di bawah tulisan KM/H
-        int rpmWidth = map(speedValue, 0, 120, 0, 80);
-        canvas->fillRect(40, 88, 80, 3, DARK_BLUE); 
-        if (rpmWidth > 0) {
-            uint16_t rpmColor = (speedValue > 90) ? RED : (speedValue > 50 ? YELLOW : GREEN);
-            canvas->fillRect(40, 88, rpmWidth, 3, rpmColor); 
-        }
-
-        // Kirim hasil akhir gabungan kanvas utuh ke tengah layar utama
-        gfx->draw16bitRGBBitmap(80, 25, canvas->getFramebuffer(), CANVAS_W, CANVAS_H);
-
-        lastSpeedValue = speedValue;
     }
+    
+    // Teks skala angka kecil di pinggir busur (0, 20, 40, 60, 80, 120)
+    canvas->setTextColor(GRAY);
+    canvas->setCursor(95, 115); canvas->print("0");
+    canvas->setCursor(98, 85);  canvas->print("20");
+    canvas->setCursor(118, 55); canvas->print("40");
+    canvas->setCursor(153, 42); canvas->print("60");
+    canvas->setCursor(192, 55); canvas->print("80");
+    canvas->setCursor(212, 85); canvas->print("120");
+
+    // Teks Label "SPEED" di atas Angka Utama
+    canvas->setTextColor(CYAN);
+    canvas->setCursor(145, 58);
+    canvas->print("SPEED");
+
+    // ---- E. DIGIT ANGKA KECEPATAN BESAR DI TENGAH DASBOR ----
+    char speedText[4];
+    sprintf(speedText, "%03d", speedValue);
+    
+    canvas->setTextSize(6);
+    // Efek pendaran teks (Fake glow offset)
+    canvas->setTextColor(DARK_BLUE);
+    canvas->setCursor(114, 69); canvas->print(speedText);
+    canvas->setCursor(116, 71); canvas->print(speedText);
+    // Angka Utama Putih Jernih
+    canvas->setTextColor(WHITE);
+    canvas->setCursor(115, 70); 
+    canvas->print(speedText);
+
+    // Teks KM/H di bawah angka utama
+    canvas->setTextSize(1);
+    canvas->setTextColor(WHITE);
+    canvas->setCursor(146, 116);
+    canvas->print("KM/H");
+
+    // ---- F. FOOTER BAWAH PANEL STATUS INDIKATOR ----
+    // 1. Kotak Informasi Baterai Volt (Kiri Bawah)
+    canvas->drawRect(15, 135, 75, 30, DARK_BLUE);
+    canvas->setTextColor(GRAY);
+    canvas->setCursor(23, 140); canvas->print("BATTERY");
+    canvas->setTextColor(WHITE);
+    canvas->setCursor(23, 152); canvas->print("12.4V");
+
+    // 2. Kotak Informasi Top Speed Tengah Bawah
+    canvas->drawRect(110, 133, 100, 22, DARK_BLUE);
+    canvas->setTextColor(CYAN);
+    canvas->setCursor(132, 137); canvas->print("TOP SPEED");
+    canvas->setTextColor(WHITE);
+    canvas->setCursor(136, 146); canvas->printf("%d KM/H", topSpeed);
+
+    // 3. Kotak Informasi Temperatur (Kanan Bawah)
+    canvas->drawRect(230, 135, 75, 30, DARK_BLUE);
+    canvas->setTextColor(GRAY);
+    canvas->setCursor(236, 140); canvas->print("TEMPERATURE");
+    drawThermometerIcon(238, 148);
+    canvas->setTextColor(WHITE);
+    canvas->setCursor(254, 152); canvas->printf("%d 'C", temperature);
+
+    // 4. Bar Garis RPM Warna Warni Horizontal (Paling Bawah)
+    canvas->setTextColor(WHITE);
+    canvas->setCursor(110, 158); canvas->print("RPM");
+    
+    int barWidth = map(speedValue, 0, 120, 0, 70);
+    canvas->fillRect(135, 160, 70, 4, DARK_BLUE); // Latar dasar RPM redup
+    for (int i = 0; i < barWidth; i++) {
+        uint16_t col = GREEN;
+        if (i > 35 && i <= 55) col = YELLOW;
+        else if (i > 55)       col = RED;
+        canvas->drawFastVLine(135 + i, 159, 5, col);
+    }
+
+    // ==================================================================
+    // KIRIM SELURUH KANVAS MEMORI KE LAYAR FISIK LCD (DOUBLE BUFFERING)
+    // ==================================================================
+    gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
 
     delay(5); 
 }
