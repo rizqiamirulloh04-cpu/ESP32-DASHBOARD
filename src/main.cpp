@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// RACING DASHBOARD - BRIGHT GREEN NUMBER (FIXED BACKGROUND)
+// PERFECT TRANSPARENT GREEN SPEEDOMETER (NO MORE BOX)
 // ======================================================
 
 #define TFT_BL 22
@@ -20,24 +20,25 @@
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED            0xF800
-#define GREEN          0x07E0 // Warna Hijau Terang Utama
+#define GREEN          0x07E0 // Hijau Terang Utama
 #define YELLOW         0xFFE0
 
 // GRADIENT BLUE BACKGROUND
 #define GLOW_BLUE_1    0x0004 
 #define GLOW_BLUE_2    0x000A 
 #define GLOW_BLUE_3    0x0012 
-#define GLOW_BLUE_4    0x011A // Warna pusat lingkaran terlembut
+#define GLOW_BLUE_4    0x011A 
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 
 int speedValue = 0; 
+int lastSpeedValue = -1; // Menyimpan data angka sebelumnya untuk deteksi perubahan
 int targetSpeed = 0;
 bool blinkState = false;
 unsigned long blinkTimer = 0;
 
-// GLOW BACKGROUND
+// FUNGSI GAMBAR PENDARAN UTAMA
 void drawCyberpunkGlow() {
     for (int r = 85; r > 0; r -= 3) {
         uint16_t glowColor = BLACK;
@@ -46,6 +47,15 @@ void drawCyberpunkGlow() {
         else if (r > 25)  glowColor = GLOW_BLUE_3;
         else              glowColor = GLOW_BLUE_4;
         
+        gfx->fillCircle(160, 80, r, glowColor);
+    }
+}
+
+// FUNGSI KHUSUS: Bersihkan sisa angka dengan menimpa pendaran di pusat saja
+void refreshCenterGlow() {
+    for (int r = 45; r > 0; r -= 3) {
+        uint16_t glowColor = GLOW_BLUE_3;
+        if (r <= 25) glowColor = GLOW_BLUE_4;
         gfx->fillCircle(160, 80, r, glowColor);
     }
 }
@@ -69,7 +79,7 @@ void setup() {
 
     gfx->begin();
     gfx->invertDisplay(false);
-    gfx->setRotation(1); // Tetap Landscape (Tidur)
+    gfx->setRotation(1); 
 
     drawStaticUI();
 
@@ -116,27 +126,35 @@ void loop() {
     gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
-    // PERBAIKAN UTAMA: ANGKA HIJAU TERANG & BEBAS KOTAK
+    // LOGIKA ANTI-KOTAK (TRANSPARENT RENDERING)
     // ==================================================
-    // Latar belakang teks disamakan dengan GLOW_BLUE_4 agar kotak birunya hilang total
-    gfx->setTextColor(GREEN, GLOW_BLUE_4);
-    gfx->setTextSize(7); 
-    gfx->setCursor(105, 50); 
+    if (speedValue != lastSpeedValue) {
+        // 1. Bersihkan sisa angka lama menggunakan pendaran biru melingkar asli
+        refreshCenterGlow();
 
-    if (speedValue < 10) {
-        gfx->print("00");
-    } else if (speedValue < 100) {
-        gfx->print("0");
+        // 2. Set warna teks ke HIJAU TERANG tanpa warna latar belakang (Transparan)
+        gfx->setTextColor(GREEN); 
+        gfx->setTextSize(7); 
+        gfx->setCursor(105, 50); 
+
+        if (speedValue < 10) {
+            gfx->print("00");
+        } else if (speedValue < 100) {
+            gfx->print("0");
+        }
+        gfx->print(speedValue);
+
+        // Simpan status angka terakhir
+        lastSpeedValue = speedValue;
     }
-    gfx->print(speedValue);
 
-    // DYNAMIC NEON BAR (Ikut menggunakan Hijau Terang di awal)
+    // DYNAMIC NEON BAR
     int barWidth = map(speedValue, 0, 120, 0, 120); 
     for (int i = 0; i < barWidth; i++) {
         uint16_t segmentColor;
-        if (i < 50)       segmentColor = GREEN;  // Hijau terang saat kecepatan rendah-sedang
-        else if (i < 90)  segmentColor = YELLOW; // Transisi Kuning
-        else              segmentColor = RED;    // Merah saat top speed
+        if (i < 50)       segmentColor = GREEN;  
+        else if (i < 90)  segmentColor = YELLOW; 
+        else              segmentColor = RED;    
         
         gfx->drawFastVLine(100 + i, 114, 4, segmentColor);
     }
