@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// FINAL RACING DASHBOARD (FULL SCREEN 320x172)
+// FINAL RACING DASHBOARD (MODIFIED UI)
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -42,18 +42,17 @@ Arduino_DataBus *bus = new Arduino_ESP32SPI(
     GFX_NOT_DEFINED
 );
 
-// Menggunakan spesifikasi Waveshare ST7789 1.47" (172x320)
 Arduino_GFX *gfx = new Arduino_ST7789(
     bus,
     TFT_RST,
-    1,     // Rotasi diubah ke 1 agar menjadi Landscape (320x172)
+    1,     // Landscape mode (320x172)
     true,  // IPS = true
-    172,   // Lebar fisik asli
-    320,   // Tinggi fisik asli
-    34,    // Col offset (sesuai bawaan waveshare)
-    0,     // Row offset
-    34,    // Col offset alternatif
-    0      // Row offset alternatif
+    172,   
+    320,   
+    34,    
+    0,     
+    34,    
+    0      
 );
 
 // ======================================================
@@ -66,36 +65,13 @@ bool blinkState = false;
 unsigned long blinkTimer = 0;
 
 // ======================================================
-// STATIC UI (RE-CENTERED FOR 320x172)
+// STATIC UI
 // ======================================================
 void drawStaticUI()
 {
+    // Hanya membersihkan layar menjadi hitam pekat
+    // Garis merah, biru, cyan, dan segitiga hijau telah dihapus
     gfx->fillScreen(BLACK);
-
-    // ==================================================
-    // TOP LINE (Garis tengah atas lebar)
-    // ==================================================
-    gfx->drawFastHLine(60, 35, 200, CYAN);
-
-    // ==================================================
-    // TRIANGLE (Dipindah ke tengah-tengah X=160)
-    // ==================================================
-    gfx->fillTriangle(
-        160, 15,  // Titik atas (Tengah)
-        145, 34,  // Titik kiri bawah
-        175, 34,  // Titik kanan bawah
-        GREEN
-    );
-
-    // ==================================================
-    // LEFT BAR (Batang merah dipindah ke ujung kiri layar)
-    // ==================================================
-    gfx->fillRect(20, 35, 6, 115, RED);
-
-    // ==================================================
-    // RIGHT BAR (Batang biru dipindah ke ujung kanan layar)
-    // ==================================================
-    gfx->fillRect(294, 35, 6, 115, BLUE);
 }
 
 // ======================================================
@@ -109,15 +85,13 @@ void setup()
     // BACKLIGHT
     // ==================================================
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 18); // Kecerahan backlight
+    ledcWrite(TFT_BL, 18); 
 
     // ==================================================
     // DISPLAY INITIALIZATION
     // ==================================================
     gfx->begin();
     gfx->invertDisplay(false);
-    
-    // Memastikan orientasi landscape lebar 320, tinggi 172
     gfx->setRotation(1); 
 
     drawStaticUI();
@@ -160,25 +134,25 @@ void loop()
     }
 
     // ==================================================
-    // CLEAR CENTER (Hanya menghapus area angka dan teks tengah)
+    // CLEAR CENTER & SIGNALS AREA
     // ==================================================
-    gfx->fillRect(70, 50, 180, 100, BLACK);
+    // Menghapus area tengah termasuk tempat kedipan lampu sein agar tidak berbayang
+    gfx->fillRect(15, 45, 290, 110, BLACK);
 
     // ==================================================
-    // SPEED NUMBER (Disesuaikan agar pas di tengah X=160)
+    // SPEED NUMBER (Tengah-Tengah Layar)
     // ==================================================
     gfx->setTextColor(ICE);
-    gfx->setTextSize(7); // Ukuran teks diperbesar ke 7 agar proporsional di layar besar
+    gfx->setTextSize(7); 
 
-    // Geser posisi X cursor berdasarkan jumlah digit agar tetap presisi di tengah
     if (speedValue < 10) {
-        gfx->setCursor(110, 55);
+        gfx->setCursor(110, 50);
         gfx->print("00");
     } else if (speedValue < 100) {
-        gfx->setCursor(110, 55);
+        gfx->setCursor(110, 50);
         gfx->print("0");
     } else {
-        gfx->setCursor(90, 55);
+        gfx->setCursor(90, 50);
     }
     gfx->print(speedValue);
 
@@ -187,36 +161,36 @@ void loop()
     // ==================================================
     gfx->setTextColor(CYAN);
     gfx->setTextSize(2);
-    gfx->setCursor(136, 125); // Diposisikan di tengah bawah angka speed
+    gfx->setCursor(136, 120); 
     gfx->print("KM/H");
 
     // ==================================================
-    // GLOW LINE (Garis horizontal di atas KM/H)
+    // GLOW LINE
     // ==================================================
-    gfx->drawFastHLine(110, 115, 100, DARK);
+    gfx->drawFastHLine(110, 110, 100, DARK);
 
     // ==================================================
-    // LEFT SIGNAL (Diposisikan di sebelah kiri angka speed)
+    // LEFT SIGNAL (Di Tengah Samping Kiri Angka Speed)
     // ==================================================
     if (steerPWM < 1400 && blinkState)
     {
         gfx->fillTriangle(
-            45, 85,   // Ujung panah kiri
-            65, 70,   // Kanan atas
-            65, 100,  // Kanan bawah
+            25, 75,   // Ujung panah kiri (Sejajar tengah vertikal)
+            50, 55,   // Kanan atas
+            50, 95,   // Kanan bawah
             YELLOW
         );
     }
 
     // ==================================================
-    // RIGHT SIGNAL (Diposisikan di sebelah kanan angka speed)
+    // RIGHT SIGNAL (Di Tengah Samping Kanan Angka Speed)
     // ==================================================
     if (steerPWM > 1600 && blinkState)
     {
         gfx->fillTriangle(
-            275, 85,  // Ujung panah kanan
-            255, 70,  // Kiri atas
-            255, 100, // Kiri bawah
+            295, 75,  // Ujung panah kanan (Sejajar tengah vertikal)
+            270, 55,  // Kiri atas
+            270, 95,  // Kiri bawah
             YELLOW
         );
     }
