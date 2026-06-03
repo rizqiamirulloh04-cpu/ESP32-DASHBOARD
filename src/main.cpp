@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// HIGH-PERFORMANCE CANVAS SPEEDOMETER (FIXED RC INPUT)
+// CANVAS SPEEDOMETER - COMPILER FIX (getFramebuffer)
 // ======================================================
 
 #define TFT_BL 22
@@ -27,12 +27,12 @@
 #define GLOW_BLUE_1    0x0004 
 #define GLOW_BLUE_2    0x000A 
 #define GLOW_BLUE_3    0x0012 
-#define GLOW_BLUE_4    0x011A // Pusat pendaran
+#define GLOW_BLUE_4    0x011A 
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 
-// UKURAN KANVAS UNTUK AREA ANGKA (X: 90 s/d 230, Y: 45 s/d 105)
+// UKURAN KANVAS UNTUK AREA ANGKA
 #define CANVAS_W 140
 #define CANVAS_H 60
 Arduino_Canvas *canvas = new Arduino_Canvas(CANVAS_W, CANVAS_H, gfx);
@@ -139,14 +139,14 @@ void loop() {
             else if (r > 25)  glowColor = GLOW_BLUE_3;
             else              glowColor = GLOW_BLUE_4;
             
-            // Gambar koordinat lingkaran disesuaikan dengan pusat kanvas (160-90 = 70, 80-45 = 35)
+            // Koordinat relatif di dalam kanvas (160-90 = 70, 80-45 = 35)
             canvas->fillCircle(70, 35, r, glowColor);
         }
 
         // 2. Cetak angka HIJAU TERANG di atas kanvas secara transparan murni
         canvas->setTextColor(GREEN); 
         canvas->setTextSize(7); 
-        canvas->setCursor(15, 5); // Posisi relatif di dalam kanvas
+        canvas->setCursor(15, 5); 
 
         if (speedValue < 10) {
             canvas->print("00");
@@ -155,8 +155,8 @@ void loop() {
         }
         canvas->print(speedValue);
 
-        // 3. Kirim hasil kanvas jadi ke posisi layar utama (X: 90, Y: 45)
-        gfx->draw16bitRGBBitmap(90, 45, canvas->getBuffer(), CANVAS_W, CANVAS_H);
+        // 3. Kirim hasil kanvas ke layar utama (getFramebuffer sudah diperbaiki)
+        gfx->draw16bitRGBBitmap(90, 45, canvas->getFramebuffer(), CANVAS_W, CANVAS_H);
 
         lastSpeedValue = speedValue;
     }
@@ -184,6 +184,5 @@ void loop() {
         gfx->fillTriangle(295, 75, 265, 55, 265, 95, YELLOW);
     }
 
-    // Delay diturunkan sedikit agar pembacaan pulseIn lebih sinkron dan responsif
     delay(5);
 }
