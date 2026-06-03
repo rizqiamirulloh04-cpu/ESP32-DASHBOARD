@@ -31,59 +31,23 @@
 // ======================================================================
 // DATA BINAR GAMBAR ANGKA GOTHIC KUSTOM (RGB565 - 16BIT)
 // ======================================================================
-// Catatan: Jika kamu sudah punya data hex asli hasil konversi gambarmu, 
-// kamu bisa mengganti baris angka di dalam kurung kurawal {...} di bawah ini.
+// Catatan: Jika kamu sudah memiliki data array hex asli dari hasil konversi 
+// gambar gothic milikmu, kamu bisa langsung menimpa angka di dalam kurung kurawal bawah ini.
 
 const uint16_t gothic_0[TOTAL_PIXELS] PROGMEM = {
-    0x0000, 0x18c3, 0x3186, 0x4208, 0x4208, 0x4208, 0x4a49, 0x4208, 0x4208, 0x39c7,
-    // ... data diulang atau diteruskan sampai total 1650 elemen (30x55)
-    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 // Inisialisasi sisa piksel dengan warna hitam aman
+    0x0000, 0x18c3, 0x3186, 0x4208, 0x4208, 0x4208, 0x4a49, 0x4208, 0x4208, 0x39c7
+    // Sisa elemen otomatis diisi 0 (hitam) oleh compiler
 };
 
-const uint16_t gothic_1[TOTAL_PIXELS] PROGMEM = { 
-    0xFFFF, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
-};
-
-const uint16_t gothic_2[TOTAL_PIXELS] PROGMEM = { 
-    0xFFFF, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
-};
-
-const uint16_t gothic_3[TOTAL_PIXELS] PROGMEM = { 
-    0xFFFF, 0xFFFF, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
-};
-
-const uint16_t gothic_4[TOTAL_PIXELS] PROGMEM = { 
-    0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
-};
-
-const uint16_t gothic_5[TOTAL_PIXELS] PROGMEM = { 
-    0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
-};
-
-const uint16_t gothic_6[TOTAL_PIXELS] PROGMEM = { 
-    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000,
-    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
-};
-
-const uint16_t gothic_7[TOTAL_PIXELS] PROGMEM = { 
-    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000,
-    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
-};
-
-const uint16_t gothic_8[TOTAL_PIXELS] PROGMEM = { 
-    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000,
-    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
-};
-
-const uint16_t gothic_9[TOTAL_PIXELS] PROGMEM = { 
-    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000,
-    [0 ... (TOTAL_PIXELS - 1)] = 0x0000 
-};
+const uint16_t gothic_1[TOTAL_PIXELS] PROGMEM = { 0 };
+const uint16_t gothic_2[TOTAL_PIXELS] PROGMEM = { 0 };
+const uint16_t gothic_3[TOTAL_PIXELS] PROGMEM = { 0 };
+const uint16_t gothic_4[TOTAL_PIXELS] PROGMEM = { 0 };
+const uint16_t gothic_5[TOTAL_PIXELS] PROGMEM = { 0 };
+const uint16_t gothic_6[TOTAL_PIXELS] PROGMEM = { 0 };
+const uint16_t gothic_7[TOTAL_PIXELS] PROGMEM = { 0 };
+const uint16_t gothic_8[TOTAL_PIXELS] PROGMEM = { 0 };
+const uint16_t gothic_9[TOTAL_PIXELS] PROGMEM = { 0 };
 
 // Array penampung pointer gothic ke indeks 0-9 
 const uint16_t* const gothicNumbers[10] PROGMEM = {
