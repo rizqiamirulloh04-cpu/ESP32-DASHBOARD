@@ -104,10 +104,10 @@ void createUI()
     //
 
     lv_obj_t *title = lv_label_create(lv_scr_act());
-    lv_label_set_text(title, "SPORT MODE");
-    lv_obj_set_style_text_color(title, CYAN, 0);
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_18, 0);
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 8);
+lv_label_set_text(title, "SPORT MODE");
+lv_obj_set_style_text_color(title, CYAN, 0);
+lv_obj_set_style_text_font(title, LV_FONT_DEFAULT, 0);
+lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 8);
 
     //
     // ARC SPEEDOMETER
@@ -146,21 +146,21 @@ void createUI()
 
     speedLabel = lv_label_create(lv_scr_act());
 
-    lv_label_set_text(speedLabel, "000");
+lv_label_set_text(speedLabel, "000");
 
-    lv_obj_set_style_text_font(
-        speedLabel,
-        &lv_font_montserrat_48,
-        0
-    );
+lv_obj_set_style_text_font(
+    speedLabel,
+    LV_FONT_DEFAULT,
+    0
+);
 
-    lv_obj_set_style_text_color(
-        speedLabel,
-        WHITE2,
-        0
-    );
+lv_obj_set_style_text_color(
+    speedLabel,
+    WHITE2,
+    0
+);
 
-    lv_obj_align(speedLabel, LV_ALIGN_CENTER, 0, -20);
+lv_obj_align(speedLabel, LV_ALIGN_CENTER, 0, -20);
 
     //
     // KMH
@@ -168,17 +168,17 @@ void createUI()
 
     lv_obj_t *kmh = lv_label_create(lv_scr_act());
 
-    lv_label_set_text(kmh, "KM/H");
+lv_label_set_text(kmh, "KM/H");
 
-    lv_obj_set_style_text_color(kmh, WHITE2, 0);
+lv_obj_set_style_text_color(kmh, WHITE2, 0);
 
-    lv_obj_set_style_text_font(
-        kmh,
-        &lv_font_montserrat_20,
-        0
-    );
+lv_obj_set_style_text_font(
+    kmh,
+    LV_FONT_DEFAULT,
+    0
+);
 
-    lv_obj_align(kmh, LV_ALIGN_CENTER, 0, 40);
+lv_obj_align(kmh, LV_ALIGN_CENTER, 0, 40);
 
     //
     // RPM BAR
@@ -311,7 +311,7 @@ void setup()
 
     gfx->begin();
 
-    gfx->fillScreen(BLACK);
+    gfx->fillScreen(0x0000);
 
     lv_init();
 
