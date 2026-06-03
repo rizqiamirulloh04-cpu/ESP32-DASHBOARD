@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// RE-FIXED RESPONSIVE RACING DASHBOARD (ANTI-FLICKER)
+// FAST-RESPONSIVE SPEEDOMETER (FIXED TEXT & FAST SMOOTHING)
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -58,7 +58,7 @@ Arduino_GFX *gfx = new Arduino_ST7789(
 // ======================================================
 // VARIABLES
 // ======================================================
-int speedValue = 0; // Mulai dari 0 (Aman dari bug locking)
+int speedValue = 0; 
 int targetSpeed = 0;
 
 bool blinkState = false;
@@ -116,39 +116,45 @@ void setup()
 void loop()
 {
     // ==================================================
-    // READ PWM (Deteksi langsung dari Receiver)
+    // READ PWM
     // ==================================================
     int steerPWM = pulseIn(STEER_PIN, HIGH, 25000);
     int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 25000);
 
-    // FAILSAFE (Jika kabel lepas/sinyal hilang)
+    // FAILSAFE
     if (steerPWM == 0)     steerPWM = 1500;
     if (throttlePWM == 0)  throttlePWM = 1500; 
 
     // ==================================================
-    // LOGIKA FILTER GAS MAJU / MUNDUR (Lebih Luas & Stabil)
+    // LOGIKA FILTER GAS MAJU / MUNDUR
     // ==================================================
     if (throttlePWM < 1490) 
     {
-        // MAJU: Sinyal mengecil dari 1500 ke 1000 (0-120 km)
         targetSpeed = map(throttlePWM, 1500, 1000, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
     } 
     else if (throttlePWM > 1510) 
     {
-        // MUNDUR: Sinyal membesar dari 1500 ke 2000 (0-50 km)
         targetSpeed = map(throttlePWM, 1500, 2000, 0, 50);
         targetSpeed = constrain(targetSpeed, 0, 50);
     } 
     else 
     {
-        // NETRAL PAS DI TENGAH
         targetSpeed = 0;
     }
 
-    // SMOOTHING (Pergerakan angka naik turun)
-    if (speedValue < targetSpeed) speedValue++;
-    if (speedValue > targetSpeed) speedValue--;
+    // ==================================================
+    // PERBAIKAN: SMOOTHING DIIPERCEPAT
+    // Nilai lompatan diubah dari 1 menjadi 4 agar angka mengejar lebih cepat
+    // ==================================================
+    if (speedValue < targetSpeed) {
+        speedValue += 4; 
+        if (speedValue > targetSpeed) speedValue = targetSpeed; // Kunci agar tidak kelewatan
+    }
+    if (speedValue > targetSpeed) {
+        speedValue -= 4;
+        if (speedValue < targetSpeed) speedValue = targetSpeed; // Kunci agar tidak kurang
+    }
 
     // TIMER KEDIP SEIN
     if (millis() - blinkTimer > 350)
@@ -158,32 +164,27 @@ void loop()
     }
 
     // ==================================================
-    // REFRESH AREA SEIN (Hapus kotak hitam tipis sebelum digambar)
-    // Ditulis langsung tanpa 'if' penahan agar responsif instan
+    // REFRESH AREA SEIN
     // ==================================================
-    gfx->fillRect(15, 50, 45, 55, BLACK);  // Hapus area kiri
-    gfx->fillRect(260, 50, 50, 55, BLACK); // Hapus area kanan
+    gfx->fillRect(15, 50, 45, 55, BLACK);  
+    gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
-    // SPEED NUMBER RENDERING (ANTI-FLICKER)
+    // SPEED NUMBER RENDERING (FIXED COORDINATE)
     // ==================================================
-    // Menggunakan trik menulis teks sekalian menimpa warna background hitamnya
     gfx->setTextColor(ICE, BLACK);
     gfx->setTextSize(7); 
+    gfx->setCursor(90, 50); 
 
     if (speedValue < 10) {
-        gfx->setCursor(110, 50);
         gfx->print("00");
     } else if (speedValue < 100) {
-        gfx->setCursor(110, 50);
         gfx->print("0");
-    } else {
-        gfx->setCursor(90, 50);
     }
     gfx->print(speedValue);
 
     // ==================================================
-    // LEFT SIGNAL (Belok Kiri)
+    // LEFT SIGNAL
     // ==================================================
     if (steerPWM < 1400 && blinkState)
     {
@@ -191,7 +192,7 @@ void loop()
     }
 
     // ==================================================
-    // RIGHT SIGNAL (Belok Kanan)
+    // RIGHT SIGNAL
     // ==================================================
     if (steerPWM > 1600 && blinkState)
     {
