@@ -2,7 +2,7 @@
 #include <Arduino_GFX_Library.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - PERFECT RADIUS SCALE CALIBRATION
+// WAVESHARE ESP32-C6 1.47" - RADIUS SCALE CALIBRATION V3 (EXTERIOR)
 // ======================================================================
 
 #define TFT_BL 22
@@ -55,7 +55,6 @@ uint16_t getArcGradientColor(int currentAngle, int startAngle, int endAngle) {
     if (ratio < 0.0) ratio = 0.0;
     if (ratio > 1.0) ratio = 1.0;
 
-    // Pink / Merah Muda Cerah ke Merah Tua
     uint8_t startR = 31; 
     uint8_t startG = 26; 
     uint8_t startB = 22; 
@@ -226,21 +225,21 @@ void loop() {
         }
     }
     
-    // ---- 🔥 PERBAIKAN TOTAL: KOORDINAT SKALA MENGIKUTI LENGKUNGAN LUAR BUSUR PAS 🔥 ----
+    // ---- 🔥 PERBAIKAN: ANGKA SEBAR MELINGKAR DI LUAR BUSUR SEPENUHNYA 🔥 ----
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    canvas->setCursor(94, 120);  canvas->print("0");    // Mepet rapi di ujung bawah kiri busur
-    canvas->setCursor(90, 84);   canvas->print("20");   // Mepet pas di luar lengkungan kiri
-    canvas->setCursor(104, 52);  canvas->print("40");   // Mepet pas di lengkungan kiri atas
-    canvas->setCursor(154, 38);  canvas->print("60");   // Tepat di puncak atas luar busur
-    canvas->setCursor(202, 52);  canvas->print("80");   // Mepet pas di lengkungan kanan atas
-    canvas->setCursor(216, 84);  canvas->print("100");  // Mepet pas di luar lengkungan kanan
-    canvas->setCursor(210, 120); canvas->print("120");  // Mepet rapi di ujung bawah kanan busur
+    canvas->setCursor(85, 125);  canvas->print("0");    // Di luar ujung kiri bawah busur
+    canvas->setCursor(72, 85);   canvas->print("20");   // Di luar lengkungan kiri tengah
+    canvas->setCursor(95, 40);   canvas->print("40");   // Di luar lengkungan kiri atas
+    canvas->setCursor(154, 24);  canvas->print("60");   // TINGGI DI ATAS LENGKUNGAN (Bebas tabrakan)
+    canvas->setCursor(208, 40);  canvas->print("80");   // Di luar lengkungan kanan atas
+    canvas->setCursor(234, 85);  canvas->print("100");  // Di luar lengkungan kanan tengah
+    canvas->setCursor(220, 125); canvas->print("120");  // Di luar ujung kanan bawah busur
 
-    // Diturunkan koordinat Y nya agar berada di tengah lingkaran dalam & tidak menabrak angka 60
+    // Label SPEED diposisikan manis di dalam busur, terpisah dari angka 60
     canvas->setTextColor(CYAN);
-    canvas->setCursor(145, 62);
+    canvas->setCursor(145, 58);
     canvas->print("SPEED");
 
     // ---- E. DIGIT ANGKA KECEPATAN UTAMA DI TENGAH (SIZE 4) ----
