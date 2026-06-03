@@ -2,7 +2,7 @@
 #include <Arduino_GFX_Library.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - STANDARD TEXT DASHBOARD (NO BITMAP)
+// WAVESHARE ESP32-C6 1.47" - CYBERPUNK DASHBOARD WITH BATTERY & SIGNAL
 // ======================================================================
 
 #define TFT_BL 22
@@ -14,6 +14,8 @@
 
 #define STEER_PIN    1
 #define THROTTLE_PIN 2
+#define BATTERY_PIN  3  // Pin Analog untuk sensor tegangan baterai
+#define SIGNAL_PIN   4  // Pin Analog/PWM untuk membaca RSSI / Sinyal Receiver
 
 // COLORS (Format RGB565 16-Bit)
 #define BLACK          0x0000
@@ -22,12 +24,13 @@
 #define GREEN          0x07E0 
 #define YELLOW         0xFFE0
 #define GLOW_BLUE_3    0x0012 
+#define NEON_GLOW      0x03EF // Warna Cyan/Biru Muda Neon untuk pendaran teks
 
 // INITIALISASI HARDWARE DISPLAY & KANVAS
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 
-// Canvas internal anti-flicker (Untuk area angka agar transisinya mulus)
+// Canvas internal anti-flicker (Menghindari layar berkedip saat angka berganti)
 #define CANVAS_W 140
 #define CANVAS_H 60
 Arduino_Canvas *canvas = new Arduino_Canvas(CANVAS_W, CANVAS_H, gfx);
@@ -38,6 +41,13 @@ int targetSpeed = 0;
 bool blinkState = false;
 unsigned long blinkTimer = 0;
 int lastSteerState = 0; 
+
+// Variabel untuk data Sensor (Diperbarui berkala agar tidak lag)
+float batteryVolt = 0.0;
+float lastBatteryVolt = -1.0;
+int signalStrength = 0;
+int lastSignalStrength = -1;
+unsigned long sensorTimer = 0;
 
 // Fungsi menggambar pendaran lingkaran biru khas dasbor cyberpunk
 void drawCyberpunkGlow() {
@@ -74,6 +84,8 @@ void setup() {
 
     pinMode(STEER_PIN, INPUT);
     pinMode(THROTTLE_PIN, INPUT);
+    pinMode(BATTERY_PIN, INPUT);
+    pinMode(SIGNAL_PIN, INPUT);
 }
 
 void loop() {
@@ -129,7 +141,46 @@ void loop() {
     }
 
     // ==================================================================
-    // PROSES RENDAER ANGKA MENGGUNAKAN TEKS STANDAR (FONT BAWAAN)
+    // PEMBACAAN DAN DISPLAY INDIKATOR BARU (BATERAI & SINYAL)
+    // ==================================================================
+    // Dibaca setiap 200ms sekali agar pembacaan analog tidak membebani pulseIn
+    if (millis() - sensorTimer > 200) {
+        sensorTimer = millis();
+
+        // 1. Logika Pembacaan Baterai (Contoh konversi ADC ke Voltase, sesuaikan rasio resistor pembagimu)
+        int rawBat = analogRead(BATTERY_PIN);
+        batteryVolt = (rawBat / 4095.0) * 3.3 * 4.0; // Angka 4.0 adalah asumsi rasio pembagi tegangan
+
+        // 2. Logika Pembacaan Sinyal (Contoh konversi ADC ke Persentase 0-100%)
+        int rawSig = analogRead(SIGNAL_PIN);
+        signalStrength = map(rawSig, 0, 4095, 0, 100);
+        signalStrength = constrain(signalStrength, 0, 100);
+
+        // Render Tegangan Baterai di Kiri Atas (Di atas Sen Kiri) jika nilainya berubah
+        if (abs(batteryVolt - lastBatteryVolt) > 0.05) {
+            gfx->fillRect(10, 15, 65, 20, BLACK); // Hapus area lama
+            gfx->setTextSize(2);
+            gfx->setTextColor(GREEN); // Beri warna hijau agar kontras
+            gfx->setCursor(10, 15);
+            gfx->printf("%.1fV", batteryVolt);
+            lastBatteryVolt = batteryVolt;
+        }
+
+        // Render Indikator Sinyal di Kanan Atas (Di atas Sen Kanan) jika nilainya berubah
+        if (signalStrength != lastSignalStrength) {
+            gfx->fillRect(245, 15, 65, 20, BLACK); // Hapus area lama
+            gfx->setTextSize(2);
+            // Warna sinyal berubah dinamis: Merah jika lemah, Hijau jika kuat
+            uint16_t sigColor = (signalStrength < 40) ? RED : GREEN;
+            gfx->setTextColor(sigColor);
+            gfx->setCursor(245, 15);
+            gfx->printf("%d%%", signalStrength);
+            lastSignalStrength = signalStrength;
+        }
+    }
+
+    // ==================================================================
+    // PROSES RENDER ANGKA TEKS STANDAR DENGAN PINGGIRAN MENYALA (GLOW)
     // ==================================================================
     if (speedValue != lastSpeedValue) {
         
@@ -146,13 +197,26 @@ void loop() {
             canvas->fillCircle(70, 30, r, glowColor);
         }
 
-        // 3. Format angka bulat menjadi format 3 digit (misal: 0 -> "000", 5 -> "005")
+        // 3. Format angka bulat menjadi format 3 digit otomatis (misal: "000")
         char speedText[4];
         sprintf(speedText, "%03d", speedValue);
 
-        // 4. Gambar teks angka standar ke kanvas (Ukuran 6 agar besar dan terbaca jelas)
-        canvas->setTextColor(WHITE);
+        // 4. Proses pembuatan efek pendaran (Glow Offset) pada teks
         canvas->setTextSize(6);
+
+        // Cetak teks pendaran warna cyan di sekeliling koordinat utama (geser 2 piksel)
+        canvas->setTextColor(NEON_GLOW);
+        canvas->setCursor(16, 6);  canvas->print(speedText); // Atas-Kiri
+        canvas->setCursor(20, 6);  canvas->print(speedText); // Atas-Kanan
+        canvas->setCursor(16, 10); canvas->print(speedText); // Bawah-Kiri
+        canvas->setCursor(20, 10); canvas->print(speedText); // Bawah-Kanan
+        canvas->setCursor(18, 6);  canvas->print(speedText); // Atas
+        canvas->setCursor(18, 10); canvas->print(speedText); // Bawah
+        canvas->setCursor(16, 8);  canvas->print(speedText); // Kiri
+        canvas->setCursor(20, 8);  canvas->print(speedText); // Kanan
+        
+        // Cetak angka utama warna putih tepat di tengah (Center)
+        canvas->setTextColor(WHITE);
         canvas->setCursor(18, 8); 
         canvas->print(speedText);
 
@@ -170,7 +234,7 @@ void loop() {
         else if (i >= 90)      segmentColor = RED;
         gfx->drawFastVLine(100 + i, 114, 4, segmentColor);
     }
-    // Sisa bar yang tidak aktif diberi warna redup (pendaran dasar)
+    // Sisa bar yang tidak aktif diberi warna pendaran dasar
     if (barWidth < 120) {
         gfx->fillRect(100 + barWidth, 114, 120 - barWidth, 4, GLOW_BLUE_3);
     }
