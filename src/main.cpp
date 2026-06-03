@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// PERFECTLY CENTERED RACING DASHBOARD
+// RACING DASHBOARD WITH RAINBOW NEON LINE
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -74,11 +74,16 @@ void drawStaticUI()
     // KM/H TEXT
     gfx->setTextColor(CYAN);
     gfx->setTextSize(2);
-    gfx->setCursor(136, 120); 
+    gfx->setCursor(136, 125); // Diturunkan sedikit (dari 120 ke 125) agar tidak menabrak garis neon tebal
     gfx->print("KM/H");
 
-    // GLOW LINE
-    gfx->drawFastHLine(110, 110, 100, DARK);
+    // ==================================================
+    // NEON RAINBOW LINE (Garis Neon Warna-Warni)
+    // Digambar statis di awal dengan ketebalan 3 piksel
+    // ==================================================
+    gfx->fillRect(95, 112, 40, 3, GREEN);   // Segmen Hijau (Kiri)
+    gfx->fillRect(135, 112, 40, 3, YELLOW); // Segmen Kuning (Tengah)
+    gfx->fillRect(175, 112, 40, 3, RED);    // Segmen Merah (Kanan)
 }
 
 // ======================================================
@@ -167,12 +172,10 @@ void loop()
     gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
-    // SPEED NUMBER RENDERING (CENTERED COORDINATE)
+    // SPEED NUMBER RENDERING
     // ==================================================
     gfx->setTextColor(ICE, BLACK);
     gfx->setTextSize(7); 
-    
-    // Digeser ke X=105 agar posisi 3 digit pas di tengah-tengah layar
     gfx->setCursor(105, 50); 
 
     if (speedValue < 10) {
