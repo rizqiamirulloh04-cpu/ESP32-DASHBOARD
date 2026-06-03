@@ -2,7 +2,7 @@
 #include <Arduino_GFX_Library.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - SINGLE FILE PREMIUM GOTHIC DASHBOARD
+// WAVESHARE ESP32-C6 1.47" - STANDARD TEXT DASHBOARD (NO BITMAP)
 // ======================================================================
 
 #define TFT_BL 22
@@ -23,46 +23,11 @@
 #define YELLOW         0xFFE0
 #define GLOW_BLUE_3    0x0012 
 
-// Dimensi Piksel Per Angka Gothic (Lebar: 30, Tinggi: 55)
-#define IMG_W 30
-#define IMG_H 55
-#define TOTAL_PIXELS (IMG_W * IMG_H) // 1650 piksel per angka
-
-// ======================================================================
-// DATA BINAR GAMBAR ANGKA GOTHIC KUSTOM (RGB565 - 16BIT)
-// ======================================================================
-// Catatan: Jika kamu sudah memiliki data array hex asli dari hasil konversi 
-// gambar gothic milikmu, kamu bisa langsung menimpa angka di dalam kurung kurawal bawah ini.
-
-const uint16_t gothic_0[TOTAL_PIXELS] PROGMEM = {
-    0x0000, 0x18c3, 0x3186, 0x4208, 0x4208, 0x4208, 0x4a49, 0x4208, 0x4208, 0x39c7
-    // Sisa elemen otomatis diisi 0 (hitam) oleh compiler
-};
-
-const uint16_t gothic_1[TOTAL_PIXELS] PROGMEM = { 0 };
-const uint16_t gothic_2[TOTAL_PIXELS] PROGMEM = { 0 };
-const uint16_t gothic_3[TOTAL_PIXELS] PROGMEM = { 0 };
-const uint16_t gothic_4[TOTAL_PIXELS] PROGMEM = { 0 };
-const uint16_t gothic_5[TOTAL_PIXELS] PROGMEM = { 0 };
-const uint16_t gothic_6[TOTAL_PIXELS] PROGMEM = { 0 };
-const uint16_t gothic_7[TOTAL_PIXELS] PROGMEM = { 0 };
-const uint16_t gothic_8[TOTAL_PIXELS] PROGMEM = { 0 };
-const uint16_t gothic_9[TOTAL_PIXELS] PROGMEM = { 0 };
-
-// Array penampung pointer gothic ke indeks 0-9 
-const uint16_t* const gothicNumbers[10] PROGMEM = {
-    gothic_0, gothic_1, gothic_2, gothic_3, gothic_4,
-    gothic_5, gothic_6, gothic_7, gothic_8, gothic_9
-};
-
-// ======================================================================
 // INITIALISASI HARDWARE DISPLAY & KANVAS
-// ======================================================================
-
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 
-// Canvas internal anti-flicker (Menghindari layar berkedip saat angka berganti cepat)
+// Canvas internal anti-flicker (Untuk area angka agar transisinya mulus)
 #define CANVAS_W 140
 #define CANVAS_H 60
 Arduino_Canvas *canvas = new Arduino_Canvas(CANVAS_W, CANVAS_H, gfx);
@@ -164,7 +129,7 @@ void loop() {
     }
 
     // ==================================================================
-    // PROSES MERENDAER TRANSPARENT GOTHIC DIGIT KE KANVAS
+    // PROSES RENDAER ANGKA MENGGUNAKAN TEKS STANDAR (FONT BAWAAN)
     // ==================================================================
     if (speedValue != lastSpeedValue) {
         
@@ -181,15 +146,15 @@ void loop() {
             canvas->fillCircle(70, 30, r, glowColor);
         }
 
-        // 3. Pecah angka bulat (0-120) menjadi 3 bagian digit terpisah
-        int digit1 = speedValue / 100;          // Ratusan
-        int digit2 = (speedValue / 10) % 10;    // Puluhan
-        int digit3 = speedValue % 10;           // Satuan
+        // 3. Format angka bulat menjadi format 3 digit (misal: 0 -> "000", 5 -> "005")
+        char speedText[4];
+        sprintf(speedText, "%03d", speedValue);
 
-        // 4. Tempel potongan gambar biner angka secara berdampingan di kanvas
-        canvas->draw16bitRGBBitmap(20, 3, (uint16_t*)pgm_read_ptr(&gothicNumbers[digit1]), IMG_W, IMG_H);
-        canvas->draw16bitRGBBitmap(55, 3, (uint16_t*)pgm_read_ptr(&gothicNumbers[digit2]), IMG_W, IMG_H);
-        canvas->draw16bitRGBBitmap(90, 3, (uint16_t*)pgm_read_ptr(&gothicNumbers[digit3]), IMG_W, IMG_H);
+        // 4. Gambar teks angka standar ke kanvas (Ukuran 6 agar besar dan terbaca jelas)
+        canvas->setTextColor(WHITE);
+        canvas->setTextSize(6);
+        canvas->setCursor(18, 8); 
+        canvas->print(speedText);
 
         // 5. Kirim gambar hasil gabungan kanvas utuh ke tengah layar LCD utama
         gfx->draw16bitRGBBitmap(90, 45, canvas->getFramebuffer(), CANVAS_W, CANVAS_H);
