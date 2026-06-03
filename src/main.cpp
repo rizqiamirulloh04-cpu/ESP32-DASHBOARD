@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// FINAL RACING DASHBOARD (MODIFIED UI)
+// FINAL RACING DASHBOARD (FULL FIX)
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -69,8 +69,7 @@ unsigned long blinkTimer = 0;
 // ======================================================
 void drawStaticUI()
 {
-    // Hanya membersihkan layar menjadi hitam pekat
-    // Garis merah, biru, cyan, dan segitiga hijau telah dihapus
+    // Membersihkan layar menjadi hitam pekat tanpa garis tepi tambahan
     gfx->fillScreen(BLACK);
 }
 
@@ -134,13 +133,17 @@ void loop()
     }
 
     // ==================================================
-    // CLEAR CENTER & SIGNALS AREA
+    // REFRESH AREA (Hapus per bagian agar tidak menabrak sein)
     // ==================================================
-    // Menghapus area tengah termasuk tempat kedipan lampu sein agar tidak berbayang
-    gfx->fillRect(15, 45, 290, 110, BLACK);
+    // 1. Hapus area angka kecepatan & KM/H di tengah
+    gfx->fillRect(80, 45, 160, 110, BLACK);
+    
+    // 2. Hapus area kedipan sein kiri & kanan agar bersih
+    gfx->fillRect(20, 50, 35, 50, BLACK);  
+    gfx->fillRect(265, 50, 35, 50, BLACK); 
 
     // ==================================================
-    // SPEED NUMBER (Tengah-Tengah Layar)
+    // SPEED NUMBER
     // ==================================================
     gfx->setTextColor(ICE);
     gfx->setTextSize(7); 
@@ -170,27 +173,27 @@ void loop()
     gfx->drawFastHLine(110, 110, 100, DARK);
 
     // ==================================================
-    // LEFT SIGNAL (Di Tengah Samping Kiri Angka Speed)
+    // LEFT SIGNAL (Tengah Kiri)
     // ==================================================
     if (steerPWM < 1400 && blinkState)
     {
         gfx->fillTriangle(
-            25, 75,   // Ujung panah kiri (Sejajar tengah vertikal)
-            50, 55,   // Kanan atas
-            50, 95,   // Kanan bawah
+            25, 75,   // Ujung panah kiri
+            55, 55,   // Kanan atas
+            55, 95,   // Kanan bawah
             YELLOW
         );
     }
 
     // ==================================================
-    // RIGHT SIGNAL (Di Tengah Samping Kanan Angka Speed)
+    // RIGHT SIGNAL (Tengah Kanan)
     // ==================================================
     if (steerPWM > 1600 && blinkState)
     {
         gfx->fillTriangle(
-            295, 75,  // Ujung panah kanan (Sejajar tengah vertikal)
-            270, 55,  // Kiri atas
-            270, 95,  // Kiri bawah
+            295, 75,  // Ujung panah kanan
+            265, 55,  // Kiri atas
+            265, 95,  // Kiri bawah
             YELLOW
         );
     }
