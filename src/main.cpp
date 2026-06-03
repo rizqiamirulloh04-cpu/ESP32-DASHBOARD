@@ -3,7 +3,7 @@
 
 // ======================================================
 // WAVESHARE ESP32-C6 1.47"
-// RACING DASHBOARD WITH DYNAMIC NEON SPEED BAR
+// RACING DASHBOARD WITH BACKLIGHT GREEN GLOW EFFECT
 // ======================================================
 
 // ================= BACKLIGHT =================
@@ -21,15 +21,20 @@
 #define THROTTLE_PIN 2
 
 // ================= COLORS =================
-#define BLACK   0x0000
-#define WHITE   0xFFFF
-#define RED     0xF800
-#define GREEN   0x07E0
-#define BLUE    0x001F
-#define CYAN    0x07FF
-#define YELLOW  0xFFE0
-#define DARK    0x2104
-#define ICE     0xCE79
+#define BLACK         0x0000
+#define WHITE         0xFFFF
+#define RED           0xF800
+#define GREEN         0x07E0
+#define BLUE          0x001F
+#define CYAN          0x07FF
+#define YELLOW        0xFFE0
+#define ICE           0xCE79
+
+// Warna Gradasi untuk Efek Neon Glow Hijau (Makin besar angkanya, makin gelap)
+#define GLOW_GREEN_1  0x0204 // Hijau sangat redup (luar)
+#define GLOW_GREEN_2  0x0306 // Hijau redup sedang
+#define GLOW_GREEN_3  0x0408 // Hijau agak terang (pusat)
+#define GLOW_LINE_CLR 0x1208 // Garis pembatas gelap
 
 // ======================================================
 // DISPLAY CONFIGURATION
@@ -65,13 +70,34 @@ bool blinkState = false;
 unsigned long blinkTimer = 0;
 
 // ======================================================
+// FUNCTION FOR BACKLIGHT GLOW EFFECT (Efek Pendaran Lampu)
+// ======================================================
+void drawGlowBackground()
+{
+    // Menggambar lingkaran berlapis dari luar ke dalam untuk membentuk gradasi lampu halus
+    // Pusat lingkaran diatur di tengah layar (X=160, Y=80)
+    for (int r = 85; r > 0; r -= 5) 
+    {
+        uint16_t glowColor = BLACK;
+        if (r > 60)       glowColor = GLOW_GREEN_1; // Lapisan terluar (paling redup)
+        else if (r > 35)  glowColor = GLOW_GREEN_2; // Lapisan tengah
+        else              glowColor = GLOW_GREEN_3; // Lapisan pusat (paling terang)
+        
+        gfx->fillCircle(160, 80, r, glowColor);
+    }
+}
+
+// ======================================================
 // STATIC UI (Digambar sekali di awal)
 // ======================================================
 void drawStaticUI()
 {
     gfx->fillScreen(BLACK);
 
-    // KM/H TEXT
+    // 1. Gambar efek pendaran lampu hijau di latar belakang terlebih dahulu
+    drawGlowBackground();
+
+    // 2. KM/H TEXT
     gfx->setTextColor(CYAN);
     gfx->setTextSize(2);
     gfx->setCursor(136, 125); 
@@ -158,15 +184,17 @@ void loop()
     }
 
     // ==================================================
-    // REFRESH AREA SEIN
+    // REFRESH AREA SEIN (Tetap menggunakan BLACK karena di luar area glow)
     // ==================================================
     gfx->fillRect(15, 50, 45, 55, BLACK);  
     gfx->fillRect(260, 50, 50, 55, BLACK); 
 
     // ==================================================
-    // SPEED NUMBER RENDERING
+    // SPEED NUMBER RENDERING WITH GLOW BACKGROUND
+    // Trik: Set background text ke warna GLOW_GREEN_3 (warna pusat glow)
+    // agar angka menimpa latar belakang pendaran secara mulus tanpa kotak hitam kaku
     // ==================================================
-    gfx->setTextColor(ICE, BLACK);
+    gfx->setTextColor(ICE, GLOW_GREEN_3);
     gfx->setTextSize(7); 
     gfx->setCursor(105, 50); 
 
@@ -178,30 +206,23 @@ void loop()
     gfx->print(speedValue);
 
     // ==================================================
-    // LOGIKA NEON BERJALAN DINAMIS (DYNAMIC BAR)
-    // Panjang total bar = 120 piksel (Mulai dari X=100 sampai X=220)
+    // DYNAMIC NEON SPEED BAR (Neon Berjalan)
     // ==================================================
-    // Mengonversi nilai speedValue (0-120) menjadi panjang pixel (0-120 pixel)
     int barWidth = map(speedValue, 0, 120, 0, 120); 
 
-    // Gambar segmen warna neon yang aktif sesuai panjang gas
     for (int i = 0; i < barWidth; i++) 
     {
         uint16_t segmentColor;
-        if (i < 40) {
-            segmentColor = GREEN;   // 40 piksel pertama warna hijau
-        } else if (i < 80) {
-            segmentColor = YELLOW;  // 40 piksel kedua warna kuning
-        } else {
-            segmentColor = RED;     // Sisanya warna merah
-        }
-        // Gambar garis vertikal tipis setinggi 4 piksel untuk membentuk bar
+        if (i < 40)       segmentColor = GREEN;   
+        else if (i < 80)  segmentColor = YELLOW;  
+        else              segmentColor = RED;     
+        
         gfx->drawFastVLine(100 + i, 112, 4, segmentColor);
     }
 
-    // Hapus sisa bar di sebelah kanan agar saat lepas gas, neonnya ikut mundur memendek
+    // Trik: Menghapus sisa bar menggunakan warna GLOW_GREEN_2 karena posisinya ada di area glow bawah
     if (barWidth < 120) {
-        gfx->fillRect(100 + barWidth, 112, 120 - barWidth, 4, BLACK);
+        gfx->fillRect(100 + barWidth, 112, 120 - barWidth, 4, GLOW_GREEN_2);
     }
 
     // ==================================================
