@@ -15,8 +15,8 @@
 #define TFT_DC   15
 #define TFT_RST  21
 
-#define SCR_W 320
-#define SCR_H 172
+#define SCR_W 172
+#define SCR_H 320
 
 //
 // ===================== RGB COLORS =====================
@@ -327,8 +327,8 @@ void setup()
 
     lv_disp_drv_init(&disp_drv);
 
-    disp_drv.hor_res = SCR_W;
-    disp_drv.ver_res = SCR_H;
+    disp_drv.hor_res = SCR_W;172;
+    disp_drv.ver_res = SCR_H;320;
 
     disp_drv.flush_cb = my_flush_cb;
 
