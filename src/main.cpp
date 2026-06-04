@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V12: CLEAN MIDDLE & NO SHADOW EFFECT
+// WAVESHARE ESP32-C6 1.47" - CODE V13: ELEVATED ARC FOR PERFECT CENTER
 // ======================================================================
 
 #define TFT_BL 22
@@ -47,9 +47,9 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// Konfigurasi Pusat Elips Utama
+// Konfigurasi Pusat Elips Utama (Dinaikkan dari 124 ke 116 agar tidak menabrak boks bawah)
 const int centerX = 160;
-const int centerY = 124; 
+const int centerY = 116; 
 const int rx = 84;       
 const int ry = 62;       
 
@@ -273,24 +273,24 @@ void loop() {
     printAutoCenterLabel("100", 358, 12); 
     printAutoCenterLabel("120", 375, 12); 
 
-    // Label Teks SPEED (Pas di atas angka utama)
+    // Label Teks SPEED (Disesuaikan agar pas di atas angka utama)
     canvas->setTextColor(CYAN);
-    canvas->setCursor(146, 44);
+    canvas->setCursor(146, 42);
     canvas->print("SPEED");
 
-    // ---- F. ANGKA UTAMA SPEED DIGITAL (SHADOW DIHAPUS BIAR RECOGNITION BERSIH & LEGA) ----
+    // ---- F. ANGKA UTAMA SPEED DIGITAL ----
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     
     canvas->setTextSize(4); 
     canvas->setTextColor(WHITE);
-    canvas->setCursor(124, 56); // Hanya satu garis text murni                            
+    canvas->setCursor(124, 52); 
     canvas->print(speedText);
 
-    // Teks KM/H (Turun sedikit ke Y=94, melayang bebas tepat di tengah ruang kosong)
+    // Teks KM/H (Disesuaikan posisinya mengikuti keselarasan elips baru)
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(146, 94);                           
+    canvas->setCursor(146, 90);                           
     canvas->print("KM/H");
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
