@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V26: KOREKSI WARNA RPM & BUSUR ELIPS
+// WAVESHARE ESP32-C6 1.47" - CODE V28: EFEK KOMET BERBUNTUT PADA BAR RPM
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,11 +21,13 @@
 // COLOR PALETTE (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED            0xF800
-#define GREEN_BRIGHT   0x07E0 // Hijau muda terang untuk Bar RPM bawah
+#define RED_DARK       0x8000 
+#define RED_BRIGHT     0xF800 
+#define PINK_LIGHT     0xFDB8 
+#define GREEN_BRIGHT   0x07E0 // Kepala Komet (Hijau Muda Terang)
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
-#define DARK_BLUE      0x0010 // Warna dasar busur elips semula
+#define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
 
 // INITIALISASI HARDWARE DISPLAY
@@ -47,7 +49,7 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// CONFIG ELIPS PRESISI SPREADSHEET
+// CONFIG ELIPS PRESISI
 const int centerX = 160;
 const int centerY = 85;  
 const int rx = 86;       
@@ -59,7 +61,7 @@ const int endAngle = 395;
 // ======================================================================
 // FUNGSI UTAMA: MENGGAMBAR BUSUR OVAL KECEPATAN
 // ======================================================================
-void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t color, int thickness, bool drawTicks) {
+void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
     for (int t = 0; t < thickness; t++) {
         int curRx = rx - t;
         int curRy = ry - t;
@@ -69,8 +71,23 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             int x = cx + (int)(cos(rad) * curRx);
             int y = cy + (int)(sin(rad) * curRy);
             
+            uint16_t pixelColor = defaultColor;
+
+            if (isSpeedArc) {
+                int progress = angle - startAngle;
+                int totalRange = endAngle - startAngle;
+                
+                if (progress < (totalRange / 3)) {
+                    pixelColor = PINK_LIGHT; 
+                } else if (progress < (2 * totalRange / 3)) {
+                    pixelColor = RED_BRIGHT;
+                } else {
+                    pixelColor = RED_DARK;
+                }
+            }
+            
             if (x >= 0 && x < 320 && y >= 0 && y < 172) {
-                canvas->drawPixel(x, y, color);
+                canvas->drawPixel(x, y, pixelColor);
             }
 
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
@@ -91,13 +108,10 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
 // ======================================================================
 void printAutoCenterLabel(const char* label, int angle, int textGap) {
     float rad = (float)angle * M_PI / 180.0;
-    
     int targetX = centerX + (int)(cos(rad) * (rx + textGap));
     int targetY = centerY + (int)(sin(rad) * (ry + textGap));
-    
     int stringWidth = strlen(label) * 6; 
     int stringHeight = 8;
-    
     canvas->setCursor(targetX - (stringWidth / 2), targetY - (stringHeight / 2));
     canvas->print(label);
 }
@@ -127,7 +141,7 @@ void drawSteeringIcon(int x, int y) {
 void drawThermometerIcon(int x, int y) {
     canvas->drawCircle(x + 4, y + 12, 4, CYAN);
     canvas->fillRect(x + 3, y, 3, 10, CYAN);
-    canvas->fillRect(x + 4, y + 3, 1, 10, RED);
+    canvas->fillRect(x + 4, y + 3, 1, 10, RED_BRIGHT);
 }
 
 // ======================================================================
@@ -191,7 +205,6 @@ void loop() {
         batteryPercent = constrain(batteryPercent, 0, 100);
     }
 
-    // Refresh bersih layar anti-ghosting
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
@@ -223,15 +236,15 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL (KEMBALI KE SEMULA) ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
-    // Background busur kembali menggunakan warna asli Biru Gelap (DARK_BLUE)
-    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true);
+    // Background busur asli Biru Gelap (DARK_BLUE)
+    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
     
-    // Aktif speed menggunakan warna putih bersih
+    // Sinar merah bergerak aktif
     if (speedValue > 0) {
-        drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
+        drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true);
     }
     
     // ---- E. DISTRIBUSI LABEL ANGKA KELILING ----
@@ -240,7 +253,7 @@ void loop() {
     
     printAutoCenterLabel("20",  182, 13); 
     printAutoCenterLabel("40",  215, 13); 
-    printAutoCenterLabel("60",  270, 10); // Tetap rapi turun sedikit
+    printAutoCenterLabel("60",  270, 10); 
     printAutoCenterLabel("80",  325, 13); 
     printAutoCenterLabel("100", 358, 13); 
 
@@ -248,72 +261,64 @@ void loop() {
     canvas->setCursor(243, 122); canvas->print("120"); 
 
     // ---- F. CLUSTER TENGAH ----
-    
-    // 1. TULISAN "SPEED"
     canvas->setTextSize(1);
     canvas->setTextColor(CYAN);
-    int speedX = 145; 
-    int speedY = 56;  
+    int speedX = 145; int speedY = 56;  
     canvas->setCursor(speedX, speedY);     canvas->print("SPEED");
     canvas->setCursor(speedX + 1, speedY); canvas->print("SPEED"); 
 
-    // 2. ANGKA SPEED UTAMA "000"
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
-    canvas->setTextSize(4); 
-    canvas->setTextColor(WHITE);
-    
-    int textX = 122; 
-    int textY = 69;  
-    
+    canvas->setTextSize(4); canvas->setTextColor(WHITE);
+    int textX = 122; int textY = 69;  
     canvas->setCursor(textX, textY);         canvas->print(speedText);
     canvas->setCursor(textX + 1, textY);     canvas->print(speedText);
     canvas->setCursor(textX - 1, textY);     canvas->print(speedText);
     canvas->setCursor(textX, textY + 1);     canvas->print(speedText);
     canvas->setCursor(textX, textY - 1);     canvas->print(speedText);
 
-    // 3. TULISAN "KM/H"
-    canvas->setTextSize(1);
-    canvas->setTextColor(WHITE);
-    int kmhX = 148; 
-    int kmhY = 105;  
+    canvas->setTextSize(1); canvas->setTextColor(WHITE);
+    int kmhX = 148; int kmhY = 105;  
     canvas->setCursor(kmhX, kmhY);     canvas->print("KM/H");
     canvas->setCursor(kmhX + 1, kmhY); canvas->print("KM/H"); 
 
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
     canvas->drawRect(15, 142, 75, 26, DARK_BLUE);
-    canvas->setTextColor(GRAY);
-    canvas->setTextSize(1);
+    canvas->setTextColor(GRAY); canvas->setTextSize(1);
     canvas->setCursor(23, 145); canvas->print("BATTERY");
-    canvas->setTextColor(WHITE);
-    canvas->setCursor(23, 156); canvas->print("12.4V");
+    canvas->setTextColor(WHITE); canvas->setCursor(23, 156); canvas->print("12.4V");
 
     canvas->drawRect(110, 137, 100, 19, DARK_BLUE);
-    canvas->setTextColor(CYAN);
-    canvas->setCursor(132, 140); canvas->print("TOP SPEED");
-    canvas->setTextColor(WHITE);
-    canvas->setCursor(136, 147); canvas->printf("%d KM/H", topSpeed);
+    canvas->setTextColor(CYAN); canvas->setCursor(132, 140); canvas->print("TOP SPEED");
+    canvas->setTextColor(WHITE); canvas->setCursor(136, 147); canvas->printf("%d KM/H", topSpeed);
 
     canvas->drawRect(230, 142, 75, 26, DARK_BLUE);
-    canvas->setTextColor(GRAY);
-    canvas->setCursor(236, 145); canvas->print("TEMPERATURE");
+    canvas->setTextColor(GRAY); canvas->setCursor(236, 145); canvas->print("TEMPERATURE");
     drawThermometerIcon(238, 151);
-    canvas->setTextColor(WHITE);
-    canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
+    canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- BAR RPM (PALING BAWAH - SEKARANG WARNA HIJAU MUDA TERANG) ----
+    // ---- H. BAR RPM EFEK KOMET BERBUNTUT (FADING GREEN GRADIENT) ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
+    canvas->fillRect(135, 165, 70, 4, DARK_BLUE); // Background Rel/Jalur Bar Kosong
     int barWidth = map(speedValue, 0, 120, 0, 70);
-    canvas->fillRect(135, 165, 70, 4, BLACK); // Bersihkan sisa render bar lama
-    canvas->fillRect(135, 165, 70, 4, DARK_BLUE); // Background bar kosong
     
     for (int i = 0; i < barWidth; i++) {
-        uint16_t col = GREEN_BRIGHT; // Dirubah penuh menggunakan Hijau Muda Terang
-        if (i > 45 && i <= 60) col = YELLOW;
-        else if (i > 60)       col = RED;
+        uint16_t col = GREEN_BRIGHT; // Default Kepala Komet (Terang Benderang)
+        
+        // Logika Fading (Buntut Komet memudar ke belakang)
+        int distanceFromHead = barWidth - 1 - i; 
+        
+        if (distanceFromHead > 0) {
+            // Menggeser kecerahan komponen Hijau (Green dalam RGB565 berada di bit tengah)
+            // Semakin jauh dari kepala komet, warna hijaunya semakin diredupkan
+            int intensity = 63 - (distanceFromHead * 4); 
+            if (intensity < 12) intensity = 12; // Batas minimal redup agar buntut tidak hilang total
+            col = (intensity << 5); // Terapkan nilai intensitas ke bit warna hijau
+        }
+        
         canvas->drawFastVLine(135 + i, 164, 5, col);
     }
 
