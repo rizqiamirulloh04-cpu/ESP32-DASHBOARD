@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V18: CENTER CALIBRATION (SHIFTED DOWN)
+// WAVESHARE ESP32-C6 1.47" - CODE V19: PERFECT CENTER (SHIFTED DOWN MORE)
 // ======================================================================
 
 #define TFT_BL 22
@@ -273,37 +273,37 @@ void loop() {
     printAutoCenterLabel("100", 358, 13); 
     printAutoCenterLabel("120", 375, 13); 
 
-    // ---- F. CLUSTER TENGAH: ADJUSTED POSITION (SHIFTED DOWN) ----
+    // ---- F. CLUSTER TENGAH: FINAL LOW-CENTERED DESIGN ----
     
-    // 1. TULISAN "SPEED" (Diturunkan sedikit ke Y = 48)
+    // 1. TULISAN "SPEED" (Diturunkan lagi ke Y = 52)
     canvas->setTextSize(1);
     canvas->setTextColor(CYAN);
     int speedX = 145; 
-    int speedY = 48;  
+    int speedY = 52;  
     canvas->setCursor(speedX, speedY);     canvas->print("SPEED");
     canvas->setCursor(speedX + 1, speedY); canvas->print("SPEED"); 
 
-    // 2. ANGKA SPEED UTAMA (Diturunkan 4 piksel ke Y = 60 agar pas di tengah oval)
+    // 2. ANGKA SPEED UTAMA (Diturunkan mantap ke Y = 64 agar sangat simetris)
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     canvas->setTextSize(4); 
     canvas->setTextColor(WHITE);
     
     int textX = 122; 
-    int textY = 60;  
+    int textY = 64;  
     
-    // Efek Tebal 4 Arah
+    // Efek Tebal 4 Arah (Bold Shadow Effect)
     canvas->setCursor(textX, textY);         canvas->print(speedText);
     canvas->setCursor(textX + 1, textY);     canvas->print(speedText);
     canvas->setCursor(textX - 1, textY);     canvas->print(speedText);
     canvas->setCursor(textX, textY + 1);     canvas->print(speedText);
     canvas->setCursor(textX, textY - 1);     canvas->print(speedText);
 
-    // 3. TULISAN "KM/H" (Diturunkan ke Y = 96)
+    // 3. TULISAN "KM/H" (Diturunkan pas ke Y = 100)
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
     int kmhX = 148; 
-    int kmhY = 96;  
+    int kmhY = 100;  
     canvas->setCursor(kmhX, kmhY);     canvas->print("KM/H");
     canvas->setCursor(kmhX + 1, kmhY); canvas->print("KM/H"); 
 
