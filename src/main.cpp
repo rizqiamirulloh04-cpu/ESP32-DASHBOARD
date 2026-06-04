@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V54 FIX: AGGRESSIVE HEADER & REAL METEOR
+// WAVESHARE ESP32-C6 1.47" - CODE V54 FIX: GLOWING RED METEOR & BLUE LINE
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,7 +21,7 @@
 // COLOR PALETTE (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 
+#define RED_BRIGHT     0xF800 // Merah Murni Maksimal (Bersinar)
 #define GREEN_BRIGHT   0x07E0 
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF // Neon Blue Terang untuk Header & Teks
@@ -64,7 +64,7 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN KEPALA METEOR TERANG DI UJUNG GAS
+// FUNGSI UTAMA: MENGGAMBAR BUSUR METEOR MERAH SOLID BERSINAR & KEPALA PUTIH
 // ======================================================================
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
     int totalAngles = endDeg - startDeg;
@@ -82,18 +82,17 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             
             uint16_t pixelColor = defaultColor;
             
-            // LOGIKA METEOR: KEPALA TERANG DI UJUNG GAS, EKOR MERAH MEMUDAR KE BELAKANG
+            // LOGIKA WARNA MERAH HIGH-INTENSITY & KEPALA PUTIH BERSINAR
             if (isSpeedArc && totalAngles > 0) {
-                int currentPos = angle - startDeg; // Jarak pixel berjalan dari titik 0
+                int currentPos = angle - startDeg;
                 
-                // Jika posisi pixel berada di 3 derajat terakhir (paling ujung gas/kepala meteor)
-                if (currentPos >= totalAngles - 3) {
-                    pixelColor = CYAN; // Kepala meteor menyala Cyan terang seperti coretan foto Mas
-                } else {
-                    // Sisa busur ke belakang menjadi ekor merah bergradasi memudar menuju pangkal
-                    int redIntensity = map(currentPos, 0, totalAngles, 8, 31); 
-                    redIntensity = constrain(redIntensity, 8, 31);
-                    pixelColor = (redIntensity << 11); 
+                // Kepala di ujung gas (4 derajat terakhir) menyala Putih bersih agar kontras bersinar
+                if (currentPos >= totalAngles - 4) {
+                    pixelColor = WHITE; 
+                } 
+                // Seluruh badan komet di belakangnya menggunakan Merah Solid Maksimal tanpa redup
+                else {
+                    pixelColor = RED_BRIGHT; 
                 }
             }
             
@@ -101,7 +100,7 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
                 canvas->drawPixel(x, y, pixelColor);
             }
 
-            // Gambar titik skala (Ticks) di lapisan terluar busur background saja
+            // Gambar titik skala (Ticks)
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
                 for (int tickLen = 1; tickLen <= 4; tickLen++) {
                     int tx = cx + (int)(cos(rad) * (rx + tickLen));
@@ -265,7 +264,7 @@ void loop() {
     // Background dasar busur asli Biru Gelap (DARK_BLUE)
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
     
-    // RENDERING METEOR GAS DENGAN KEPALA TERANG DI DEPAN
+    // RENDERING METEOR GAS DENGAN WARNA MERAH MENYALA MAKSIMAL
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true);
     }
