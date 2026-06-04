@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V21: BUSUR & ANGKA KELILING DINAIKKAN TOTAL
+// WAVESHARE ESP32-C6 1.47" - CODE V22: BUSUR DINAIKKAN, ANGKA 0 & 120 FIXED DOWN
 // ======================================================================
 
 #define TFT_BL 22
@@ -47,9 +47,9 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// CONFIG ELIPS (TITIK PUSAT Y DINAIKKAN TOTAL DARI 102 KE 90 AGAR BUSUR NAIK)
+// CONFIG ELIPS (TITIK PUSAT Y DINAIKKAN SEDIKIT LAGI DARI 90 KE 85 AGAR BUSUR LEBIH NAIK)
 const int centerX = 160;
-const int centerY = 90;  // <-- Dinaikkan agar busur melengkung tinggi ke atas
+const int centerY = 85;  // <-- Dinaikkan sedikit lagi agar posisi busur makin cakep
 const int rx = 86;       
 const int ry = 48;       
 
@@ -253,7 +253,7 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL (POSISI SUDAH TERANGKAT KE ATAS) ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL (SEDIKIT DINAIKKAN LAGI KE Y=85) ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true);
@@ -261,19 +261,22 @@ void loop() {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
     }
     
-    // ---- E. DISTRIBUSI LABEL ANGKA KELILING (OTOMATIS IKUT TERANGKAT KE ATAS) ----
+    // ---- E. DISTRIBUSI LABEL ANGKA KELILING ----
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    printAutoCenterLabel("0",   165, 13); 
+    // Angka tengah otomatis ikut terangkat agar pas dengan lekukan atas busur
     printAutoCenterLabel("20",  182, 13); 
     printAutoCenterLabel("40",  215, 13); 
     printAutoCenterLabel("60",  270, 14); 
     printAutoCenterLabel("80",  325, 13); 
     printAutoCenterLabel("100", 358, 13); 
-    printAutoCenterLabel("120", 375, 13); 
 
-    // ---- F. CLUSTER TENGAH (POSISI TETAP DI PUSAT LAYAR AGAR TERLIHAT SEIMBANG) ----
+    // PERBAIKAN ANGKA 0 & 120 (Dibuat Manual Kebawahan agar presisi di ujung garis bawah)
+    canvas->setCursor(68, 122);  canvas->print("0");   // Samping kiri ujung bawah busur
+    canvas->setCursor(243, 122); canvas->print("120"); // Samping kanan ujung bawah busur
+
+    // ---- F. CLUSTER TENGAH ----
     
     // 1. TULISAN "SPEED"
     canvas->setTextSize(1);
