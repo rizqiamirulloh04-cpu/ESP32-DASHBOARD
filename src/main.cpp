@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V15: ENLARGED DIGITAL SPEEDOMETER
+// WAVESHARE ESP32-C6 1.47" - CODE V16: BOLD & DOMINANT CENTER INFOGRAPHICS
 // ======================================================================
 
 #define TFT_BL 22
@@ -47,7 +47,7 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// CONFIG ELIPS (Tetap mempertahankan presisi V14 yang sudah oke)
+// CONFIG ELIPS (Presisi V14-V15 yang sudah aman dari boks bawah)
 const int centerX = 160;
 const int centerY = 102; 
 const int rx = 86;       
@@ -265,44 +265,53 @@ void loop() {
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    printAutoCenterLabel("0",   165, 11); 
-    printAutoCenterLabel("20",  182, 11); 
-    printAutoCenterLabel("40",  215, 11); 
-    printAutoCenterLabel("60",  270, 11); 
-    printAutoCenterLabel("80",  325, 11); 
-    printAutoCenterLabel("100", 358, 11); 
-    printAutoCenterLabel("120", 375, 11); 
+    printAutoCenterLabel("0",   165, 13); 
+    printAutoCenterLabel("20",  182, 13); 
+    printAutoCenterLabel("40",  215, 13); 
+    printAutoCenterLabel("60",  270, 14); 
+    printAutoCenterLabel("80",  325, 13); 
+    printAutoCenterLabel("100", 358, 13); 
+    printAutoCenterLabel("120", 375, 13); 
 
-    // Label Teks SPEED
+    // ---- F. INTEGRASI AREA TENGAH: SUPER BOLD & TEGAK ----
+    
+    // 1. TULISAN "SPEED" (Ukuran dinaikkan ke 2 + Bold Effect)
+    canvas->setTextSize(2);
     canvas->setTextColor(CYAN);
-    canvas->setCursor(146, 42); // Sedikit dinaikkan untuk memberi ruang angka besar
-    canvas->print("SPEED");
+    int speedX = 131; // Ditengahkan pas dengan lebar huruf baru
+    int speedY = 36;  // Posisi Y disesuaikan agar proporsional
+    canvas->setCursor(speedX, speedY);     canvas->print("SPEED");
+    canvas->setCursor(speedX + 1, speedY); canvas->print("SPEED"); // Duplikasi tebal
 
-    // ---- F. ANGKA UTAMA SPEED DIGITAL (DIPERBESAR NYAMAN) ----
+    // 2. ANGKA UTAMA SPEED DIGITAL (Ukuran 4 + 4-Way Cross Penebalan Ekstrem)
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
-    
-    // Kita buat kombinasi tebal dengan cetak bayangan tipis (Bold Effect)
     canvas->setTextSize(4); 
     canvas->setTextColor(WHITE);
     
-    // Menggeser posisi X ke kiri (120) agar angka berukuran besar tetap simetris pas di tengah elips
-    int textX = 120; 
-    int textY = 54;
+    int textX = 122; // Kalibrasi sumbu X agar seimbang di tengah layar
+    int textY = 55;  
     
-    // Cetak tebal lapis ganda
-    canvas->setCursor(textX, textY);     canvas->print(speedText);
-    canvas->setCursor(textX + 1, textY); canvas->print(speedText); 
+    // Matriks penebalan 4 arah agar struktur angka tebal merata dan berdiri kokoh
+    canvas->setCursor(textX, textY);         canvas->print(speedText);
+    canvas->setCursor(textX + 1, textY);     canvas->print(speedText);
+    canvas->setCursor(textX - 1, textY);     canvas->print(speedText);
+    canvas->setCursor(textX, textY + 1);     canvas->print(speedText);
+    canvas->setCursor(textX, textY - 1);     canvas->print(speedText);
 
-    // Teks KM/H
-    canvas->setTextSize(1);
+    // 3. TULISAN "KM/H" (Ukuran dinaikkan ke 2 + Bold Effect)
+    canvas->setTextSize(2);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(146, 95);                           
-    canvas->print("KM/H");
+    int kmhX = 136; // Ditengahkan pas di bawah angka utama yang masif
+    int kmhY = 94;  
+    canvas->setCursor(kmhX, kmhY);     canvas->print("KM/H");
+    canvas->setCursor(kmhX + 1, kmhY); canvas->print("KM/H"); // Duplikasi tebal
+
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
     canvas->drawRect(15, 142, 75, 26, DARK_BLUE);
     canvas->setTextColor(GRAY);
+    canvas->setTextSize(1);
     canvas->setCursor(23, 145); canvas->print("BATTERY");
     canvas->setTextColor(WHITE);
     canvas->setCursor(23, 156); canvas->print("12.4V");
