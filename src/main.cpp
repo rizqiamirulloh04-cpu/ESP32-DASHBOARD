@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V46: CLEAN LOOK (RED LINE REMOVED)
+// WAVESHARE ESP32-C6 1.47" - CODE V47: PURPLE LINE HEIGHT PERFECTLY TUNED
 // ======================================================================
 
 #define TFT_BL 22
@@ -78,7 +78,6 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             int x = cx + (int)(cos(rad) * curRx);
             int y = cy + (int)(sin(rad) * curRy);
             
-            // Garis merah gradasi dilewati langsung ke warna default cyan/biru utama
             uint16_t pixelColor = defaultColor;
             
             if (x >= 0 && x < 320 && y >= 0 && y < 172) {
@@ -208,12 +207,13 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (TIPE TIPIS ELEGAN 1-PIXEL) ----
-    canvas->drawFastHLine(10, 25, 100, NEON_PURPLE);  
-    canvas->drawLine(110, 25, 122, 18, NEON_PURPLE); 
-    canvas->drawFastHLine(122, 18, 76, NEON_PURPLE);  
-    canvas->drawLine(198, 18, 210, 25, NEON_PURPLE); 
-    canvas->drawFastHLine(210, 25, 100, NEON_PURPLE); 
+    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (TINGGI DINAIKKAN SEDIKIT) ----
+    // Koordinat Y disesuaikan dari (25 & 18) dinaikkan sedikit menjadi (21 & 14)
+    canvas->drawFastHLine(10, 21, 100, NEON_PURPLE);  
+    canvas->drawLine(110, 21, 122, 14, NEON_PURPLE); 
+    canvas->drawFastHLine(122, 14, 76, NEON_PURPLE);  
+    canvas->drawLine(198, 14, 210, 21, NEON_PURPLE); 
+    canvas->drawFastHLine(210, 21, 100, NEON_PURPLE); 
 
     // ---- B. INFO STATUS HEADER ATAS ----
     drawSignalIcon(15, 2);
@@ -240,11 +240,9 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & KOMET (WARNA CYAN MATANG) ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & KOMET ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
-    // Background busur pasif (Biru Gelap)
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
-    // Busur aktif yang berjalan mengikuti gas (Cyan Terang)
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, CYAN, 3, false, true);
     }
