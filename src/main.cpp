@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V49: METEOR RED FIXED & CLEAN LOOK
+// WAVESHARE ESP32-C6 1.47" - CODE V51: BASE TAIL RED METEOR FIXED
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,10 +21,10 @@
 // COLOR PALETTE ORIGINAL (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 
+#define RED_BRIGHT     0xF800 // Warna Merah Terang untuk Buntut Bawah (Angka 0)
 #define GREEN_BRIGHT   0x07E0 
 #define YELLOW         0xFFE0
-#define CYAN           0x07FF
+#define CYAN           0x07FF // Warna Utama Badan Busur Kecepatan
 #define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
 #define NEON_BLUE      0x001F // Garis Atas Biru Tua Menyala Pilihan Mas
@@ -65,9 +65,9 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN EFEK METEOR MERAH YANG PRESISI
+// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN PANGKAL BUNTUT MERAH TERANG (ANGKA 0)
 // ======================================================================
-void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc, int activeAngle) {
+void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
     for (int t = 0; t < thickness; t++) {
         int curRx = rx - t;
         int curRy = ry - t;
@@ -80,18 +80,15 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             
             uint16_t pixelColor = defaultColor;
             
-            // JIKA SEBAGAI BUSUR AKTIF (GAS): BERIKAN EFEK METEOR GRADASI MERAH DI UJUNGNYA
+            // LOGIKA RE-POSISI METEOR: Mengunci warna merah terang murni di pangkal buntut elips (dekat angka 0)
             if (isSpeedArc) {
-                int distanceFromHead = activeAngle - angle;
-                if (distanceFromHead >= 0 && distanceFromHead <= 28) {
-                    // Gradasi ekor komet dari Merah Cerah ke Cyan Utama
-                    int redIntensity = 31 - (distanceFromHead / 1); 
-                    if (redIntensity < 0) redIntensity = 0;
-                    pixelColor = (redIntensity << 11) | (0x07FF & defaultColor); 
+                // Jika posisi angle berada di 25 derajat awal sejak startAngle (145 sampai 170 derajat)
+                if (angle >= startDeg && angle <= (startDeg + 25)) {
+                    pixelColor = RED_BRIGHT; 
                 }
             }
             
-            // Pengaman koordinat layar agar tidak menggambar pixel bocor keluar batas busur
+            // Pengaman koordinat ketat agar tidak ada pixel bocor ke panel atas
             if (x >= (cx - rx - 4) && x <= (cx + rx + 4) && y >= (cy - ry - 4) && y <= (cy + ry + 4)) {
                 if (x >= 0 && x < 320 && y >= 0 && y < 172) {
                     canvas->drawPixel(x, y, pixelColor);
@@ -221,7 +218,7 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (TINGGI DISET PAS) ----
+    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (TINGGI DISET PAS & NEON BLUE) ----
     canvas->drawFastHLine(10, 21, 100, NEON_BLUE);  
     canvas->drawLine(110, 21, 122, 14, NEON_BLUE); 
     canvas->drawFastHLine(122, 14, 76, NEON_BLUE);  
@@ -253,13 +250,13 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & KOMET (METEOR MERAH KEMBALI AKTIF) ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & KOMET METEOR ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     // Background busur pasif (Biru Gelap)
-    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false, 0);
-    // Busur aktif (Cyan + Ujung Meteor Merah)
+    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
+    // Busur aktif (Cyan + Pangkal Buntut Meteor Merah)
     if (speedValue > 0) {
-        drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, CYAN, 3, false, true, currentActiveAngle);
+        drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, CYAN, 3, false, true);
     }
     
     // ---- E. DISTRIBUSI LABEL ANGKA KELILING ----
