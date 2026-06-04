@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V44: ADJUSTED LOWER PANEL LINE POSITIONS
+// WAVESHARE ESP32-C6 1.47" - CODE V45: SLEEK & THIN 1-PIXEL PANEL LINE
 // ======================================================================
 
 #define TFT_BL 22
@@ -154,7 +154,7 @@ void setup() {
     Serial.begin(115200);
     
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 120); // Kecerahan nyaman di mata
+    ledcWrite(TFT_BL, 120); 
 
     gfx->begin();
     gfx->invertDisplay(false);
@@ -216,15 +216,14 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (TURUN POSISI / TIDAK NABRAK TEKS) ----
-    // Koordinat Y saya turunkan sebanyak 11 pixel dari posisi awal biar pas di bawah ikon.
-    canvas->drawLine(10, 25, 110, 25, NEON_PURPLE); 
-    canvas->drawLine(110, 25, 122, 18, NEON_PURPLE);
-    canvas->drawLine(122, 18, 198, 18, NEON_PURPLE);
-    canvas->drawLine(198, 18, 210, 25, NEON_PURPLE);
-    canvas->drawLine(210, 25, 310, 25, NEON_PURPLE); 
+    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (TIPE TIPIS ELEGAN 1-PIXEL) ----
+    canvas->drawFastHLine(10, 25, 100, NEON_PURPLE);  // Garis horizontal kiri tipis murni 1-pixel
+    canvas->drawLine(110, 25, 122, 18, NEON_PURPLE); // Diagonal naik
+    canvas->drawFastHLine(122, 18, 76, NEON_PURPLE);  // Garis horizontal tengah atas tipis murni 1-pixel
+    canvas->drawLine(198, 18, 210, 25, NEON_PURPLE); // Diagonal turun
+    canvas->drawFastHLine(210, 25, 100, NEON_PURPLE); // Garis horizontal kanan tipis murni 1-pixel
 
-    // ---- B. INFO STATUS HEADER ATAS (TETAP AMAN DI ATAS GARIS) ----
+    // ---- B. INFO STATUS HEADER ATAS ----
     drawSignalIcon(15, 2);
     canvas->setTextColor(WHITE);
     canvas->setCursor(40, 5);
