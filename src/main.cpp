@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V40: PERFECT RECT & SOLID GREEN RPM
+// WAVESHARE ESP32-C6 1.47" - CODE V41: DYNAMIC RPM GRADIENT COMET EFFECT
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,8 +21,8 @@
 // COLOR PALETTE ORIGINAL (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 // Kepala Komet Speedometer
-#define GREEN_BRIGHT   0x07E0 // Hijau Murni Original (Dikunci untuk Sein & RPM Solid)
+#define RED_BRIGHT     0xF800 
+#define GREEN_BRIGHT   0x07E0 // Hijau murni original untuk referensi/sein
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
 #define DARK_BLUE      0x0010 
@@ -290,35 +290,48 @@ void loop() {
     canvas->setCursor(kmhX, kmhY);     canvas->print("KM/H");
     canvas->setCursor(kmhX + 1, kmhY); canvas->print("KM/H"); 
 
-    // ---- G. REVISI FIX: FOOTER PANEL STATUS INDIKATOR (ANTI TABRAKAN) ----
+    // ---- G. FOOTER PANEL STATUS INDIKATOR (ANTI TABRAKAN) ----
     canvas->drawRect(15, 142, 75, 26, DARK_BLUE);
     canvas->setTextColor(GRAY); canvas->setTextSize(1);
     canvas->setCursor(23, 145); canvas->print("BATTERY");
     canvas->setTextColor(WHITE); canvas->setCursor(23, 156); canvas->print("12.4V");
 
-    // Lebar kotak dinaikkan jadi 104, tinggi ditingkatkan ke 25, posisi Y dinaikkan sedikit ke 134 agar seimbang
     canvas->drawRect(108, 134, 104, 25, DARK_BLUE);
     canvas->setTextColor(CYAN); 
-    canvas->setCursor(128, 137); canvas->print("TOP SPEED"); // Posisi Y label teks dipisah bersih
+    canvas->setCursor(128, 137); canvas->print("TOP SPEED"); 
     canvas->setTextColor(WHITE); 
-    canvas->setCursor(130, 148); canvas->printf("%d KM/H", topSpeed); // Nilai angka ditaruh di bawahnya tanpa tabrakan
+    canvas->setCursor(130, 148); canvas->printf("%d KM/H", topSpeed); 
 
     canvas->drawRect(230, 142, 75, 26, DARK_BLUE);
     canvas->setTextColor(GRAY); canvas->setCursor(236, 145); canvas->print("TEMPERATURE");
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- H. REVISI FIX: BAR RPM TEBAL & WARNA HIJAU SOLID SUPER TERANG ----
+    // ---- H. BARU: KOMET RPM GRADASI MEMUDAR (DIAMETER LEBIH TEBAL) ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
-    // Tinggi base-box RPM dinaikkan dari 4 ke 7 pixel
-    canvas->fillRect(135, 163, 70, 7, DARK_BLUE); 
+    // Background slot kosong RPM (Tinggi 8 pixel)
+    canvas->fillRect(135, 162, 70, 8, DARK_BLUE); 
     int barWidth = map(speedValue, 0, 120, 0, 70);
     
-    // Digambar menggunakan Hijau Murni penuh (tanpa rumus pemudaran ekor) dengan tinggi 8 pixel
+    // Logika Komet: Semakin mendekati ujung (kepala gas), warna semakin terang. Ekornya memudar natural.
     for (int i = 0; i < barWidth; i++) {
-        canvas->drawFastVLine(135 + i, 162, 8, GREEN_BRIGHT);
+        int distanceFromHead = barWidth - 1 - i; 
+        uint16_t col;
+        
+        if (distanceFromHead == 0) {
+            // Kepala Komet: Hijau murni sangat terang (RGB565: G=63 maksimum)
+            col = 0x07E0; 
+        } else {
+            // Ekor Komet: Gradasi meredup secara matematis (mengurangi register warna hijau)
+            int greenIntensity = 63 - (distanceFromHead * 2); 
+            if (greenIntensity < 15) greenIntensity = 15; // Kunci batas redup terbawah agar ekor tidak hilang hitam
+            col = (greenIntensity << 5); 
+        }
+        
+        // Digambar kokoh dengan ketebalan penuh 8 pixel vertikal
+        canvas->drawFastVLine(135 + i, 162, 8, col);
     }
 
     // TAMPILKAN SELURUH MEMORI KANVAS KE LCD
