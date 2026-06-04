@@ -88,14 +88,13 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
                 }
             }
 
-            // PERBAIKAN UTAMA: Menggambar garis skala putih kecil keluar (Tick Marks) setiap kelipatan 4 derajat
+            // MENGGAMBAR GARIS SKALA KECIL (Tick Marks) keluar setiap kelipatan 4 derajat
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
-                // Gambar garis pendek sepanjang 4 piksel menjulur ke arah luar elips
                 for (int tickLen = 1; tickLen <= 4; tickLen++) {
                     int tx = cx + (int)(cos(rad) * (rx + tickLen));
                     int ty = cy + (int)(sin(rad) * (ry + tickLen));
                     if (tx >= 0 && tx < 320 && ty >= 0 && ty < 172) {
-                        canvas->drawPixel(tx, ty, GRAY); // Menggunakan warna abu-abu agar rapi dan tidak terlalu kontras
+                        canvas->drawPixel(tx, ty, GRAY); 
                     }
                 }
             }
@@ -194,7 +193,7 @@ void loop() {
     }
 
     // ==================================================================
-    // RENDER GRAFIS
+    // RENDER GRAFIS KANVAS
     // ==================================================================
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
@@ -237,36 +236,36 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. CONFIG ELIPS OVAL DESIGN ----
+    // ---- D. SETTING UTAMA ELIPS OVAL DESIGN ----
     int centerX = 160;
-    int centerY = 118; // Diturunkan sedikit ke Y=118 agar lebih pas
-    int rx = 86;       // Dipersempit 2 piksel memberikan ruang bernafas untuk garis skala luar
-    int ry = 64;       
+    int centerY = 118; // Sumbu pusat diturunkan ke Y=118
+    int rx = 86;       // Sumbu radius horizontal (melebar)
+    int ry = 64;       // Sumbu radius vertikal (pipih horizontal)
     
     int startAngle = 145;
     int endAngle = 395;
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
 
-    // 1. Render Background Busur Oval + Nyalakan Mode Garis Skala (true)
+    // 1. Render Background Busur Oval + Garis Skala (true)
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true);
 
-    // 2. Render Bar Aktif Kecepatan Berwarna (false agar tidak menimpa garis skala)
+    // 2. Render Bar Aktif Kecepatan Berwarna (false agar tidak merusak garis skala)
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
     }
     
-    // ---- E. RE-POSITIONING GRID ANGKA SKALA OUTSIDE OVAL ----
-    // Koordinat angka digeser turun sedikit agar proporsional menempel pada ujung garis skala luar
+    // ---- E. RE-POSITIONING GRID ANGKA SKALA OUTSIDE OVAL (KALIBRASI PRESISI) ----
+    // Posisi koordinat ditalas agar berjejer mengitari ujung luar elips secara rapi
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    canvas->setCursor(55, 122);   canvas->print("0");    
-    canvas->setCursor(52, 85);    canvas->print("20");   
-    canvas->setCursor(88, 49);    canvas->print("40");   
-    canvas->setCursor(154, 30);   canvas->print("60");   // Sempurna: Tepat di tengah atas di bawah SPORT MODE
-    canvas->setCursor(216, 49);   canvas->print("80");   
-    canvas->setCursor(252, 85);   canvas->print("100");  
-    canvas->setCursor(244, 122);  canvas->print("120");  
+    canvas->setCursor(68, 120);   canvas->print("0");    
+    canvas->setCursor(60, 84);    canvas->print("20");   
+    canvas->setCursor(96, 48);    canvas->print("40");   
+    canvas->setCursor(154, 30);   canvas->print("60");   // Berada tepat di tengah atas di bawah SPORT MODE
+    canvas->setCursor(212, 48);   canvas->print("80");   
+    canvas->setCursor(244, 84);   canvas->print("100");  
+    canvas->setCursor(240, 116);  canvas->print("120");  
 
     // Label teks SPEED pas berada di dalam lengkungan bawah angka 60
     canvas->setTextColor(CYAN);
