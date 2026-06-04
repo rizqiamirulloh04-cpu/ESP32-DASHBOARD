@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V31: OPTIMASI RESPONS CEPAT & FULL SPEED 120KM
+// WAVESHARE ESP32-C6 1.47" - CODE V32: FIX KALIBRASI ARAH GAS REMOTE RC
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,8 +21,8 @@
 // COLOR PALETTE (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 // Warna Tunggal Busur (Merah Terang Komet)
-#define GREEN_BRIGHT   0x07E0 // Kepala Komet RPM (Hijau Muda Terang)
+#define RED_BRIGHT     0xF800 // Warna Busur Merah Terang Komet
+#define GREEN_BRIGHT   0x07E0 // Kepala Komet RPM
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
 #define DARK_BLUE      0x0010 
@@ -35,11 +35,11 @@ Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34
 // Canvas Utama Ukuran Penuh (320x172)
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
-// VARIABEL FILTERING (SMOOTHING) - RESPONS DIOPTIMALKAN LEBIH AGRESIF
+// VARIABEL FILTERING (SMOOTHING) - RESPONS DIJAGA TETAP INSTAN
 float smoothedThrottle = 1500.0;
 float smoothedSteer = 1500.0;
-const float THROTTLE_SMOOTH_FACTOR = 0.40; // Dinaikkan dari 0.15 ke 0.40 agar gas responsif & instan!
-const float STEER_SMOOTH_FACTOR = 0.30;    // Dioptimalkan untuk keseimbangan sen
+const float THROTTLE_SMOOTH_FACTOR = 0.45; // Sangat responsif mengikuti tuas remote
+const float STEER_SMOOTH_FACTOR = 0.35;    
 
 float speedValueFiltered = 0.0; 
 int speedValue = 0; 
@@ -64,14 +64,13 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: MENGGAMBAR BUSUR OVAL KECEPATAN (MERAH TERANG FIXED)
+// FUNGSI UTAMA: MENGGAMBAR BUSUR OVAL KECEPATAN
 // ======================================================================
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
     for (int t = 0; t < thickness; t++) {
         int curRx = rx - t;
         int curRy = ry - t;
         
-        // Menggunakan step lompatan angle (angle += 2) pada background untuk meringankan kerja processor (anti-lag)
         int step = isSpeedArc ? 1 : 2; 
         
         for (int angle = startDeg; angle <= endDeg; angle += step) {
@@ -165,33 +164,34 @@ void setup() {
 // MAIN LOOP
 // ======================================================================
 void loop() {
-    // Membaca sinyal mentah PWM dari receiver remote RC
-    int rawSteerPWM = pulseIn(STEER_PIN, HIGH, 18000);
-    int rawThrottlePWM = pulseIn(THROTTLE_PIN, HIGH, 18000);
+    int rawSteerPWM = pulseIn(STEER_PIN, HIGH, 20000);
+    int rawThrottlePWM = pulseIn(THROTTLE_PIN, HIGH, 20000);
 
     if (rawSteerPWM == 0)     rawSteerPWM = 1500;
     if (rawThrottlePWM == 0)  rawThrottlePWM = 1500; 
 
-    // RUMUS PENYARINGAN DINAMIS (Anti-Jitter tapi Instan & Cepat)
+    // FILTER PENYARINGAN DATA
     smoothedThrottle = (smoothedThrottle * (1.0 - THROTTLE_SMOOTH_FACTOR)) + (rawThrottlePWM * THROTTLE_SMOOTH_FACTOR);
     smoothedSteer = (smoothedSteer * (1.0 - STEER_SMOOTH_FACTOR)) + (rawSteerPWM * STEER_SMOOTH_FACTOR);
 
-    // KALIBRASI PEMETAAN: Menghitung kecepatan dari data gas maju/mundur
-    // Ditransformasikan penuh agar jangkauan PWM bisa mencapai top speed 120 KM/H secara linear
-    if (smoothedThrottle < 1475) { 
-        // Mode Maju: Sinyal mengecil dari 1475 menuju rentang 1100-1000
-        targetSpeed = map((int)smoothedThrottle, 1475, 1050, 0, 120);
+    // ==================================================================
+    // RE-KALIBRASI FIX: PENYESUAIAN REAL-TIME DENGAN REMOT RC MAS
+    // ==================================================================
+    if (smoothedThrottle > 1520) { 
+        // GAS MAJU: Nilai PWM membesar dari posisi netral (>1520) menuju mentok (~1950)
+        targetSpeed = map((int)smoothedThrottle, 1520, 1950, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
-    } else if (smoothedThrottle > 1525) { 
-        // Mode Mundur: Sinyal membesar dari 1525 ke atas
-        targetSpeed = map((int)smoothedThrottle, 1525, 1900, 0, 60);
-        targetSpeed = constrain(targetSpeed, 0, 60);
+    } else if (smoothedThrottle < 1480) { 
+        // GAS MUNDUR / REM: Nilai PWM mengecil dari posisi netral (<1480) menuju mentok (~1050)
+        targetSpeed = map((int)smoothedThrottle, 1480, 1050, 0, 50);
+        targetSpeed = constrain(targetSpeed, 0, 50);
     } else {
+        // POSISI DIAM (NETRAL): Rentang antara 1480 sampai 1520 agar angka mengunci di 0
         targetSpeed = 0; 
     }
 
-    // Pemulusan transisi angka akhir (Ditingkatkan ke 0.5 agar angka naik-turun sangat responsif)
-    speedValueFiltered = (speedValueFiltered * 0.5) + (targetSpeed * 0.5);
+    // Transisi filter akhir dibuat agresif (0.6) agar angka dan bar merah bergerak berbarengan secara instan!
+    speedValueFiltered = (speedValueFiltered * 0.4) + (targetSpeed * 0.6);
     speedValue = (int)(speedValueFiltered + 0.5);
 
     if (speedValue > topSpeed) topSpeed = speedValue;
@@ -201,7 +201,6 @@ void loop() {
         blinkState = !blinkState;
     }
 
-    // Indikator Sen Aktif Stabil
     currentSteerState = 0; 
     if (smoothedSteer < 1360)      currentSteerState = 1; 
     else if (smoothedSteer > 1640) currentSteerState = 2; 
@@ -244,13 +243,13 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL (KOMET MERAH TERANG) ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL (MERAH TERANG SEJAJAR GAS) ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
     // Background busur asli Biru Gelap (DARK_BLUE)
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
     
-    // Sinar aktif MERAH TERANG mengalir lancar
+    // Sinar aktif MERAH TERANG mengalir lurus berbarengan dengan injakan gas maju
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true);
     }
@@ -328,5 +327,5 @@ void loop() {
     // TAMPILKAN SELURUH MEMORI KANVAS KE LCD
     gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
 
-    delay(5); // Mengurangi delay loop utama agar eksekusi program jauh lebih gesit
+    delay(3); 
 }
