@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V19: PERFECT CENTER (SHIFTED DOWN MORE)
+// WAVESHARE ESP32-C6 1.47" - CODE V20: PERFECT CENTER (SHIFTED DOWN MORE ~1mm)
 // ======================================================================
 
 #define TFT_BL 22
@@ -273,24 +273,24 @@ void loop() {
     printAutoCenterLabel("100", 358, 13); 
     printAutoCenterLabel("120", 375, 13); 
 
-    // ---- F. CLUSTER TENGAH: FINAL LOW-CENTERED DESIGN ----
+    // ---- F. CLUSTER TENGAH: ADJUSTED POSITION V20 (DOWN MORE ~1MM) ----
     
-    // 1. TULISAN "SPEED" (Diturunkan lagi ke Y = 52)
+    // 1. TULISAN "SPEED" (Diturunkan lagi ke Y = 56)
     canvas->setTextSize(1);
     canvas->setTextColor(CYAN);
     int speedX = 145; 
-    int speedY = 52;  
+    int speedY = 56;  
     canvas->setCursor(speedX, speedY);     canvas->print("SPEED");
     canvas->setCursor(speedX + 1, speedY); canvas->print("SPEED"); 
 
-    // 2. ANGKA SPEED UTAMA (Diturunkan mantap ke Y = 64 agar sangat simetris)
+    // 2. ANGKA SPEED UTAMA (Diturunkan ke Y = 69 agar pas di pusat oval)
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     canvas->setTextSize(4); 
     canvas->setTextColor(WHITE);
     
     int textX = 122; 
-    int textY = 64;  
+    int textY = 69;  
     
     // Efek Tebal 4 Arah (Bold Shadow Effect)
     canvas->setCursor(textX, textY);         canvas->print(speedText);
@@ -299,11 +299,11 @@ void loop() {
     canvas->setCursor(textX, textY + 1);     canvas->print(speedText);
     canvas->setCursor(textX, textY - 1);     canvas->print(speedText);
 
-    // 3. TULISAN "KM/H" (Diturunkan pas ke Y = 100)
+    // 3. TULISAN "KM/H" (Diturunkan ke Y = 105)
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
     int kmhX = 148; 
-    int kmhY = 100;  
+    int kmhY = 105;  
     canvas->setCursor(kmhX, kmhY);     canvas->print("KM/H");
     canvas->setCursor(kmhX + 1, kmhY); canvas->print("KM/H"); 
 
