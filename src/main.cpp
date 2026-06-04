@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V24: POSISI ANGKA 60 DITURUNKAN SEDIKIT
+// WAVESHARE ESP32-C6 1.47" - CODE V25: PERBAIKAN BUSUR KECEPATAN & WARNA HIJAU MUDA
 // ======================================================================
 
 #define TFT_BL 22
@@ -22,7 +22,7 @@
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED            0xF800
-#define GREEN          0x07E0 
+#define GREEN_BRIGHT   0x07E0 // Hijau Muda Terang utama pengganti hijau tua
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
 #define DARK_BLUE      0x0010 
@@ -47,7 +47,7 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// CONFIG ELIPS (SAMA DENGAN V23 YANG SUDAH PRESISI)
+// CONFIG ELIPS PRESISI
 const int centerX = 160;
 const int centerY = 85;  
 const int rx = 86;       
@@ -57,25 +57,7 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI GRADASI WARNA BUSUR OVAL
-// ======================================================================
-uint16_t getOvalGradientColor(int currentAngle, int startAngle, int endAngle) {
-    float ratio = (float)(currentAngle - startAngle) / (float)(endAngle - startAngle);
-    if (ratio < 0.0) ratio = 0.0;
-    if (ratio > 1.0) ratio = 1.0;
-
-    uint8_t startR = 0;   uint8_t startG = 28;  uint8_t startB = 31; 
-    uint8_t endR = 31;    uint8_t endG = 0;     uint8_t endB = 0;  
-
-    uint8_t r = startR + (endR - startR) * ratio;
-    uint8_t g = startG + (endG - startG) * ratio;
-    uint8_t b = startB + (endB - startB) * ratio;
-
-    return (r << 11) | (g << 5) | b;
-}
-
-// ======================================================================
-// FUNGSI UTAMA: BUSUR OVAL + OTOMATIS TICK MARKS
+// FUNGSI UTAMA: MENGGAMBAR BUSUR OVAL (ANTI-BERBAYANG)
 // ======================================================================
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t color, int thickness, bool drawTicks) {
     for (int t = 0; t < thickness; t++) {
@@ -88,13 +70,10 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             int y = cy + (int)(sin(rad) * curRy);
             
             if (x >= 0 && x < 320 && y >= 0 && y < 172) {
-                if (color == WHITE) {
-                    canvas->drawPixel(x, y, getOvalGradientColor(angle, startDeg, endDeg));
-                } else {
-                    canvas->drawPixel(x, y, color);
-                }
+                canvas->drawPixel(x, y, color);
             }
 
+            // Gambar tick marks pembagi satuan elips hanya pada layer pertama
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
                 for (int tickLen = 1; tickLen <= 4; tickLen++) {
                     int tx = cx + (int)(cos(rad) * (rx + tickLen));
@@ -136,7 +115,7 @@ void drawSignalIcon(int x, int y) {
 void drawBatteryIcon(int x, int y) {
     canvas->drawRect(x, y + 3, 18, 10, GRAY);
     canvas->fillRect(x + 18, y + 6, 2, 4, GRAY);
-    canvas->fillRect(x + 2, y + 5, 14, 6, GREEN);
+    canvas->fillRect(x + 2, y + 5, 14, 6, GREEN_BRIGHT);
 }
 
 void drawSteeringIcon(int x, int y) {
@@ -213,6 +192,7 @@ void loop() {
         batteryPercent = constrain(batteryPercent, 0, 100);
     }
 
+    // Refresh kanvas bersih total di setiap frame awal untuk hilangkan sisa piksel
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
@@ -230,24 +210,27 @@ void loop() {
     canvas->printf("%d%%", batteryPercent);
 
     // ---- C. LAMPU SEIN KIRI & KANAN ----
-    uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN : DARK_BLUE;
+    uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN_BRIGHT : DARK_BLUE;
     canvas->fillTriangle(18, 52, 30, 40, 30, 64, leftArrowColor);
     canvas->fillRect(30, 47, 12, 10, leftArrowColor);
-    canvas->setTextColor(leftArrowColor == GREEN ? GREEN : GRAY);
+    canvas->setTextColor(leftArrowColor == GREEN_BRIGHT ? GREEN_BRIGHT : GRAY);
     canvas->setCursor(20, 72); canvas->print("LEFT");
     drawSteeringIcon(28, 102);
 
-    uint16_t rightArrowColor = (currentSteerState == 2 && blinkState) ? GREEN : DARK_BLUE;
+    uint16_t rightArrowColor = (currentSteerState == 2 && blinkState) ? GREEN_BRIGHT : DARK_BLUE;
     canvas->fillTriangle(302, 52, 290, 40, 290, 64, rightArrowColor);
     canvas->fillRect(278, 47, 12, 10, rightArrowColor);
-    canvas->setTextColor(rightArrowColor == GREEN ? GREEN : GRAY);
+    canvas->setTextColor(rightArrowColor == GREEN_BRIGHT ? GREEN_BRIGHT : GRAY);
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL (WARNA HIJAU MUDA) ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
-    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true);
+    // Dasar busur menggunakan warna Hijau Muda Terang (GREEN_BRIGHT)
+    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, GREEN_BRIGHT, 3, true);
+    
+    // Ketika ada kecepatan berjalan, bagian aktif diganti warna putih bersih di atasnya tanpa ghosting
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
     }
@@ -258,14 +241,11 @@ void loop() {
     
     printAutoCenterLabel("20",  182, 13); 
     printAutoCenterLabel("40",  215, 13); 
-    
-    // Angka 60 diturunkan dengan mengubah jarak celah (textGap) dari 14 menjadi 10
-    printAutoCenterLabel("60",  270, 10); 
-    
+    printAutoCenterLabel("60",  270, 10); // Jarak 10 agar posisi turun proporsional
     printAutoCenterLabel("80",  325, 13); 
     printAutoCenterLabel("100", 358, 13); 
 
-    // Posisi manual tetap kebawahan
+    // Posisi manual ujung bawah
     canvas->setCursor(68, 122);  canvas->print("0");   
     canvas->setCursor(243, 122); canvas->print("120"); 
 
@@ -288,7 +268,7 @@ void loop() {
     int textX = 122; 
     int textY = 69;  
     
-    // Efek Bold tebal
+    // Efek Tebal Bold
     canvas->setCursor(textX, textY);         canvas->print(speedText);
     canvas->setCursor(textX + 1, textY);     canvas->print(speedText);
     canvas->setCursor(textX - 1, textY);     canvas->print(speedText);
@@ -332,7 +312,7 @@ void loop() {
     int barWidth = map(speedValue, 0, 120, 0, 70);
     canvas->fillRect(135, 165, 70, 4, DARK_BLUE); 
     for (int i = 0; i < barWidth; i++) {
-        uint16_t col = GREEN;
+        uint16_t col = GREEN_BRIGHT;
         if (i > 35 && i <= 55) col = YELLOW;
         else if (i > 55)       col = RED;
         canvas->drawFastVLine(135 + i, 164, 5, col);
