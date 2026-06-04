@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V9: NO COLLISION, PERFECT OUTSIDE TEXT
+// WAVESHARE ESP32-C6 1.47" - CODE V10: AUTO-CENTER MATH LAYOUT (NO MORE MANUAL GUESS)
 // ======================================================================
 
 #define TFT_BL 22
@@ -18,7 +18,7 @@
 #define BATTERY_PIN  3  
 #define SIGNAL_PIN   4  
 
-// COLOR PALETTE (RGB565 16-Bit)
+// COLOR PALETTE
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED            0xF800
@@ -28,11 +28,8 @@
 #define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
 
-// INITIALISASI HARDWARE DISPLAY
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
-
-// Canvas Utama Ukuran Penuh (320x172) untuk Double Buffering
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
 int speedValue = 0; 
@@ -47,16 +44,23 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// ======================================================================
-// FUNGSI GRADASI WARNA BUSUR OVAL
-// ======================================================================
+// Konfigurasi Pusat Elips Utama (Agar Seimbang di Layar)
+const int centerX = 160;
+const int centerY = 124; // Diturunkan sedikit agar elips atas tidak menabrak teks SPORT MODE
+const int rx = 84;       // Radius horizontal
+const int ry = 62;       // Radius vertikal pipih
+
+const int startAngle = 145;
+const int endAngle = 395;
+
+// Fungsi Gradasi Warna Busur
 uint16_t getOvalGradientColor(int currentAngle, int startAngle, int endAngle) {
     float ratio = (float)(currentAngle - startAngle) / (float)(endAngle - startAngle);
     if (ratio < 0.0) ratio = 0.0;
     if (ratio > 1.0) ratio = 1.0;
 
-    uint8_t startR = 0;   uint8_t startG = 28;  uint8_t startB = 31; // CYAN
-    uint8_t endR = 31;    uint8_t endG = 0;     uint8_t endB = 0;  // RED
+    uint8_t startR = 0;   uint8_t startG = 28;  uint8_t startB = 31; 
+    uint8_t endR = 31;    uint8_t endG = 0;     uint8_t endB = 0;  
 
     uint8_t r = startR + (endR - startR) * ratio;
     uint8_t g = startG + (endG - startG) * ratio;
@@ -65,9 +69,7 @@ uint16_t getOvalGradientColor(int currentAngle, int startAngle, int endAngle) {
     return (r << 11) | (g << 5) | b;
 }
 
-// ======================================================================
-// FUNGSI CUSTOM: BUSUR OVAL + OTOMATIS GARIS SKALA (TICK MARKS)
-// ======================================================================
+// Fungsi Menggambar Elips dan Garis Skala (Tick Marks)
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t color, int thickness, bool drawTicks) {
     for (int t = 0; t < thickness; t++) {
         int curRx = rx - t;
@@ -80,14 +82,13 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             
             if (x >= 0 && x < 320 && y >= 0 && y < 172) {
                 if (color == WHITE) {
-                    uint16_t dynamicColor = getOvalGradientColor(angle, startDeg, endDeg);
-                    canvas->drawPixel(x, y, dynamicColor);
+                    canvas->drawPixel(x, y, getOvalGradientColor(angle, startDeg, endDeg));
                 } else {
                     canvas->drawPixel(x, y, color);
                 }
             }
 
-            // MENGGAMBAR TICK MARKS KELUAR (Panjang 4 Piksel ke Luar Elips)
+            // Gambar Tick Marks menjorok keluar
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
                 for (int tickLen = 1; tickLen <= 4; tickLen++) {
                     int tx = cx + (int)(cos(rad) * (rx + tickLen));
@@ -101,9 +102,22 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
     }
 }
 
-// ======================================================================
-// FUNGSI GRAFIS IKON
-// ======================================================================
+// ---- FUNGSI BARU: PRINT ANGKA OTOMATIS MENGIKUTI POSISI SUDUT ELIPS ----
+void printAutoCenterLabel(const char* label, int angle, int textGap) {
+    float rad = (float)angle * M_PI / 180.0;
+    
+    // Hitung posisi di luar elips + gap ruang napas teks
+    int targetX = centerX + (int)(cos(rad) * (rx + textGap));
+    int targetY = centerY + (int)(sin(rad) * (ry + textGap));
+    
+    // Koreksi ukuran string agar text-alignment nya pas di tengah titik (Center Alignment)
+    int stringWidth = strlen(label) * 6; // Ukuran font default text size 1 adalah ~6 piksel/karakter
+    int stringHeight = 8;
+    
+    canvas->setCursor(targetX - (stringWidth / 2), targetY - (stringHeight / 2));
+    canvas->print(label);
+}
+
 void drawSignalIcon(int x, int y) {
     canvas->fillCircle(x + 10, y + 12, 2, CYAN);
     canvas->drawArc(x + 10, y + 12, 5, 4, 220, 320, CYAN);
@@ -129,12 +143,8 @@ void drawThermometerIcon(int x, int y) {
     canvas->fillRect(x + 4, y + 3, 1, 10, RED);
 }
 
-// ======================================================================
-// MAIN SETUP
-// ======================================================================
 void setup() {
     Serial.begin(115200);
-    
     ledcAttach(TFT_BL, 5000, 8);
     ledcWrite(TFT_BL, 150); 
 
@@ -151,9 +161,6 @@ void setup() {
     pinMode(SIGNAL_PIN, INPUT);
 }
 
-// ======================================================================
-// MAIN LOOP
-// ======================================================================
 void loop() {
     int steerPWM = pulseIn(STEER_PIN, HIGH, 10000);
     int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 10000);
@@ -172,7 +179,6 @@ void loop() {
     }
 
     speedValue = targetSpeed; 
-
     if (speedValue > topSpeed) topSpeed = speedValue;
 
     if (millis() - blinkTimer > 350) {
@@ -191,13 +197,10 @@ void loop() {
         batteryPercent = constrain(batteryPercent, 0, 100);
     }
 
-    // ==================================================================
-    // RENDER GRAFIS KANVAS
-    // ==================================================================
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. GARIS DEKORASI HEADER ATAS ----
+    // ---- A. GARIS HEADER ATAS ----
     canvas->setTextColor(CYAN);
     canvas->setTextSize(1);
     canvas->setCursor(132, 2); 
@@ -209,7 +212,7 @@ void loop() {
     canvas->drawLine(197, 5, 205, 14, CYAN);
     canvas->drawLine(205, 14, 310, 14, CYAN);
 
-    // ---- B. INFO SINYAL & BATERAI ATAS ----
+    // ---- B. INFO STATUS HEADER ----
     drawSignalIcon(15, 1);
     canvas->setTextColor(WHITE);
     canvas->setCursor(40, 4);
@@ -219,8 +222,7 @@ void loop() {
     canvas->setCursor(275, 4);
     canvas->printf("%d%%", batteryPercent);
 
-    // ---- C. INDIKATOR LAMPU SEIN KIRI & KANAN ----
-    canvas->setTextSize(1);
+    // ---- C. LAMPU SEIN ----
     uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN : DARK_BLUE;
     canvas->fillTriangle(18, 52, 30, 40, 30, 64, leftArrowColor);
     canvas->fillRect(30, 47, 12, 10, leftArrowColor);
@@ -235,100 +237,89 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. SETTING UTAMA ELIPS OVAL DESIGN ----
-    int centerX = 160;
-    int centerY = 120; // Sumbu pusat diturunkan ke Y=120 agar bagian bawah lebih pas
-    int rx = 82;       // Radius horizontal diperkecil dikit (82) agar teks luar punya ruang lapang
-    int ry = 62;       // Radius vertikal proporsional (62)
-    
-    int startAngle = 145;
-    int endAngle = 395;
+    // ---- D. DRAW BUSUR ELIPS OVAL ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
-
-    // 1. Render Background Busur Oval + Garis Skala (true)
+    
+    // Background Busur + Garis Skala Kecil
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true);
-
-    // 2. Render Bar Aktif Kecepatan Berwarna (false)
+    // Bar Aktif Kecepatan Berwarna
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
     }
     
-    // ---- E. RE-POSITIONING TOTAL ANGKA SKALA OUTSIDE OVAL (BEBAS TABRAKAN) ----
-    // Angka ditarik keluar menjauh dari elips agar bersih, rapi, dan presisi
+    // ---- E. MATH AUTO-CENTER TEXT LABELS (BEBAS TABRAKAN) ----
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    canvas->setCursor(50, 122);   canvas->print("0");    // Mundur ke kiri luar ujung elips bawah
-    canvas->setCursor(44, 82);    canvas->print("20");   // Mundur total ke kiri luar elips
-    canvas->setCursor(82, 42);    canvas->print("40");   // Naik ke atas luar menjauh dari busur skala
-    canvas->setCursor(154, 26);   canvas->print("60");   // Naik ke atas tepat di bawah lekukan SPORT MODE
-    canvas->setCursor(226, 42);   canvas->print("80");   // Naik ke atas kanan luar menjauh dari busur skala
-    canvas->setCursor(258, 82);   canvas->print("100");  // Mundur total ke kanan luar elips (Aman dari jarum panah)
-    canvas->setCursor(254, 122);  canvas->print("120");  // Mundur ke kanan luar ujung elips bawah
+    // Angka dicetak otomatis presisi tegak lurus sesuai derajat elips asli
+    printAutoCenterLabel("0",   145, 12); // Sudut Mulai (Gap 12 piksel ke luar)
+    printAutoCenterLabel("20",  180, 12);
+    printAutoCenterLabel("40",  220, 12);
+    printAutoCenterLabel("60",  270, 14); // Puncak Atas Tengah, diturunkan dikit gap-nya agar ga tabrak header
+    printAutoCenterLabel("80",  320, 12);
+    printAutoCenterLabel("100", 360, 12);
+    printAutoCenterLabel("120", 395, 12); // Sudut Akhir
 
-    // Label teks SPEED pas berada di dalam lengkungan bawah angka 60
+    // Label Teks SPEED di bawah angka 60
     canvas->setTextColor(CYAN);
-    canvas->setCursor(146, 46);
+    canvas->setCursor(146, 48);
     canvas->print("SPEED");
 
-    // ---- F. DIGIT KECEPATAN UTAMA DI TENGAH ----
+    // ---- F. ANGKA UTAMA SPEED DIGITAL ----
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     
     canvas->setTextSize(4); 
-    // Efek Shadow belakang angka utama
     canvas->setTextColor(DARK_BLUE);
-    canvas->setCursor(123, 67); canvas->print(speedText);
-    canvas->setCursor(125, 69); canvas->print(speedText);
-    // Angka utama putih solid di tengah elips
+    canvas->setCursor(123, 69); canvas->print(speedText);
+    canvas->setCursor(125, 71); canvas->print(speedText);
+    
     canvas->setTextColor(WHITE);
-    canvas->setCursor(124, 68); 
+    canvas->setCursor(124, 70); 
     canvas->print(speedText);
 
-    // Teks KM/H tepat di bawah digit besar
+    // Teks KM/H
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(146, 105);
+    canvas->setCursor(146, 107);
     canvas->print("KM/H");
 
-    // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
-    // 1. Kotak Informasi Baterai Volt (Kiri Bawah)
-    canvas->drawRect(15, 140, 75, 28, DARK_BLUE);
+    // ---- G. FOOTER PANEL INDIKATOR ----
+    // 1. Kotak Baterai Volt
+    canvas->drawRect(15, 142, 75, 26, DARK_BLUE);
     canvas->setTextColor(GRAY);
-    canvas->setCursor(23, 144); canvas->print("BATTERY");
+    canvas->setCursor(23, 145); canvas->print("BATTERY");
     canvas->setTextColor(WHITE);
-    canvas->setCursor(23, 155); canvas->print("12.4V");
+    canvas->setCursor(23, 156); canvas->print("12.4V");
 
-    // 2. Kotak Informasi Top Speed (Tengah Bawah)
-    canvas->drawRect(110, 136, 100, 20, DARK_BLUE);
+    // 2. Kotak Top Speed
+    canvas->drawRect(110, 137, 100, 19, DARK_BLUE);
     canvas->setTextColor(CYAN);
-    canvas->setCursor(132, 139); canvas->print("TOP SPEED");
+    canvas->setCursor(132, 140); canvas->print("TOP SPEED");
     canvas->setTextColor(WHITE);
     canvas->setCursor(136, 147); canvas->printf("%d KM/H", topSpeed);
 
-    // 3. Kotak Informasi Temperatur (Kanan Bawah)
-    canvas->drawRect(230, 140, 75, 28, DARK_BLUE);
+    // 3. Kotak Temperatur
+    canvas->drawRect(230, 142, 75, 26, DARK_BLUE);
     canvas->setTextColor(GRAY);
-    canvas->setCursor(236, 144); canvas->print("TEMPERATURE");
+    canvas->setCursor(236, 145); canvas->print("TEMPERATURE");
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(254, 155); canvas->printf("%d 'C", temperature);
+    canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // 4. Bar Garis RPM Horizontal (Paling Bawah)
+    // 4. Bar RPM paling bawah
     canvas->setTextColor(WHITE);
-    canvas->setCursor(110, 162); canvas->print("RPM");
+    canvas->setCursor(110, 163); canvas->print("RPM");
     
     int barWidth = map(speedValue, 0, 120, 0, 70);
-    canvas->fillRect(135, 164, 70, 4, DARK_BLUE); 
+    canvas->fillRect(135, 165, 70, 4, DARK_BLUE); 
     for (int i = 0; i < barWidth; i++) {
         uint16_t col = GREEN;
         if (i > 35 && i <= 55) col = YELLOW;
         else if (i > 55)       col = RED;
-        canvas->drawFastVLine(135 + i, 163, 5, col);
+        canvas->drawFastVLine(135 + i, 164, 5, col);
     }
 
-    // KIRIM MEMORI KANVAS KE FISIK LCD
     gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
-
     delay(5); 
 }
