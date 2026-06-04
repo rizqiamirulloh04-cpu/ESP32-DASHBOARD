@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V13: ELEVATED ARC FOR PERFECT CENTER
+// WAVESHARE ESP32-C6 1.47" - CODE V14: PERFECT FLAT OVAL & HIGH POSITION
 // ======================================================================
 
 #define TFT_BL 22
@@ -47,11 +47,11 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// Konfigurasi Pusat Elips Utama (Dinaikkan dari 124 ke 116 agar tidak menabrak boks bawah)
+// --- KONFIGURASI ELIPS BARU (CEPER & NAIK TOTAL) ---
 const int centerX = 160;
-const int centerY = 116; 
-const int rx = 84;       
-const int ry = 62;       
+const int centerY = 102; // Naik drastis dari 116 agar ujung bawah terangkat bebas
+const int rx = 86;       // Sedikit dilebarkan kesamping
+const int ry = 48;       // Dikecilkan dari 62 agar elipsnya ceper/pipih dan tidak mentok atas-bawah
 
 const int startAngle = 145;
 const int endAngle = 395;
@@ -261,21 +261,21 @@ void loop() {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
     }
     
-    // ---- E. MATH AUTO-CENTER TEXT LABELS ----
+    // ---- E. DISTRIBUSI LABEL ANGKA KELILING (Ditambah jarak gap agar rapi) ----
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    printAutoCenterLabel("0",   165, 12); 
-    printAutoCenterLabel("20",  182, 12); 
-    printAutoCenterLabel("40",  215, 13); 
-    printAutoCenterLabel("60",  270, 14); 
-    printAutoCenterLabel("80",  325, 13); 
-    printAutoCenterLabel("100", 358, 12); 
-    printAutoCenterLabel("120", 375, 12); 
+    printAutoCenterLabel("0",   165, 11); 
+    printAutoCenterLabel("20",  182, 11); 
+    printAutoCenterLabel("40",  215, 11); 
+    printAutoCenterLabel("60",  270, 11); // Angka 60 sekarang berada pas di atas elips, menjauh dari teks SPEED
+    printAutoCenterLabel("80",  325, 11); 
+    printAutoCenterLabel("100", 358, 11); 
+    printAutoCenterLabel("120", 375, 11); 
 
-    // Label Teks SPEED (Disesuaikan agar pas di atas angka utama)
+    // Label Teks SPEED
     canvas->setTextColor(CYAN);
-    canvas->setCursor(146, 42);
+    canvas->setCursor(146, 44);
     canvas->print("SPEED");
 
     // ---- F. ANGKA UTAMA SPEED DIGITAL ----
@@ -284,13 +284,13 @@ void loop() {
     
     canvas->setTextSize(4); 
     canvas->setTextColor(WHITE);
-    canvas->setCursor(124, 52); 
+    canvas->setCursor(124, 56); 
     canvas->print(speedText);
 
-    // Teks KM/H (Disesuaikan posisinya mengikuti keselarasan elips baru)
+    // Teks KM/H 
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(146, 90);                           
+    canvas->setCursor(146, 94);                           
     canvas->print("KM/H");
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
