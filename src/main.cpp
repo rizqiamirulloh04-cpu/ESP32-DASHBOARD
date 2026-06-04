@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V25: PERBAIKAN BUSUR KECEPATAN & WARNA HIJAU MUDA
+// WAVESHARE ESP32-C6 1.47" - CODE V26: KOREKSI WARNA RPM & BUSUR ELIPS
 // ======================================================================
 
 #define TFT_BL 22
@@ -22,10 +22,10 @@
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED            0xF800
-#define GREEN_BRIGHT   0x07E0 // Hijau Muda Terang utama pengganti hijau tua
+#define GREEN_BRIGHT   0x07E0 // Hijau muda terang untuk Bar RPM bawah
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
-#define DARK_BLUE      0x0010 
+#define DARK_BLUE      0x0010 // Warna dasar busur elips semula
 #define GRAY           0x5AEB
 
 // INITIALISASI HARDWARE DISPLAY
@@ -47,7 +47,7 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// CONFIG ELIPS PRESISI
+// CONFIG ELIPS PRESISI SPREADSHEET
 const int centerX = 160;
 const int centerY = 85;  
 const int rx = 86;       
@@ -57,7 +57,7 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: MENGGAMBAR BUSUR OVAL (ANTI-BERBAYANG)
+// FUNGSI UTAMA: MENGGAMBAR BUSUR OVAL KECEPATAN
 // ======================================================================
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t color, int thickness, bool drawTicks) {
     for (int t = 0; t < thickness; t++) {
@@ -73,7 +73,6 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
                 canvas->drawPixel(x, y, color);
             }
 
-            // Gambar tick marks pembagi satuan elips hanya pada layer pertama
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
                 for (int tickLen = 1; tickLen <= 4; tickLen++) {
                     int tx = cx + (int)(cos(rad) * (rx + tickLen));
@@ -192,7 +191,7 @@ void loop() {
         batteryPercent = constrain(batteryPercent, 0, 100);
     }
 
-    // Refresh kanvas bersih total di setiap frame awal untuk hilangkan sisa piksel
+    // Refresh bersih layar anti-ghosting
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
@@ -224,13 +223,13 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL (WARNA HIJAU MUDA) ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL (KEMBALI KE SEMULA) ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
-    // Dasar busur menggunakan warna Hijau Muda Terang (GREEN_BRIGHT)
-    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, GREEN_BRIGHT, 3, true);
+    // Background busur kembali menggunakan warna asli Biru Gelap (DARK_BLUE)
+    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true);
     
-    // Ketika ada kecepatan berjalan, bagian aktif diganti warna putih bersih di atasnya tanpa ghosting
+    // Aktif speed menggunakan warna putih bersih
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
     }
@@ -241,11 +240,10 @@ void loop() {
     
     printAutoCenterLabel("20",  182, 13); 
     printAutoCenterLabel("40",  215, 13); 
-    printAutoCenterLabel("60",  270, 10); // Jarak 10 agar posisi turun proporsional
+    printAutoCenterLabel("60",  270, 10); // Tetap rapi turun sedikit
     printAutoCenterLabel("80",  325, 13); 
     printAutoCenterLabel("100", 358, 13); 
 
-    // Posisi manual ujung bawah
     canvas->setCursor(68, 122);  canvas->print("0");   
     canvas->setCursor(243, 122); canvas->print("120"); 
 
@@ -268,7 +266,6 @@ void loop() {
     int textX = 122; 
     int textY = 69;  
     
-    // Efek Tebal Bold
     canvas->setCursor(textX, textY);         canvas->print(speedText);
     canvas->setCursor(textX + 1, textY);     canvas->print(speedText);
     canvas->setCursor(textX - 1, textY);     canvas->print(speedText);
@@ -305,16 +302,18 @@ void loop() {
     canvas->setTextColor(WHITE);
     canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // Bar RPM (Paling Bawah)
+    // ---- BAR RPM (PALING BAWAH - SEKARANG WARNA HIJAU MUDA TERANG) ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
     int barWidth = map(speedValue, 0, 120, 0, 70);
-    canvas->fillRect(135, 165, 70, 4, DARK_BLUE); 
+    canvas->fillRect(135, 165, 70, 4, BLACK); // Bersihkan sisa render bar lama
+    canvas->fillRect(135, 165, 70, 4, DARK_BLUE); // Background bar kosong
+    
     for (int i = 0; i < barWidth; i++) {
-        uint16_t col = GREEN_BRIGHT;
-        if (i > 35 && i <= 55) col = YELLOW;
-        else if (i > 55)       col = RED;
+        uint16_t col = GREEN_BRIGHT; // Dirubah penuh menggunakan Hijau Muda Terang
+        if (i > 45 && i <= 60) col = YELLOW;
+        else if (i > 60)       col = RED;
         canvas->drawFastVLine(135 + i, 164, 5, col);
     }
 
