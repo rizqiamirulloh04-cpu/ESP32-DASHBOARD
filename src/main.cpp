@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V42: DEEP PURPLE PANEL & ADJUSTED BRIGHTNESS
+// WAVESHARE ESP32-C6 1.47" - CODE V43: NEON PURPLE / LASER EDITION
 // ======================================================================
 
 #define TFT_BL 22
@@ -27,7 +27,7 @@
 #define CYAN           0x07FF
 #define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
-#define DEEP_PURPLE    0x9013 // <-- WARNA BARU: Ungu Tua Premium yang Pekat & Elegan
+#define NEON_PURPLE    0xF81F // <-- WARNA BARU: Ungu Menyala / Laser Magenta yang Sangat Terang
 
 // INITIALISASI HARDWARE DISPLAY
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
@@ -155,7 +155,7 @@ void setup() {
     Serial.begin(115200);
     
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 120); // <-- FIX: Kecerahan sudah diturunkan ke 120 agar nyaman di mata
+    ledcWrite(TFT_BL, 120); // Kecerahan diset 120 agar nyaman di mata dan warna neonnya pop-out
 
     gfx->begin();
     gfx->invertDisplay(false);
@@ -217,12 +217,12 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (DOUBLE WINGED - DEEP PURPLE) ----
-    canvas->drawLine(10, 14, 110, 14, DEEP_PURPLE); 
-    canvas->drawLine(110, 14, 122, 7, DEEP_PURPLE);
-    canvas->drawLine(122, 7, 198, 7, DEEP_PURPLE);
-    canvas->drawLine(198, 7, 210, 14, DEEP_PURPLE);
-    canvas->drawLine(210, 14, 310, 14, DEEP_PURPLE); 
+    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (DOUBLE WINGED - NEON PURPLE) ----
+    canvas->drawLine(10, 14, 110, 14, NEON_PURPLE); 
+    canvas->drawLine(110, 14, 122, 7, NEON_PURPLE);
+    canvas->drawLine(122, 7, 198, 7, NEON_PURPLE);
+    canvas->drawLine(198, 7, 210, 14, NEON_PURPLE);
+    canvas->drawLine(210, 14, 310, 14, NEON_PURPLE); 
 
     // ---- B. INFO STATUS HEADER ATAS ----
     drawSignalIcon(15, 1);
@@ -291,7 +291,7 @@ void loop() {
     canvas->setCursor(kmhX, kmhY);     canvas->print("KM/H");
     canvas->setCursor(kmhX + 1, kmhY); canvas->print("KM/H"); 
 
-    // ---- G. FOOTER PANEL STATUS INDIKATOR (ANTI TABRAKAN) ----
+    // ---- G. FOOTER PANEL STATUS INDIKATOR ----
     canvas->drawRect(15, 142, 75, 26, DARK_BLUE);
     canvas->setTextColor(GRAY); canvas->setTextSize(1);
     canvas->setCursor(23, 145); canvas->print("BATTERY");
