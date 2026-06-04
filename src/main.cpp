@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V14: PERFECT FLAT OVAL & HIGH POSITION
+// WAVESHARE ESP32-C6 1.47" - CODE V15: ENLARGED DIGITAL SPEEDOMETER
 // ======================================================================
 
 #define TFT_BL 22
@@ -47,11 +47,11 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// --- KONFIGURASI ELIPS BARU (CEPER & NAIK TOTAL) ---
+// CONFIG ELIPS (Tetap mempertahankan presisi V14 yang sudah oke)
 const int centerX = 160;
-const int centerY = 102; // Naik drastis dari 116 agar ujung bawah terangkat bebas
-const int rx = 86;       // Sedikit dilebarkan kesamping
-const int ry = 48;       // Dikecilkan dari 62 agar elipsnya ceper/pipih dan tidak mentok atas-bawah
+const int centerY = 102; 
+const int rx = 86;       
+const int ry = 48;       
 
 const int startAngle = 145;
 const int endAngle = 395;
@@ -261,36 +261,43 @@ void loop() {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
     }
     
-    // ---- E. DISTRIBUSI LABEL ANGKA KELILING (Ditambah jarak gap agar rapi) ----
+    // ---- E. DISTRIBUSI LABEL ANGKA KELILING ----
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
     printAutoCenterLabel("0",   165, 11); 
     printAutoCenterLabel("20",  182, 11); 
     printAutoCenterLabel("40",  215, 11); 
-    printAutoCenterLabel("60",  270, 11); // Angka 60 sekarang berada pas di atas elips, menjauh dari teks SPEED
+    printAutoCenterLabel("60",  270, 11); 
     printAutoCenterLabel("80",  325, 11); 
     printAutoCenterLabel("100", 358, 11); 
     printAutoCenterLabel("120", 375, 11); 
 
     // Label Teks SPEED
     canvas->setTextColor(CYAN);
-    canvas->setCursor(146, 44);
+    canvas->setCursor(146, 42); // Sedikit dinaikkan untuk memberi ruang angka besar
     canvas->print("SPEED");
 
-    // ---- F. ANGKA UTAMA SPEED DIGITAL ----
+    // ---- F. ANGKA UTAMA SPEED DIGITAL (DIPERBESAR NYAMAN) ----
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     
+    // Kita buat kombinasi tebal dengan cetak bayangan tipis (Bold Effect)
     canvas->setTextSize(4); 
     canvas->setTextColor(WHITE);
-    canvas->setCursor(124, 56); 
-    canvas->print(speedText);
+    
+    // Menggeser posisi X ke kiri (120) agar angka berukuran besar tetap simetris pas di tengah elips
+    int textX = 120; 
+    int textY = 54;
+    
+    // Cetak tebal lapis ganda
+    canvas->setCursor(textX, textY);     canvas->print(speedText);
+    canvas->setCursor(textX + 1, textY); canvas->print(speedText); 
 
-    // Teks KM/H 
+    // Teks KM/H
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(146, 94);                           
+    canvas->setCursor(146, 95);                           
     canvas->print("KM/H");
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
