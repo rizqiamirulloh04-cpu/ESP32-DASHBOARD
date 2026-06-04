@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE FIX V7: PERFECT OVAL RADIAL DASHBOARD
+// WAVESHARE ESP32-C6 1.47" - CODE FIX V8: PERFECT DASHBOARD WITH TICK MARKS
 // ======================================================================
 
 #define TFT_BL 22
@@ -25,7 +25,7 @@
 #define GREEN          0x07E0 
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
-#define DARK_BLUE      0x0010 // Biru redup background
+#define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
 
 // INITIALISASI HARDWARE DISPLAY
@@ -55,7 +55,7 @@ uint16_t getOvalGradientColor(int currentAngle, int startAngle, int endAngle) {
     if (ratio < 0.0) ratio = 0.0;
     if (ratio > 1.0) ratio = 1.0;
 
-    // Gradasi dari Biru Muda (Cyan) ke Merah di ujung kanan skala
+    // Gradasi dari Cyan ke Merah di ujung kanan skala
     uint8_t startR = 0;   uint8_t startG = 28;  uint8_t startB = 31; // CYAN
     uint8_t endR = 31;    uint8_t endG = 0;     uint8_t endB = 0;  // RED
 
@@ -67,29 +67,36 @@ uint16_t getOvalGradientColor(int currentAngle, int startAngle, int endAngle) {
 }
 
 // ======================================================================
-// FUNGSI CUSTOM UNTUK MENGGAMBAR BUSUR OVAL (PIPIH) PERSIS SEPERTI GAMBAR
+// FUNGSI CUSTOM: BUSUR OVAL + OTOMATIS GARIS SKALA (TICK MARKS)
 // ======================================================================
-void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t color, int thickness) {
-    // Loop untuk menggambar ketebalan garis busur ke arah dalam
+void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t color, int thickness, bool drawTicks) {
     for (int t = 0; t < thickness; t++) {
         int curRx = rx - t;
         int curRy = ry - t;
         
-        // Gambar pixel demi pixel berdasarkan sudut derajat matematika
         for (int angle = startDeg; angle <= endDeg; angle++) {
             float rad = (float)angle * M_PI / 180.0;
-            // Gunakan rumus koordinat elips/oval
             int x = cx + (int)(cos(rad) * curRx);
             int y = cy + (int)(sin(rad) * curRy);
             
-            // Proteksi batas layar agar tidak crash
             if (x >= 0 && x < 320 && y >= 0 && y < 172) {
-                // Jika warna adalah WHITE (berarti mode render bar aktif), pakai warna gradasi dinamis
                 if (color == WHITE) {
-                    uint16_t dynamicColor = getOvalGradientColor(angle, 145, 395);
+                    uint16_t dynamicColor = getOvalGradientColor(angle, startDeg, endDeg);
                     canvas->drawPixel(x, y, dynamicColor);
                 } else {
                     canvas->drawPixel(x, y, color);
+                }
+            }
+
+            // PERBAIKAN UTAMA: Menggambar garis skala putih kecil keluar (Tick Marks) setiap kelipatan 4 derajat
+            if (drawTicks && t == 0 && (angle % 4 == 0)) {
+                // Gambar garis pendek sepanjang 4 piksel menjulur ke arah luar elips
+                for (int tickLen = 1; tickLen <= 4; tickLen++) {
+                    int tx = cx + (int)(cos(rad) * (rx + tickLen));
+                    int ty = cy + (int)(sin(rad) * (ry + tickLen));
+                    if (tx >= 0 && tx < 320 && ty >= 0 && ty < 172) {
+                        canvas->drawPixel(tx, ty, GRAY); // Menggunakan warna abu-abu agar rapi dan tidak terlalu kontras
+                    }
                 }
             }
         }
@@ -230,62 +237,60 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. FORMULA UTAMA: OVAL RADIAL BUSUR (PERSIS GAMBAR REFERENSI) ----
-    // Titik pusat digeser ke bawah (Y=116), Lebar X=88 (Sangat Melebar), Tinggi Y=66 (Pipih ke bawah)
+    // ---- D. CONFIG ELIPS OVAL DESIGN ----
     int centerX = 160;
-    int centerY = 116; 
-    int rx = 88;
-    int ry = 66;
+    int centerY = 118; // Diturunkan sedikit ke Y=118 agar lebih pas
+    int rx = 86;       // Dipersempit 2 piksel memberikan ruang bernafas untuk garis skala luar
+    int ry = 64;       
     
-    // Sudut derajat elips (145' kiri bawah melingkar atas sampai 395' kanan bawah)
     int startAngle = 145;
     int endAngle = 395;
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
 
-    // 1. Gambar Background Busur Oval (Biru Redup) dengan ketebalan 4 pixel
-    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 4);
+    // 1. Render Background Busur Oval + Nyalakan Mode Garis Skala (true)
+    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true);
 
-    // 2. Gambar Lapisan Bar Aktif Kecepatan (Gradasi Berwarna) di atas background
+    // 2. Render Bar Aktif Kecepatan Berwarna (false agar tidak menimpa garis skala)
     if (speedValue > 0) {
-        drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 4);
+        drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
     }
     
     // ---- E. RE-POSITIONING GRID ANGKA SKALA OUTSIDE OVAL ----
-    // Angka diposisikan presisi melingkari kontur luar elips/oval secara estetis
+    // Koordinat angka digeser turun sedikit agar proporsional menempel pada ujung garis skala luar
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    canvas->setCursor(55, 120);   canvas->print("0");    // Kiri bawah dekat Battery
-    canvas->setCursor(56, 82);    canvas->print("20");   // Sisi kiri luar elips
-    canvas->setCursor(92, 44);    canvas->print("40");   // Naik ke atas kiri
-    canvas->setCursor(152, 24);   canvas->print("60");   // FIX UTAMA: Tepat di tengah atas, luar busur, di bawah SPORT MODE!
-    canvas->setCursor(214, 44);   canvas->print("80");   // Turun ke kanan atas
-    canvas->setCursor(248, 82);   canvas->print("100");  // Sisi kanan luar elips
-    canvas->setCursor(244, 120);  canvas->print("120");  // Kanan bawah dekat Temp
+    canvas->setCursor(55, 122);   canvas->print("0");    
+    canvas->setCursor(52, 85);    canvas->print("20");   
+    canvas->setCursor(88, 49);    canvas->print("40");   
+    canvas->setCursor(154, 30);   canvas->print("60");   // Sempurna: Tepat di tengah atas di bawah SPORT MODE
+    canvas->setCursor(216, 49);   canvas->print("80");   
+    canvas->setCursor(252, 85);   canvas->print("100");  
+    canvas->setCursor(244, 122);  canvas->print("120");  
 
-    // Label teks SPEED pas di dalam puncak elips bawah angka 60
+    // Label teks SPEED pas berada di dalam lengkungan bawah angka 60
     canvas->setTextColor(CYAN);
-    canvas->setCursor(146, 42);
+    canvas->setCursor(146, 45);
     canvas->print("SPEED");
 
-    // ---- F. DIGIT KECEPATAN UTAMA DI TENGAH (UKURAN BESAR LEGA) ----
+    // ---- F. DIGIT KECEPATAN UTAMA DI TENGAH ----
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     
     canvas->setTextSize(4); 
     // Efek Shadow belakang angka utama
     canvas->setTextColor(DARK_BLUE);
-    canvas->setCursor(123, 62); canvas->print(speedText);
-    canvas->setCursor(125, 64); canvas->print(speedText);
+    canvas->setCursor(123, 65); canvas->print(speedText);
+    canvas->setCursor(125, 67); canvas->print(speedText);
     // Angka utama putih solid di tengah elips
     canvas->setTextColor(WHITE);
-    canvas->setCursor(124, 63); 
+    canvas->setCursor(124, 66); 
     canvas->print(speedText);
 
     // Teks KM/H tepat di bawah digit besar
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(146, 100);
+    canvas->setCursor(146, 103);
     canvas->print("KM/H");
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
