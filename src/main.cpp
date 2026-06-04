@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V16: BOLD & DOMINANT CENTER INFOGRAPHICS
+// WAVESHARE ESP32-C6 1.47" - CODE V17: BALANCE DESIGN (LARGE NUMBER)
 // ======================================================================
 
 #define TFT_BL 22
@@ -47,7 +47,7 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// CONFIG ELIPS (Presisi V14-V15 yang sudah aman dari boks bawah)
+// CONFIG ELIPS (Sangat aman dari boks bawah)
 const int centerX = 160;
 const int centerY = 102; 
 const int rx = 86;       
@@ -273,39 +273,39 @@ void loop() {
     printAutoCenterLabel("100", 358, 13); 
     printAutoCenterLabel("120", 375, 13); 
 
-    // ---- F. INTEGRASI AREA TENGAH: SUPER BOLD & TEGAK ----
+    // ---- F. AREA TENGAH: BALANCE COMPOSITION WITH EXPANDED NUMBER ----
     
-    // 1. TULISAN "SPEED" (Ukuran dinaikkan ke 2 + Bold Effect)
-    canvas->setTextSize(2);
+    // 1. TULISAN "SPEED" (Dikecilkan kembali ke ukuran 1 + Bold Effect)
+    canvas->setTextSize(1);
     canvas->setTextColor(CYAN);
-    int speedX = 131; // Ditengahkan pas dengan lebar huruf baru
-    int speedY = 36;  // Posisi Y disesuaikan agar proporsional
+    int speedX = 145; // Ditengahkan pas untuk ukuran huruf kecil
+    int speedY = 44;  // Diposisikan naik agar memberi ruang nafas angka utama
     canvas->setCursor(speedX, speedY);     canvas->print("SPEED");
-    canvas->setCursor(speedX + 1, speedY); canvas->print("SPEED"); // Duplikasi tebal
+    canvas->setCursor(speedX + 1, speedY); canvas->print("SPEED"); 
 
-    // 2. ANGKA UTAMA SPEED DIGITAL (Ukuran 4 + 4-Way Cross Penebalan Ekstrem)
+    // 2. ANGKA UTAMA SPEED DIGITAL (Ukuran Masif 4 + 4-Way Cross Penebalan Tegak)
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     canvas->setTextSize(4); 
     canvas->setTextColor(WHITE);
     
-    int textX = 122; // Kalibrasi sumbu X agar seimbang di tengah layar
-    int textY = 55;  
+    int textX = 122; // Letak tengah presisi horizontal
+    int textY = 56;  // Diturunkan sedikit agar seimbang
     
-    // Matriks penebalan 4 arah agar struktur angka tebal merata dan berdiri kokoh
+    // Matriks penebalan 4-arah agar angka berdiri dengan kokoh dan solid
     canvas->setCursor(textX, textY);         canvas->print(speedText);
     canvas->setCursor(textX + 1, textY);     canvas->print(speedText);
     canvas->setCursor(textX - 1, textY);     canvas->print(speedText);
     canvas->setCursor(textX, textY + 1);     canvas->print(speedText);
     canvas->setCursor(textX, textY - 1);     canvas->print(speedText);
 
-    // 3. TULISAN "KM/H" (Ukuran dinaikkan ke 2 + Bold Effect)
-    canvas->setTextSize(2);
+    // 3. TULISAN "KM/H" (Dikecilkan kembali ke ukuran 1 + Bold Effect)
+    canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
-    int kmhX = 136; // Ditengahkan pas di bawah angka utama yang masif
-    int kmhY = 94;  
+    int kmhX = 148; // Ditengahkan pas di bawah angka besar
+    int kmhY = 93;  // Koordinat Y dijaga agar tidak menabrak batas boks bawah
     canvas->setCursor(kmhX, kmhY);     canvas->print("KM/H");
-    canvas->setCursor(kmhX + 1, kmhY); canvas->print("KM/H"); // Duplikasi tebal
+    canvas->setCursor(kmhX + 1, kmhY); canvas->print("KM/H"); 
 
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
