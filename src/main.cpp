@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V43: NEON PURPLE / LASER EDITION
+// WAVESHARE ESP32-C6 1.47" - CODE V44: ADJUSTED LOWER PANEL LINE POSITIONS
 // ======================================================================
 
 #define TFT_BL 22
@@ -22,12 +22,12 @@
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED_BRIGHT     0xF800 
-#define GREEN_BRIGHT   0x07E0 // Hijau murni untuk sein & kepala komet
+#define GREEN_BRIGHT   0x07E0 
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
 #define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
-#define NEON_PURPLE    0xF81F // <-- WARNA BARU: Ungu Menyala / Laser Magenta yang Sangat Terang
+#define NEON_PURPLE    0xF81F // Ungu Menyala Pilihan Mas
 
 // INITIALISASI HARDWARE DISPLAY
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
@@ -73,7 +73,6 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
     for (int t = 0; t < thickness; t++) {
         int curRx = rx - t;
         int curRy = ry - t;
-        
         int step = isSpeedArc ? 1 : 2; 
         
         for (int angle = startDeg; angle <= endDeg; angle += step) {
@@ -155,7 +154,7 @@ void setup() {
     Serial.begin(115200);
     
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 120); // Kecerahan diset 120 agar nyaman di mata dan warna neonnya pop-out
+    ledcWrite(TFT_BL, 120); // Kecerahan nyaman di mata
 
     gfx->begin();
     gfx->invertDisplay(false);
@@ -217,21 +216,22 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (DOUBLE WINGED - NEON PURPLE) ----
-    canvas->drawLine(10, 14, 110, 14, NEON_PURPLE); 
-    canvas->drawLine(110, 14, 122, 7, NEON_PURPLE);
-    canvas->drawLine(122, 7, 198, 7, NEON_PURPLE);
-    canvas->drawLine(198, 7, 210, 14, NEON_PURPLE);
-    canvas->drawLine(210, 14, 310, 14, NEON_PURPLE); 
+    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (TURUN POSISI / TIDAK NABRAK TEKS) ----
+    // Koordinat Y saya turunkan sebanyak 11 pixel dari posisi awal biar pas di bawah ikon.
+    canvas->drawLine(10, 25, 110, 25, NEON_PURPLE); 
+    canvas->drawLine(110, 25, 122, 18, NEON_PURPLE);
+    canvas->drawLine(122, 18, 198, 18, NEON_PURPLE);
+    canvas->drawLine(198, 18, 210, 25, NEON_PURPLE);
+    canvas->drawLine(210, 25, 310, 25, NEON_PURPLE); 
 
-    // ---- B. INFO STATUS HEADER ATAS ----
-    drawSignalIcon(15, 1);
+    // ---- B. INFO STATUS HEADER ATAS (TETAP AMAN DI ATAS GARIS) ----
+    drawSignalIcon(15, 2);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(40, 4);
+    canvas->setCursor(40, 5);
     canvas->printf("%d dBm", signalDbm);
     
-    drawBatteryIcon(250, 1);
-    canvas->setCursor(275, 4);
+    drawBatteryIcon(250, 2);
+    canvas->setCursor(275, 5);
     canvas->printf("%d%%", batteryPercent);
 
     // ---- C. LAMPU SEIN KIRI & KANAN ----
@@ -320,7 +320,7 @@ void loop() {
         uint16_t col;
         
         if (distanceFromHead == 0) {
-            col = 0x07E0; // Kepala Komet Hijau Cerah
+            col = 0x07E0; 
         } else {
             int greenIntensity = 63 - (distanceFromHead * 2); 
             if (greenIntensity < 15) greenIntensity = 15; 
