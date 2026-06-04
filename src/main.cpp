@@ -2,7 +2,7 @@
 #include <Arduino_GFX_Library.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE FIX V4: PERFECT ARC & TEXT SPACING
+// WAVESHARE ESP32-C6 1.47" - FINAL PERFECT CALIBRATION CODE
 // ======================================================================
 
 #define TFT_BL 22
@@ -167,7 +167,6 @@ void loop() {
     canvas->setFont(NULL); 
 
     // ---- A. GARIS DEKORASI HEADER ATAS ----
-    // FIX: Teks dinaikkan ke Y:2 agar menjauh dari tekukan garis dekorasi
     canvas->setTextColor(CYAN);
     canvas->setTextSize(1);
     canvas->setCursor(132, 2); 
@@ -206,9 +205,8 @@ void loop() {
     drawSteeringIcon(292, 102);
 
     // ---- D. LENGKUNGAN BUSUR SPEEDOMETER ----
-    // FIX UTAMA: CenterY diturunkan ke 102 agar busur tidak menumpuk ke atas
     int centerX = 160;
-    int centerY = 102; 
+    int centerY = 104; // Diturunkan sedikit lagi ke 104 agar makin proporsional
     int startAngle = 150;
     int endAngle = 390;
     int totalArcLength = endAngle - startAngle; 
@@ -227,21 +225,22 @@ void loop() {
         }
     }
     
-    // ---- E. RE-KALIBRASI ANGKA SKALA (MENGIKUTI CENTER Y BARU) ----
+    // ---- E. RE-KALIBRASI KOORDINAT ANGKA SKALA (PERFECT ROUND POSITION) ----
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    canvas->setCursor(82, 140);  canvas->print("0");    
-    canvas->setCursor(70, 99);   canvas->print("20");   
-    canvas->setCursor(90, 56);   canvas->print("40");   
-    canvas->setCursor(154, 19);  canvas->print("60");   // FIX: Sekarang pas di area kosong atas busur!
-    canvas->setCursor(214, 56);  canvas->print("80");   
-    canvas->setCursor(236, 99);  canvas->print("100");  
-    canvas->setCursor(224, 140); canvas->print("120");  
+    // Angka skala digeser menjauh keluar mengikuti lengkungan lingkaran (Aman dari tabrakan kotak bawah)
+    canvas->setCursor(74, 124);  canvas->print("0");    // Naik & keluar dari jangkauan kotak bodi BATTERY
+    canvas->setCursor(68, 88);   canvas->print("20");   // Mundur ke kiri luar busur
+    canvas->setCursor(92, 50);   canvas->print("40");   // Naik ke kiri atas luar busur
+    canvas->setCursor(154, 21);  canvas->print("60");   // Berada di tengah atas luar busur (Presisi di bawah garis)
+    canvas->setCursor(212, 50);  canvas->print("80");   // Naik ke kanan atas luar busur
+    canvas->setCursor(236, 88);  canvas->print("100");  // Mundur ke kanan luar busur
+    canvas->setCursor(228, 124); canvas->print("120");  // Naik & keluar dari jangkauan kotak bodi TEMP
 
-    // Label SPEED di dalam busur bagian atas
+    // Label SPEED ditata seimbang di bagian dalam atas lingkaran
     canvas->setTextColor(CYAN);
-    canvas->setCursor(145, 48);
+    canvas->setCursor(145, 45);
     canvas->print("SPEED");
 
     // ---- F. DIGIT KECEPATAN UTAMA DI TENGAH (SIZE 4) ----
@@ -251,35 +250,35 @@ void loop() {
     canvas->setTextSize(4); 
     // Shadow belakang
     canvas->setTextColor(DARK_BLUE);
-    canvas->setCursor(123, 67); canvas->print(speedText);
-    canvas->setCursor(125, 69); canvas->print(speedText);
+    canvas->setCursor(123, 64); canvas->print(speedText);
+    canvas->setCursor(125, 66); canvas->print(speedText);
     // Angka utama
     canvas->setTextColor(WHITE);
-    canvas->setCursor(124, 68); 
+    canvas->setCursor(124, 65); 
     canvas->print(speedText);
 
     // Teks KM/H di bawah angka utama
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(146, 106);
+    canvas->setCursor(146, 102);
     canvas->print("KM/H");
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
-    // 1. Kotak Informasi Baterai Volt (Kiri Bawah)
+    // Kotak Informasi Baterai Volt (Kiri Bawah)
     canvas->drawRect(15, 137, 75, 30, DARK_BLUE);
     canvas->setTextColor(GRAY);
     canvas->setCursor(23, 142); canvas->print("BATTERY");
     canvas->setTextColor(WHITE);
     canvas->setCursor(23, 154); canvas->print("12.4V");
 
-    // 2. Kotak Informasi Top Speed (Tengah Bawah)
+    // Kotak Informasi Top Speed (Tengah Bawah)
     canvas->drawRect(110, 133, 100, 22, DARK_BLUE);
     canvas->setTextColor(CYAN);
     canvas->setCursor(132, 137); canvas->print("TOP SPEED");
     canvas->setTextColor(WHITE);
     canvas->setCursor(136, 146); canvas->printf("%d KM/H", topSpeed);
 
-    // 3. Kotak Informasi Temperatur (Kanan Bawah)
+    // Kotak Informasi Temperatur (Kanan Bawah)
     canvas->drawRect(230, 137, 75, 30, DARK_BLUE);
     canvas->setTextColor(GRAY);
     canvas->setCursor(236, 142); canvas->print("TEMPERATURE");
@@ -287,7 +286,7 @@ void loop() {
     canvas->setTextColor(WHITE);
     canvas->setCursor(254, 154); canvas->printf("%d 'C", temperature);
 
-    // 4. Bar Garis RPM Warna Warni Horizontal (Paling Bawah)
+    // Bar Garis RPM Warna Warni Horizontal (Paling Bawah)
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 161); canvas->print("RPM");
     
