@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V23: TULISAN SPORT MODE DIHILANGKAN TOTAL
+// WAVESHARE ESP32-C6 1.47" - CODE V24: POSISI ANGKA 60 DITURUNKAN SEDIKIT
 // ======================================================================
 
 #define TFT_BL 22
@@ -47,7 +47,7 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// CONFIG ELIPS (SAMA DENGAN V22 YANG SUDAH CAKEP)
+// CONFIG ELIPS (SAMA DENGAN V23 YANG SUDAH PRESISI)
 const int centerX = 160;
 const int centerY = 85;  
 const int rx = 86;       
@@ -216,8 +216,8 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. GARIS HEADER PANEL ATAS (TULISAN SPORT MODE DIHILANGKAN, GARIS DIBUAT LURUS RAPI) ----
-    canvas->drawLine(10, 14, 310, 14, CYAN); // Garis horizontal lurus bersih dari ujung ke ujung
+    // ---- A. GARIS HEADER PANEL ATAS ----
+    canvas->drawLine(10, 14, 310, 14, CYAN); 
 
     // ---- B. INFO STATUS HEADER ATAS ----
     drawSignalIcon(15, 1);
@@ -258,11 +258,14 @@ void loop() {
     
     printAutoCenterLabel("20",  182, 13); 
     printAutoCenterLabel("40",  215, 13); 
-    printAutoCenterLabel("60",  270, 14); 
+    
+    // Angka 60 diturunkan dengan mengubah jarak celah (textGap) dari 14 menjadi 10
+    printAutoCenterLabel("60",  270, 10); 
+    
     printAutoCenterLabel("80",  325, 13); 
     printAutoCenterLabel("100", 358, 13); 
 
-    // Posisi manual tetap kebawahan (Sesuai setelan mantap V22)
+    // Posisi manual tetap kebawahan
     canvas->setCursor(68, 122);  canvas->print("0");   
     canvas->setCursor(243, 122); canvas->print("120"); 
 
