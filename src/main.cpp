@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V11: FINAL CLEAN-UP & PERFECT SPACING
+// WAVESHARE ESP32-C6 1.47" - CODE V11.2: FIXED VERTICAL MIDDLE SPACING
 // ======================================================================
 
 #define TFT_BL 22
@@ -126,7 +126,7 @@ void printAutoCenterLabel(const char* label, int angle, int textGap) {
 }
 
 // ======================================================================
-// FUNGSI GRAFIS IKON STATUS
+// FUNGSO GRAFIS IKON STATUS
 // ======================================================================
 void drawSignalIcon(int x, int y) {
     canvas->fillCircle(x + 10, y + 12, 2, CYAN);
@@ -262,7 +262,7 @@ void loop() {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
     }
     
-    // ---- E. MATH AUTO-CENTER TEXT LABELS (PERFECTED) ----
+    // ---- E. MATH AUTO-CENTER TEXT LABELS ----
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
@@ -274,29 +274,29 @@ void loop() {
     printAutoCenterLabel("100", 358, 12); 
     printAutoCenterLabel("120", 375, 12); 
 
-    // Label Teks SPEED (Diturunkan ke Y=52 agar lepas dari angka 60)
+    // Label Teks SPEED (Dinaikkan sedikit ke Y=45 agar lepas dari angka 000)
     canvas->setTextColor(CYAN);
-    canvas->setCursor(146, 52);
+    canvas->setCursor(146, 45);
     canvas->print("SPEED");
 
-    // ---- F. ANGKA UTAMA SPEED DIGITAL (DIPRESISIKAN KE Y=67) ----
+    // ---- F. ANGKA UTAMA SPEED DIGITAL (DINAIKKAN KE Y=58 BIAR SPACE BAWAH SANGAT LONGGAR) ----
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     
     canvas->setTextSize(4); 
     // Shadow belakang
     canvas->setTextColor(DARK_BLUE);
-    canvas->setCursor(123, 66); canvas->print(speedText); 
-    canvas->setCursor(125, 68); canvas->print(speedText); 
+    canvas->setCursor(123, 57); canvas->print(speedText); 
+    canvas->setCursor(125, 59); canvas->print(speedText); 
     // Angka utama
     canvas->setTextColor(WHITE);
-    canvas->setCursor(124, 67);                            
+    canvas->setCursor(124, 58);                            
     canvas->print(speedText);
 
-    // Teks KM/H (Dinaikkan ke Y=102 agar tidak menabrak boks TOP SPEED)
+    // Teks KM/H (Dinaikkan ke Y=96, pas di tengah ruang kosong sebelum boks TOP SPEED)
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(146, 102);                           
+    canvas->setCursor(146, 96);                           
     canvas->print("KM/H");
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
