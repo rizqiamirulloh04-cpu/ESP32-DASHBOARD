@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V57: INSTANT SPEED & SMOOTH/DELAY RPM
+// WAVESHARE ESP32-C6 1.47" - CODE V56: SEPARATED SPEED & RPM RESPONSIVENESS
 // ======================================================================
 
 #define TFT_BL 22
@@ -36,19 +36,18 @@ Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34
 // Canvas Utama Ukuran Penuh (320x172)
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
-// VARIABEL FILTERING (SMOOTHING TERPISAH - LOGIKA SUDAH DIPERBAIKI)
+// VARIABEL FILTERING (SMOOTHING TERPISAH)
+float smoothedThrottleSpeed = 1500.0; // Untuk Kecepatan (Dibuat lambat/smooth)
 float smoothedSteer = 1500.0;
+const float SPEED_SMOOTH_FACTOR = 0.18;  // Angka diperkecil agar gerakan busur komet lebih lambat/delay alami
 const float STEER_SMOOTH_FACTOR = 0.35;    
 
-// 1. Variabel Kecepatan (Dibuat INSTAN & Responsif Tanpa Delay)
 float speedValueFiltered = 0.0; 
 int speedValue = 0; 
 int targetSpeed = 0;
 int topSpeed = 0;
 
-// 2. Variabel RPM (Dibuat LEBIH LAMBAT / Smooth Delay)
-float smoothedThrottleRPM = 1500.0; 
-const float RPM_SMOOTH_FACTOR = 0.15; // Angka kecil agar gerakan bar RPM lambat dan tenang
+// Variabel Khusus RPM (Instan/Cepat)
 int rpmBarWidth = 0; 
 
 bool blinkState = false;
@@ -179,34 +178,35 @@ void loop() {
     if (rawSteerPWM == 0)     rawSteerPWM = 1500;
     if (rawThrottlePWM == 0)  rawThrottlePWM = 1500; 
 
+    // 1. FILTER TERPISAH UNTUK KECEPATAN (Dibuat lambat & berbobot)
+    smoothedThrottleSpeed = (smoothedThrottleSpeed * (1.0 - SPEED_SMOOTH_FACTOR)) + (rawThrottlePWM * SPEED_SMOOTH_FACTOR);
     smoothedSteer = (smoothedSteer * (1.0 - STEER_SMOOTH_FACTOR)) + (rawSteerPWM * STEER_SMOOTH_FACTOR);
 
-    // 1. HITUNG KECEPATAN SECARA INSTAN (Sangat Cepat & Responsif)
-    if (rawThrottlePWM < 1480) { 
-        targetSpeed = map(rawThrottlePWM, 1480, 1050, 0, 120);
-    } else if (rawThrottlePWM > 1520) { 
-        targetSpeed = map(rawThrottlePWM, 1520, 1950, 0, 120);
+    if (smoothedThrottleSpeed < 1480) { 
+        targetSpeed = map((int)smoothedThrottleSpeed, 1480, 1050, 0, 120);
+        targetSpeed = constrain(targetSpeed, 0, 120);
+    } else if (smoothedThrottleSpeed > 1520) { 
+        targetSpeed = map((int)smoothedThrottleSpeed, 1520, 1950, 0, 120);
+        targetSpeed = constrain(targetSpeed, 0, 120);
     } else {
         targetSpeed = 0; 
     }
-    targetSpeed = constrain(targetSpeed, 0, 120);
 
-    // Filter diperingan maksimal (0.85) agar busur komet merah langsung melesat instan
-    speedValueFiltered = (speedValueFiltered * 0.15) + (targetSpeed * 0.85);
+    speedValueFiltered = (speedValueFiltered * 0.4) + (targetSpeed * 0.6);
     speedValue = (int)(speedValueFiltered + 0.5);
 
     if (speedValue > topSpeed) topSpeed = speedValue;
 
-    // 2. FILTER KHUSUS BAR RPM (Dibuat tenang, bergerak lebih lama/delay alami)
-    smoothedThrottleRPM = (smoothedThrottleRPM * (1.0 - RPM_SMOOTH_FACTOR)) + (rawThrottlePWM * RPM_SMOOTH_FACTOR);
-    
+    // 2. HITUNG LANGSUNG DATA INSTAN RPM (Sangat Cepat tanpa delay kecepatan)
     int targetRpmWidth = 0;
-    if (smoothedThrottleRPM < 1480) {
-        targetRpmWidth = map((int)smoothedThrottleRPM, 1480, 1050, 0, 70);
-    } else if (smoothedThrottleRPM > 1520) {
-        targetRpmWidth = map((int)smoothedThrottleRPM, 1520, 1950, 0, 70);
+    if (rawThrottlePWM < 1480) {
+        targetRpmWidth = map(rawThrottlePWM, 1480, 1050, 0, 70);
+    } else if (rawThrottlePWM > 1520) {
+        targetRpmWidth = map(rawThrottlePWM, 1520, 1950, 0, 70);
     }
-    rpmBarWidth = constrain(targetRpmWidth, 0, 70);
+    // Filter sangat ringan khusus RPM agar tidak bergetar berlebihan tapi tetap instan
+    rpmBarWidth = (rpmBarWidth * 0.2) + (targetRpmWidth * 0.8); 
+    rpmBarWidth = constrain(rpmBarWidth, 0, 70);
 
     if (millis() - blinkTimer > 350) {
         blinkTimer = millis();
@@ -317,13 +317,13 @@ void loop() {
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- H. BAR RPM DENGAN EFEK DELAY/SMOOTH ----
+    // ---- H. BAR RPM INSTAN BERBUNTUT ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
     canvas->fillRect(135, 165, 70, 4, DARK_BLUE); 
     
-    // Rendering balok RPM menggunakan variabel slow 'rpmBarWidth'
+    // Rendering balok RPM menggunakan variabel instan 'rpmBarWidth'
     for (int i = 0; i < rpmBarWidth; i++) {
         uint16_t col = GREEN_BRIGHT; 
         int distanceFromHead = rpmBarWidth - 1 - i; 
