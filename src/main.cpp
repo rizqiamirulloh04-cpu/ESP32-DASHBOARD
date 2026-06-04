@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V22: BUSUR DINAIKKAN, ANGKA 0 & 120 FIXED DOWN
+// WAVESHARE ESP32-C6 1.47" - CODE V23: TULISAN SPORT MODE DIHILANGKAN TOTAL
 // ======================================================================
 
 #define TFT_BL 22
@@ -47,9 +47,9 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// CONFIG ELIPS (TITIK PUSAT Y DINAIKKAN SEDIKIT LAGI DARI 90 KE 85 AGAR BUSUR LEBIH NAIK)
+// CONFIG ELIPS (SAMA DENGAN V22 YANG SUDAH CAKEP)
 const int centerX = 160;
-const int centerY = 85;  // <-- Dinaikkan sedikit lagi agar posisi busur makin cakep
+const int centerY = 85;  
 const int rx = 86;       
 const int ry = 48;       
 
@@ -216,17 +216,8 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. GARIS HEADER PANEL ATAS ----
-    canvas->setTextColor(CYAN);
-    canvas->setTextSize(1);
-    canvas->setCursor(132, 2); 
-    canvas->print("SPORT MODE");
-
-    canvas->drawLine(10, 14, 115, 14, CYAN);
-    canvas->drawLine(115, 14, 123, 5, CYAN);
-    canvas->drawLine(123, 5, 197, 5, CYAN);
-    canvas->drawLine(197, 5, 205, 14, CYAN);
-    canvas->drawLine(205, 14, 310, 14, CYAN);
+    // ---- A. GARIS HEADER PANEL ATAS (TULISAN SPORT MODE DIHILANGKAN, GARIS DIBUAT LURUS RAPI) ----
+    canvas->drawLine(10, 14, 310, 14, CYAN); // Garis horizontal lurus bersih dari ujung ke ujung
 
     // ---- B. INFO STATUS HEADER ATAS ----
     drawSignalIcon(15, 1);
@@ -253,7 +244,7 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL (SEDIKIT DINAIKKAN LAGI KE Y=85) ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true);
@@ -265,16 +256,15 @@ void loop() {
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    // Angka tengah otomatis ikut terangkat agar pas dengan lekukan atas busur
     printAutoCenterLabel("20",  182, 13); 
     printAutoCenterLabel("40",  215, 13); 
     printAutoCenterLabel("60",  270, 14); 
     printAutoCenterLabel("80",  325, 13); 
     printAutoCenterLabel("100", 358, 13); 
 
-    // PERBAIKAN ANGKA 0 & 120 (Dibuat Manual Kebawahan agar presisi di ujung garis bawah)
-    canvas->setCursor(68, 122);  canvas->print("0");   // Samping kiri ujung bawah busur
-    canvas->setCursor(243, 122); canvas->print("120"); // Samping kanan ujung bawah busur
+    // Posisi manual tetap kebawahan (Sesuai setelan mantap V22)
+    canvas->setCursor(68, 122);  canvas->print("0");   
+    canvas->setCursor(243, 122); canvas->print("120"); 
 
     // ---- F. CLUSTER TENGAH ----
     
