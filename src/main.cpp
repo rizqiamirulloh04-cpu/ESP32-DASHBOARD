@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V20: PERFECT CENTER (SHIFTED DOWN MORE ~1mm)
+// WAVESHARE ESP32-C6 1.47" - CODE V21: BUSUR & ANGKA KELILING DINAIKKAN TOTAL
 // ======================================================================
 
 #define TFT_BL 22
@@ -47,9 +47,9 @@ int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
-// CONFIG ELIPS 
+// CONFIG ELIPS (TITIK PUSAT Y DINAIKKAN TOTAL DARI 102 KE 90 AGAR BUSUR NAIK)
 const int centerX = 160;
-const int centerY = 102; 
+const int centerY = 90;  // <-- Dinaikkan agar busur melengkung tinggi ke atas
 const int rx = 86;       
 const int ry = 48;       
 
@@ -253,7 +253,7 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL (POSISI SUDAH TERANGKAT KE ATAS) ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true);
@@ -261,7 +261,7 @@ void loop() {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, WHITE, 3, false);
     }
     
-    // ---- E. DISTRIBUSI LABEL ANGKA KELILING ----
+    // ---- E. DISTRIBUSI LABEL ANGKA KELILING (OTOMATIS IKUT TERANGKAT KE ATAS) ----
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
@@ -273,9 +273,9 @@ void loop() {
     printAutoCenterLabel("100", 358, 13); 
     printAutoCenterLabel("120", 375, 13); 
 
-    // ---- F. CLUSTER TENGAH: ADJUSTED POSITION V20 (DOWN MORE ~1MM) ----
+    // ---- F. CLUSTER TENGAH (POSISI TETAP DI PUSAT LAYAR AGAR TERLIHAT SEIMBANG) ----
     
-    // 1. TULISAN "SPEED" (Diturunkan lagi ke Y = 56)
+    // 1. TULISAN "SPEED"
     canvas->setTextSize(1);
     canvas->setTextColor(CYAN);
     int speedX = 145; 
@@ -283,7 +283,7 @@ void loop() {
     canvas->setCursor(speedX, speedY);     canvas->print("SPEED");
     canvas->setCursor(speedX + 1, speedY); canvas->print("SPEED"); 
 
-    // 2. ANGKA SPEED UTAMA (Diturunkan ke Y = 69 agar pas di pusat oval)
+    // 2. ANGKA SPEED UTAMA "000"
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     canvas->setTextSize(4); 
@@ -292,14 +292,14 @@ void loop() {
     int textX = 122; 
     int textY = 69;  
     
-    // Efek Tebal 4 Arah (Bold Shadow Effect)
+    // Efek Bold tebal
     canvas->setCursor(textX, textY);         canvas->print(speedText);
     canvas->setCursor(textX + 1, textY);     canvas->print(speedText);
     canvas->setCursor(textX - 1, textY);     canvas->print(speedText);
     canvas->setCursor(textX, textY + 1);     canvas->print(speedText);
     canvas->setCursor(textX, textY - 1);     canvas->print(speedText);
 
-    // 3. TULISAN "KM/H" (Diturunkan ke Y = 105)
+    // 3. TULISAN "KM/H"
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
     int kmhX = 148; 
