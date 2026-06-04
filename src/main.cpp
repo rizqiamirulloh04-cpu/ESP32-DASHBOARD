@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V39: AGGRESSIVE SPORT WING UPPER PANEL
+// WAVESHARE ESP32-C6 1.47" - CODE V40: PERFECT RECT & SOLID GREEN RPM
 // ======================================================================
 
 #define TFT_BL 22
@@ -22,7 +22,7 @@
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED_BRIGHT     0xF800 // Kepala Komet Speedometer
-#define GREEN_BRIGHT   0x07E0 // Hijau Murni Original (Dikunci untuk Sein & RPM)
+#define GREEN_BRIGHT   0x07E0 // Hijau Murni Original (Dikunci untuk Sein & RPM Solid)
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
 #define DARK_BLUE      0x0010 
@@ -216,16 +216,11 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. BARU: DESIGN GARIS PANEL ATAS AGRESIF MODEREN (DOUBLE WINGED) ----
-    // Garis horisontal pinggir kiri kustom
+    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (DOUBLE WINGED) ----
     canvas->drawLine(10, 14, 110, 14, CYAN);
-    // Tekukan diagonal kiri naik menuju atas angka 60
     canvas->drawLine(110, 14, 122, 7, CYAN);
-    // Garis datar pelindung tengah atas angka 60
     canvas->drawLine(122, 7, 198, 7, CYAN);
-    // Tekukan diagonal kanan turun kembali sejajar pinggir
     canvas->drawLine(198, 7, 210, 14, CYAN);
-    // Garis horisontal pinggir kanan kustom
     canvas->drawLine(210, 14, 310, 14, CYAN); 
 
     // ---- B. INFO STATUS HEADER ATAS ----
@@ -264,10 +259,9 @@ void loop() {
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    // Posisi label angka 60 diturunkan 3 pixel (dari y=10 jadi y=13) biar posisinya pas di kolong tekukan garis baru
     printAutoCenterLabel("20",  182, 13); 
     printAutoCenterLabel("40",  215, 13); 
-    printAutoCenterLabel("60",  270, 13); // Dioptimalkan posisinya
+    printAutoCenterLabel("60",  270, 13); 
     printAutoCenterLabel("80",  325, 13); 
     printAutoCenterLabel("100", 358, 13); 
 
@@ -296,39 +290,35 @@ void loop() {
     canvas->setCursor(kmhX, kmhY);     canvas->print("KM/H");
     canvas->setCursor(kmhX + 1, kmhY); canvas->print("KM/H"); 
 
-    // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
+    // ---- G. REVISI FIX: FOOTER PANEL STATUS INDIKATOR (ANTI TABRAKAN) ----
     canvas->drawRect(15, 142, 75, 26, DARK_BLUE);
     canvas->setTextColor(GRAY); canvas->setTextSize(1);
     canvas->setCursor(23, 145); canvas->print("BATTERY");
     canvas->setTextColor(WHITE); canvas->setCursor(23, 156); canvas->print("12.4V");
 
-    canvas->drawRect(110, 137, 100, 19, DARK_BLUE);
-    canvas->setTextColor(CYAN); canvas->setCursor(132, 140); canvas->print("TOP SPEED");
-    canvas->setTextColor(WHITE); canvas->setCursor(136, 147); canvas->printf("%d KM/H", topSpeed);
+    // Lebar kotak dinaikkan jadi 104, tinggi ditingkatkan ke 25, posisi Y dinaikkan sedikit ke 134 agar seimbang
+    canvas->drawRect(108, 134, 104, 25, DARK_BLUE);
+    canvas->setTextColor(CYAN); 
+    canvas->setCursor(128, 137); canvas->print("TOP SPEED"); // Posisi Y label teks dipisah bersih
+    canvas->setTextColor(WHITE); 
+    canvas->setCursor(130, 148); canvas->printf("%d KM/H", topSpeed); // Nilai angka ditaruh di bawahnya tanpa tabrakan
 
     canvas->drawRect(230, 142, 75, 26, DARK_BLUE);
     canvas->setTextColor(GRAY); canvas->setCursor(236, 145); canvas->print("TEMPERATURE");
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- H. BAR RPM: DIOPTIMALKAN AGAR LEBIH PADAT & MENYALA KONTRAS ----
+    // ---- H. REVISI FIX: BAR RPM TEBAL & WARNA HIJAU SOLID SUPER TERANG ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
-    canvas->fillRect(135, 165, 70, 4, DARK_BLUE); 
+    // Tinggi base-box RPM dinaikkan dari 4 ke 7 pixel
+    canvas->fillRect(135, 163, 70, 7, DARK_BLUE); 
     int barWidth = map(speedValue, 0, 120, 0, 70);
     
+    // Digambar menggunakan Hijau Murni penuh (tanpa rumus pemudaran ekor) dengan tinggi 8 pixel
     for (int i = 0; i < barWidth; i++) {
-        uint16_t col = GREEN_BRIGHT; 
-        int distanceFromHead = barWidth - 1 - i; 
-        
-        if (distanceFromHead > 0) {
-            int intensity = 63 - (distanceFromHead * 3); 
-            if (intensity < 24) intensity = 24;          
-            col = (intensity << 5); 
-        }
-        
-        canvas->drawFastVLine(135 + i, 164, 5, col);
+        canvas->drawFastVLine(135 + i, 162, 8, GREEN_BRIGHT);
     }
 
     // TAMPILKAN SELURUH MEMORI KANVAS KE LCD
