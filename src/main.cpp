@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V32: FIX KALIBRASI ARAH GAS REMOTE RC
+// WAVESHARE ESP32-C6 1.47" - CODE V34: MAJU MUNDUR EQUAL SPEED 120 KM/H
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,7 +21,7 @@
 // COLOR PALETTE (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 // Warna Busur Merah Terang Komet
+#define RED_BRIGHT     0xF800 // Warna Busur Merah Terang
 #define GREEN_BRIGHT   0x07E0 // Kepala Komet RPM
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
@@ -35,10 +35,10 @@ Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34
 // Canvas Utama Ukuran Penuh (320x172)
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
-// VARIABEL FILTERING (SMOOTHING) - RESPONS DIJAGA TETAP INSTAN
+// VARIABEL FILTERING (SMOOTHING)
 float smoothedThrottle = 1500.0;
 float smoothedSteer = 1500.0;
-const float THROTTLE_SMOOTH_FACTOR = 0.45; // Sangat responsif mengikuti tuas remote
+const float THROTTLE_SMOOTH_FACTOR = 0.45; 
 const float STEER_SMOOTH_FACTOR = 0.35;    
 
 float speedValueFiltered = 0.0; 
@@ -175,22 +175,22 @@ void loop() {
     smoothedSteer = (smoothedSteer * (1.0 - STEER_SMOOTH_FACTOR)) + (rawSteerPWM * STEER_SMOOTH_FACTOR);
 
     // ==================================================================
-    // RE-KALIBRASI FIX: PENYESUAIAN REAL-TIME DENGAN REMOT RC MAS
+    // FIX KALIBRASI: MAJU & MUNDUR SAMA-SAMA MENTOK DI 120 KM/H
     // ==================================================================
-    if (smoothedThrottle > 1520) { 
-        // GAS MAJU: Nilai PWM membesar dari posisi netral (>1520) menuju mentok (~1950)
+    if (smoothedThrottle < 1480) { 
+        // GAS MAJU: Nilai PWM mengecil, target map full 120 KM/H
+        targetSpeed = map((int)smoothedThrottle, 1480, 1050, 0, 120);
+        targetSpeed = constrain(targetSpeed, 0, 120);
+    } else if (smoothedThrottle > 1520) { 
+        // GAS MUNDUR: Nilai PWM membesar, SEKARANG DIRUBAH JADI FULL 120 KM/H
         targetSpeed = map((int)smoothedThrottle, 1520, 1950, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
-    } else if (smoothedThrottle < 1480) { 
-        // GAS MUNDUR / REM: Nilai PWM mengecil dari posisi netral (<1480) menuju mentok (~1050)
-        targetSpeed = map((int)smoothedThrottle, 1480, 1050, 0, 50);
-        targetSpeed = constrain(targetSpeed, 0, 50);
     } else {
-        // POSISI DIAM (NETRAL): Rentang antara 1480 sampai 1520 agar angka mengunci di 0
+        // POSISI DIAM (NETRAL)
         targetSpeed = 0; 
     }
 
-    // Transisi filter akhir dibuat agresif (0.6) agar angka dan bar merah bergerak berbarengan secara instan!
+    // Transisi filter akhir
     speedValueFiltered = (speedValueFiltered * 0.4) + (targetSpeed * 0.6);
     speedValue = (int)(speedValueFiltered + 0.5);
 
@@ -243,13 +243,13 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL (MERAH TERANG SEJAJAR GAS) ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
     // Background busur asli Biru Gelap (DARK_BLUE)
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
     
-    // Sinar aktif MERAH TERANG mengalir lurus berbarengan dengan injakan gas maju
+    // Sinar aktif MERAH TERANG mengalir lurus berbarengan dengan injakan gas maju/mundur
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true);
     }
@@ -304,7 +304,7 @@ void loop() {
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- H. BAR RPM EFEK KOMET BERBUNTUT (FADING GREEN) ----
+    // ---- H. BAR RPM EFEK KOMET BERBUNTUT ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
