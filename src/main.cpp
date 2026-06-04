@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE FIXED: REAL TIME DYNAMIC METEOR EFFECT
+// WAVESHARE ESP32-C6 1.47" - CODE V54 FIX: AGGRESSIVE BLUE LINE & REAL METEOR EFFECT
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,10 +21,10 @@
 // COLOR PALETTE (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 // Kepala Komet Merah Terang
-#define GREEN_BRIGHT   0x07E0 // Kepala Komet RPM
+#define RED_BRIGHT     0xF800 // Kepala Meteor Merah Terang (Pangkal)
+#define GREEN_BRIGHT   0x07E0 // Kepala Komet RPM / Sein
 #define YELLOW         0xFFE0
-#define CYAN           0x07FF
+#define CYAN           0x07FF // Neon Blue / Biru Terang untuk Garis & Teks
 #define DARK_BLUE      0x0010 // Background busur pas diam
 #define GRAY           0x5AEB
 
@@ -64,11 +64,10 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN EFEK KOMET GRADASI DINAMIS (IKUT GAS)
+// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN EFEK METEOR REAL GRADASI MEMUDAR
 // ======================================================================
-void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc, int activeAngle) {
-    // Hitung panjang busur aktif saat ini (bukan panjang total elips)
-    int totalActiveAngles = activeAngle - startDeg;
+void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
+    int totalAngles = endDeg - startDeg;
 
     for (int t = 0; t < thickness; t++) {
         int curRx = rx - t;
@@ -83,13 +82,13 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             
             uint16_t pixelColor = defaultColor;
             
-            // Logika Gradasi Efek Komet Bergerak Nyata
-            if (isSpeedArc && totalActiveAngles > 0) {
-                int currentPos = angle - startDeg; // Jarak dari titik nol awal
+            // LOGIKA GRADASI METEOR MERAH REAL (TEBAL/TERANG DI PANGKAL, MEMUDAR DI UJUNG GAS)
+            if (isSpeedArc && totalAngles > 0) {
+                int currentPos = angle - startDeg; // Jarak berjalan dari titik 0 (startAngle)
                 
-                // Nilai merah dipetakan secara dinamis berdasarkan posisi kepala komet yang berjalan (activeAngle)
-                // Pangkal bawah dimulai dari intensitas 6 (merah redup), ujung gas/kepala komet dipaksa 31 (Merah Menyala Maksimal)
-                int redIntensity = map(currentPos, 0, totalActiveAngles, 6, 31); 
+                // Pangkal (0 KM/H) dimulai dari Merah Terang (31)
+                // Semakin maju mengikuti gas, intensitas merah memudar halus ke arah ujung (6)
+                int redIntensity = map(currentPos, 0, totalAngles, 31, 6); 
                 redIntensity = constrain(redIntensity, 6, 31);
                 
                 // Format warna 16-bit RGB565 bit merah
@@ -191,7 +190,7 @@ void loop() {
     smoothedThrottle = (smoothedThrottle * (1.0 - THROTTLE_SMOOTH_FACTOR)) + (rawThrottlePWM * THROTTLE_SMOOTH_FACTOR);
     smoothedSteer = (smoothedSteer * (1.0 - STEER_SMOOTH_FACTOR)) + (rawSteerPWM * STEER_SMOOTH_FACTOR);
 
-    // KALIBRASI MAJU DAN MUNDUR 120 KM/H EQUAL
+    // KALIBRASI KECEPATAN
     if (smoothedThrottle < 1480) { 
         targetSpeed = map((int)smoothedThrottle, 1480, 1050, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
@@ -202,7 +201,6 @@ void loop() {
         targetSpeed = 0; 
     }
 
-    // Transisi filter akhir
     speedValueFiltered = (speedValueFiltered * 0.4) + (targetSpeed * 0.6);
     speedValue = (int)(speedValueFiltered + 0.5);
 
@@ -227,17 +225,21 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. GARIS HEADER PANEL ATAS ----
-    canvas->drawLine(10, 14, 310, 14, CYAN); 
+    // ---- A. DESAIN GARIS HEADER V54 (NEON BLUE DENGAN SUDUT AGRESIF) ----
+    canvas->drawLine(10, 24, 60, 24, CYAN);
+    canvas->drawLine(60, 24, 75, 14, CYAN);
+    canvas->drawLine(75, 14, 245, 14, CYAN);
+    canvas->drawLine(245, 14, 260, 24, CYAN);
+    canvas->drawLine(260, 24, 310, 24, CYAN);
 
-    // ---- B. INFO STATUS HEADER ATAS ----
-    drawSignalIcon(15, 1);
+    // ---- B. INFO STATUS HEADER ATAS (KOORDINAT Y MENYESUAIKAN GARIS V54) ----
+    drawSignalIcon(15, 6);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(40, 4);
+    canvas->setCursor(40, 9);
     canvas->printf("%d dBm", signalDbm);
     
-    drawBatteryIcon(250, 1);
-    canvas->setCursor(275, 4);
+    drawBatteryIcon(250, 6);
+    canvas->setCursor(275, 9);
     canvas->printf("%d%%", batteryPercent);
 
     // ---- C. LAMPU SEIN KIRI & KANAN ----
@@ -255,15 +257,15 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & KOMET ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & METEOR ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
     // Background dasar busur asli Biru Gelap (DARK_BLUE)
-    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false, 0);
+    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
     
-    // RENDERING EFEK KOMET GRADASI DINAMIS: Ujung jalan dipastikan selalu Merah Terang
+    // RENDERING EFEK METEOR GRADASI V54 (Pangkal tetap merah membara, memanjang elastis mengikuti gas)
     if (speedValue > 0) {
-        drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true, currentActiveAngle);
+        drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true);
     }
     
     // ---- E. DISTRIBUSI LABEL ANGKA KELILING ----
