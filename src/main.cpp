@@ -154,7 +154,7 @@ void setup() {
     Serial.begin(115200);
     
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 160); 
+    ledcWrite(TFT_BL, 110); 
 
     gfx->begin();
     gfx->invertDisplay(false);
