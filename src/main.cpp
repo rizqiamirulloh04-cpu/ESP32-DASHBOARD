@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V37: FIX COLOR & BACKLIGHT NORMALIZATION
+// WAVESHARE ESP32-C6 1.47" - CODE V39: AGGRESSIVE SPORT WING UPPER PANEL
 // ======================================================================
 
 #define TFT_BL 22
@@ -18,14 +18,14 @@
 #define BATTERY_PIN  3  
 #define SIGNAL_PIN   4  
 
-// COLOR PALETTE ORIGINAL (RGB565 16-Bit) - DIKUNCI BIAR TIDAK PUDAR
+// COLOR PALETTE ORIGINAL (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED_BRIGHT     0xF800 // Kepala Komet Speedometer
-#define GREEN_BRIGHT   0x07E0 // HIJAU MURNI ORIGINAL (Untuk Sein & RPM)
+#define GREEN_BRIGHT   0x07E0 // Hijau Murni Original (Dikunci untuk Sein & RPM)
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
-#define DARK_BLUE      0x0010 // Biru gelap latar belakang busur
+#define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
 
 // INITIALISASI HARDWARE DISPLAY
@@ -153,7 +153,6 @@ void drawThermometerIcon(int x, int y) {
 void setup() {
     Serial.begin(115200);
     
-    // BACKLIGHT NORMALIZATION: Diturunkan kembali ke 160 agar kontras warna kembali pekat dan dalam
     ledcAttach(TFT_BL, 5000, 8);
     ledcWrite(TFT_BL, 160); 
 
@@ -217,8 +216,17 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. GARIS HEADER PANEL ATAS ----
-    canvas->drawLine(10, 14, 310, 14, CYAN); 
+    // ---- A. BARU: DESIGN GARIS PANEL ATAS AGRESIF MODEREN (DOUBLE WINGED) ----
+    // Garis horisontal pinggir kiri kustom
+    canvas->drawLine(10, 14, 110, 14, CYAN);
+    // Tekukan diagonal kiri naik menuju atas angka 60
+    canvas->drawLine(110, 14, 122, 7, CYAN);
+    // Garis datar pelindung tengah atas angka 60
+    canvas->drawLine(122, 7, 198, 7, CYAN);
+    // Tekukan diagonal kanan turun kembali sejajar pinggir
+    canvas->drawLine(198, 7, 210, 14, CYAN);
+    // Garis horisontal pinggir kanan kustom
+    canvas->drawLine(210, 14, 310, 14, CYAN); 
 
     // ---- B. INFO STATUS HEADER ATAS ----
     drawSignalIcon(15, 1);
@@ -230,7 +238,7 @@ void loop() {
     canvas->setCursor(275, 4);
     canvas->printf("%d%%", batteryPercent);
 
-    // ---- C. LAMPU SEIN KIRI & KANAN (FIX DIKEMBALIKAN KE HIJAU ORIGINAL) ----
+    // ---- C. LAMPU SEIN KIRI & KANAN ----
     uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN_BRIGHT : DARK_BLUE;
     canvas->fillTriangle(18, 52, 30, 40, 30, 64, leftArrowColor);
     canvas->fillRect(30, 47, 12, 10, leftArrowColor);
@@ -256,9 +264,10 @@ void loop() {
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
+    // Posisi label angka 60 diturunkan 3 pixel (dari y=10 jadi y=13) biar posisinya pas di kolong tekukan garis baru
     printAutoCenterLabel("20",  182, 13); 
     printAutoCenterLabel("40",  215, 13); 
-    printAutoCenterLabel("60",  270, 10); 
+    printAutoCenterLabel("60",  270, 13); // Dioptimalkan posisinya
     printAutoCenterLabel("80",  325, 13); 
     printAutoCenterLabel("100", 358, 13); 
 
@@ -302,7 +311,7 @@ void loop() {
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- H. BAR RPM HIJAU ORIGINAL DENGAN KOMET MEMUDAR SEIMBANG ----
+    // ---- H. BAR RPM: DIOPTIMALKAN AGAR LEBIH PADAT & MENYALA KONTRAS ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
@@ -313,10 +322,9 @@ void loop() {
         uint16_t col = GREEN_BRIGHT; 
         int distanceFromHead = barWidth - 1 - i; 
         
-        // Logika pemudaran warna hijau murni berdasar jarak bit shift hijau asli
         if (distanceFromHead > 0) {
-            int intensity = 63 - (distanceFromHead * 4); 
-            if (intensity < 16) intensity = 16; 
+            int intensity = 63 - (distanceFromHead * 3); 
+            if (intensity < 24) intensity = 24;          
             col = (intensity << 5); 
         }
         
