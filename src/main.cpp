@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V41: DYNAMIC RPM GRADIENT COMET EFFECT
+// WAVESHARE ESP32-C6 1.47" - CODE V42: DEEP PURPLE PANEL & ADJUSTED BRIGHTNESS
 // ======================================================================
 
 #define TFT_BL 22
@@ -22,11 +22,12 @@
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED_BRIGHT     0xF800 
-#define GREEN_BRIGHT   0x07E0 // Hijau murni original untuk referensi/sein
+#define GREEN_BRIGHT   0x07E0 // Hijau murni untuk sein & kepala komet
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
 #define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
+#define DEEP_PURPLE    0x9013 // <-- WARNA BARU: Ungu Tua Premium yang Pekat & Elegan
 
 // INITIALISASI HARDWARE DISPLAY
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
@@ -154,7 +155,7 @@ void setup() {
     Serial.begin(115200);
     
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 110); 
+    ledcWrite(TFT_BL, 120); // <-- FIX: Kecerahan sudah diturunkan ke 120 agar nyaman di mata
 
     gfx->begin();
     gfx->invertDisplay(false);
@@ -216,12 +217,12 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (DOUBLE WINGED) ----
-    canvas->drawLine(10, 14, 110, 14, CYAN);
-    canvas->drawLine(110, 14, 122, 7, CYAN);
-    canvas->drawLine(122, 7, 198, 7, CYAN);
-    canvas->drawLine(198, 7, 210, 14, CYAN);
-    canvas->drawLine(210, 14, 310, 14, CYAN); 
+    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (DOUBLE WINGED - DEEP PURPLE) ----
+    canvas->drawLine(10, 14, 110, 14, DEEP_PURPLE); 
+    canvas->drawLine(110, 14, 122, 7, DEEP_PURPLE);
+    canvas->drawLine(122, 7, 198, 7, DEEP_PURPLE);
+    canvas->drawLine(198, 7, 210, 14, DEEP_PURPLE);
+    canvas->drawLine(210, 14, 310, 14, DEEP_PURPLE); 
 
     // ---- B. INFO STATUS HEADER ATAS ----
     drawSignalIcon(15, 1);
@@ -307,30 +308,24 @@ void loop() {
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- H. BARU: KOMET RPM GRADASI MEMUDAR (DIAMETER LEBIH TEBAL) ----
+    // ---- H. BAR RPM KOMET GRADASI MEMUDAR TEBAL ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
-    // Background slot kosong RPM (Tinggi 8 pixel)
     canvas->fillRect(135, 162, 70, 8, DARK_BLUE); 
     int barWidth = map(speedValue, 0, 120, 0, 70);
     
-    // Logika Komet: Semakin mendekati ujung (kepala gas), warna semakin terang. Ekornya memudar natural.
     for (int i = 0; i < barWidth; i++) {
         int distanceFromHead = barWidth - 1 - i; 
         uint16_t col;
         
         if (distanceFromHead == 0) {
-            // Kepala Komet: Hijau murni sangat terang (RGB565: G=63 maksimum)
-            col = 0x07E0; 
+            col = 0x07E0; // Kepala Komet Hijau Cerah
         } else {
-            // Ekor Komet: Gradasi meredup secara matematis (mengurangi register warna hijau)
             int greenIntensity = 63 - (distanceFromHead * 2); 
-            if (greenIntensity < 15) greenIntensity = 15; // Kunci batas redup terbawah agar ekor tidak hilang hitam
+            if (greenIntensity < 15) greenIntensity = 15; 
             col = (greenIntensity << 5); 
         }
-        
-        // Digambar kokoh dengan ketebalan penuh 8 pixel vertikal
         canvas->drawFastVLine(135 + i, 162, 8, col);
     }
 
