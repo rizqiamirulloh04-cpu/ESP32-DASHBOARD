@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V54 FIX: AGGRESSIVE BLUE LINE & REAL METEOR EFFECT
+// WAVESHARE ESP32-C6 1.47" - CODE V54 FIX: AGGRESSIVE HEADER & REAL METEOR
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,10 +21,10 @@
 // COLOR PALETTE (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 // Kepala Meteor Merah Terang (Pangkal)
-#define GREEN_BRIGHT   0x07E0 // Kepala Komet RPM / Sein
+#define RED_BRIGHT     0xF800 
+#define GREEN_BRIGHT   0x07E0 
 #define YELLOW         0xFFE0
-#define CYAN           0x07FF // Neon Blue / Biru Terang untuk Garis & Teks
+#define CYAN           0x07FF // Neon Blue Terang untuk Header & Teks
 #define DARK_BLUE      0x0010 // Background busur pas diam
 #define GRAY           0x5AEB
 
@@ -64,7 +64,7 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN EFEK METEOR REAL GRADASI MEMUDAR
+// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN KEPALA METEOR TERANG DI UJUNG GAS
 // ======================================================================
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
     int totalAngles = endDeg - startDeg;
@@ -82,17 +82,19 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             
             uint16_t pixelColor = defaultColor;
             
-            // LOGIKA GRADASI METEOR MERAH REAL (TEBAL/TERANG DI PANGKAL, MEMUDAR DI UJUNG GAS)
+            // LOGIKA METEOR: KEPALA TERANG DI UJUNG GAS, EKOR MERAH MEMUDAR KE BELAKANG
             if (isSpeedArc && totalAngles > 0) {
-                int currentPos = angle - startDeg; // Jarak berjalan dari titik 0 (startAngle)
+                int currentPos = angle - startDeg; // Jarak pixel berjalan dari titik 0
                 
-                // Pangkal (0 KM/H) dimulai dari Merah Terang (31)
-                // Semakin maju mengikuti gas, intensitas merah memudar halus ke arah ujung (6)
-                int redIntensity = map(currentPos, 0, totalAngles, 31, 6); 
-                redIntensity = constrain(redIntensity, 6, 31);
-                
-                // Format warna 16-bit RGB565 bit merah
-                pixelColor = (redIntensity << 11); 
+                // Jika posisi pixel berada di 3 derajat terakhir (paling ujung gas/kepala meteor)
+                if (currentPos >= totalAngles - 3) {
+                    pixelColor = CYAN; // Kepala meteor menyala Cyan terang seperti coretan foto Mas
+                } else {
+                    // Sisa busur ke belakang menjadi ekor merah bergradasi memudar menuju pangkal
+                    int redIntensity = map(currentPos, 0, totalAngles, 8, 31); 
+                    redIntensity = constrain(redIntensity, 8, 31);
+                    pixelColor = (redIntensity << 11); 
+                }
             }
             
             if (x >= 0 && x < 320 && y >= 0 && y < 172) {
@@ -225,14 +227,14 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESAIN GARIS HEADER V54 (NEON BLUE DENGAN SUDUT AGRESIF) ----
+    // ---- A. DESAIN GARIS HEADER V54 UTUH (NEON BLUE AGRESIF) ----
     canvas->drawLine(10, 24, 60, 24, CYAN);
     canvas->drawLine(60, 24, 75, 14, CYAN);
     canvas->drawLine(75, 14, 245, 14, CYAN);
     canvas->drawLine(245, 14, 260, 24, CYAN);
     canvas->drawLine(260, 24, 310, 24, CYAN);
 
-    // ---- B. INFO STATUS HEADER ATAS (KOORDINAT Y MENYESUAIKAN GARIS V54) ----
+    // ---- B. INFO STATUS HEADER ATAS ----
     drawSignalIcon(15, 6);
     canvas->setTextColor(WHITE);
     canvas->setCursor(40, 9);
@@ -263,7 +265,7 @@ void loop() {
     // Background dasar busur asli Biru Gelap (DARK_BLUE)
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
     
-    // RENDERING EFEK METEOR GRADASI V54 (Pangkal tetap merah membara, memanjang elastis mengikuti gas)
+    // RENDERING METEOR GAS DENGAN KEPALA TERANG DI DEPAN
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true);
     }
