@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V36: SUPER BRIGHT GREEN RPM EFEK GLOW
+// WAVESHARE ESP32-C6 1.47" - CODE V37: FIX COLOR & BACKLIGHT NORMALIZATION
 // ======================================================================
 
 #define TFT_BL 22
@@ -18,15 +18,14 @@
 #define BATTERY_PIN  3  
 #define SIGNAL_PIN   4  
 
-// COLOR PALETTE (RGB565 16-Bit)
+// COLOR PALETTE ORIGINAL (RGB565 16-Bit) - DIKUNCI BIAR TIDAK PUDAR
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED_BRIGHT     0xF800 // Kepala Komet Speedometer
-#define GREEN_BRIGHT   0x37E0 // RACIKAN BARU: Super Bright Lime Green (Jauh lebih menyala)
-#define GREEN_MINT     0x07FF // Alternatif Hijau Cyan Stabilo untuk aksen ikon
+#define GREEN_BRIGHT   0x07E0 // HIJAU MURNI ORIGINAL (Untuk Sein & RPM)
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
-#define DARK_BLUE      0x0010 
+#define DARK_BLUE      0x0010 // Biru gelap latar belakang busur
 #define GRAY           0x5AEB
 
 // INITIALISASI HARDWARE DISPLAY
@@ -132,7 +131,7 @@ void drawSignalIcon(int x, int y) {
 void drawBatteryIcon(int x, int y) {
     canvas->drawRect(x, y + 3, 18, 10, GRAY);
     canvas->fillRect(x + 18, y + 6, 2, 4, GRAY);
-    canvas->fillRect(x + 2, y + 5, 14, 6, GREEN_MINT);
+    canvas->fillRect(x + 2, y + 5, 14, 6, GREEN_BRIGHT);
 }
 
 void drawSteeringIcon(int x, int y) {
@@ -154,9 +153,9 @@ void drawThermometerIcon(int x, int y) {
 void setup() {
     Serial.begin(115200);
     
-    // SETUP BACKLIGHT: Ditingkatkan dari 150 menjadi 240 agar layar super terang menyala
+    // BACKLIGHT NORMALIZATION: Diturunkan kembali ke 160 agar kontras warna kembali pekat dan dalam
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 240); 
+    ledcWrite(TFT_BL, 160); 
 
     gfx->begin();
     gfx->invertDisplay(false);
@@ -231,18 +230,18 @@ void loop() {
     canvas->setCursor(275, 4);
     canvas->printf("%d%%", batteryPercent);
 
-    // ---- C. LAMPU SEIN KIRI & KANAN ----
-    uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN_MINT : DARK_BLUE;
+    // ---- C. LAMPU SEIN KIRI & KANAN (FIX DIKEMBALIKAN KE HIJAU ORIGINAL) ----
+    uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN_BRIGHT : DARK_BLUE;
     canvas->fillTriangle(18, 52, 30, 40, 30, 64, leftArrowColor);
     canvas->fillRect(30, 47, 12, 10, leftArrowColor);
-    canvas->setTextColor(leftArrowColor == GREEN_MINT ? GREEN_MINT : GRAY);
+    canvas->setTextColor(leftArrowColor == GREEN_BRIGHT ? GREEN_BRIGHT : GRAY);
     canvas->setCursor(20, 72); canvas->print("LEFT");
     drawSteeringIcon(28, 102);
 
-    uint16_t rightArrowColor = (currentSteerState == 2 && blinkState) ? GREEN_MINT : DARK_BLUE;
+    uint16_t rightArrowColor = (currentSteerState == 2 && blinkState) ? GREEN_BRIGHT : DARK_BLUE;
     canvas->fillTriangle(302, 52, 290, 40, 290, 64, rightArrowColor);
     canvas->fillRect(278, 47, 12, 10, rightArrowColor);
-    canvas->setTextColor(rightArrowColor == GREEN_MINT ? GREEN_MINT : GRAY);
+    canvas->setTextColor(rightArrowColor == GREEN_BRIGHT ? GREEN_BRIGHT : GRAY);
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
@@ -303,7 +302,7 @@ void loop() {
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- H. BAR RPM DENGAN WARNA HIJAU SUPER BRIGHT & KOMET BERBUNTUT ----
+    // ---- H. BAR RPM HIJAU ORIGINAL DENGAN KOMET MEMUDAR SEIMBANG ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
@@ -314,16 +313,11 @@ void loop() {
         uint16_t col = GREEN_BRIGHT; 
         int distanceFromHead = barWidth - 1 - i; 
         
-        // Pemetaan gradasi ekor komet RPM agar buntutnya memudar estetik
+        // Logika pemudaran warna hijau murni berdasar jarak bit shift hijau asli
         if (distanceFromHead > 0) {
-            // Skala kecerahan hijau baru yang lebih tinggi di bagian kepala
-            int intensityG = map(i, 0, barWidth, 12, 63); 
-            intensityG = constrain(intensityG, 12, 63);
-            
-            int intensityR = map(i, 0, barWidth, 1, 6);
-            intensityR = constrain(intensityR, 1, 6);
-            
-            col = (intensityR << 11) | (intensityG << 5); 
+            int intensity = 63 - (distanceFromHead * 4); 
+            if (intensity < 16) intensity = 16; 
+            col = (intensity << 5); 
         }
         
         canvas->drawFastVLine(135 + i, 164, 5, col);
