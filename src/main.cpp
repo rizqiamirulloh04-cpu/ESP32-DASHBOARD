@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V56: SEPARATED SPEED & RPM RESPONSIVENESS
+// WAVESHARE ESP32-C6 1.47" - CODE V56 FIXED: SPEED DELAY & RPM INSTAN
 // ======================================================================
 
 #define TFT_BL 22
@@ -36,10 +36,10 @@ Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34
 // Canvas Utama Ukuran Penuh (320x172)
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
-// VARIABEL FILTERING (SMOOTHING TERPISAH)
-float smoothedThrottleSpeed = 1500.0; // Untuk Kecepatan (Dibuat lambat/smooth)
+// VARIABEL FILTERING (SESUAI PILIHAN MAS: SPEED DELAY, RPM INSTAN)
+float smoothedThrottleSpeed = 1500.0; // Untuk Busur Kecepatan (Dibuat lambat/smooth delay)
 float smoothedSteer = 1500.0;
-const float SPEED_SMOOTH_FACTOR = 0.18;  // Angka diperkecil agar gerakan busur komet lebih lambat/delay alami
+const float SPEED_SMOOTH_FACTOR = 0.18;  // Angka kecil agar gerakan busur komet lebih lambat/delay alami
 const float STEER_SMOOTH_FACTOR = 0.35;    
 
 float speedValueFiltered = 0.0; 
@@ -47,7 +47,7 @@ int speedValue = 0;
 int targetSpeed = 0;
 int topSpeed = 0;
 
-// Variabel Khusus RPM (Instan/Cepat)
+// Variabel Khusus RPM (Responsif / Instan Tanpa Delay)
 int rpmBarWidth = 0; 
 
 bool blinkState = false;
@@ -69,7 +69,7 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: METEOR BERGRADASI (KEPALA PUTIH -> BADAN MERAH TERANG -> EKOR REDUP)
+// FUNGES UTAMA: METEOR BERGRADASI (KEPALA PUTIH -> BADAN MERAH TERANG -> EKOR REDUP)
 // ======================================================================
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
     int totalAngles = endDeg - startDeg;
@@ -156,7 +156,7 @@ void setup() {
     Serial.begin(115200);
     
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 150); 
+    ledcWrite(TFT_BL, 110); 
 
     gfx->begin();
     gfx->invertDisplay(false);
@@ -178,7 +178,7 @@ void loop() {
     if (rawSteerPWM == 0)     rawSteerPWM = 1500;
     if (rawThrottlePWM == 0)  rawThrottlePWM = 1500; 
 
-    // 1. FILTER TERPISAH UNTUK KECEPATAN (Dibuat lambat & berbobot)
+    // 1. KECEPATAN: FILTER DELAY DAMPING (Gerakan Lebih Lama / Tenang)
     smoothedThrottleSpeed = (smoothedThrottleSpeed * (1.0 - SPEED_SMOOTH_FACTOR)) + (rawThrottlePWM * SPEED_SMOOTH_FACTOR);
     smoothedSteer = (smoothedSteer * (1.0 - STEER_SMOOTH_FACTOR)) + (rawSteerPWM * STEER_SMOOTH_FACTOR);
 
@@ -197,14 +197,14 @@ void loop() {
 
     if (speedValue > topSpeed) topSpeed = speedValue;
 
-    // 2. HITUNG LANGSUNG DATA INSTAN RPM (Sangat Cepat tanpa delay kecepatan)
+    // 2. RPM: RESPONS INSTAN / SUPER CEPAT (Mengikuti Tarikan Jari Mas Tanpa Delay)
     int targetRpmWidth = 0;
     if (rawThrottlePWM < 1480) {
         targetRpmWidth = map(rawThrottlePWM, 1480, 1050, 0, 70);
     } else if (rawThrottlePWM > 1520) {
         targetRpmWidth = map(rawThrottlePWM, 1520, 1950, 0, 70);
     }
-    // Filter sangat ringan khusus RPM agar tidak bergetar berlebihan tapi tetap instan
+    // Filter sangat tipis agar bar RPM instan tapi bebas getar konstan
     rpmBarWidth = (rpmBarWidth * 0.2) + (targetRpmWidth * 0.8); 
     rpmBarWidth = constrain(rpmBarWidth, 0, 70);
 
