@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V28: EFEK KOMET BERBUNTUT PADA BAR RPM
+// WAVESHARE ESP32-C6 1.47" - CODE V29: PERBAIKAN FILTER SMOOTHING GAS & SEIN
 // ======================================================================
 
 #define TFT_BL 22
@@ -37,6 +37,12 @@ Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34
 // Canvas Utama Ukuran Penuh (320x172)
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
+// VARIABEL FILTERING (SMOOTHING) - Biar Gak Lompat-lompat
+float smoothedThrottle = 1500.0;
+float smoothedSteer = 1500.0;
+const float SMOOTH_FACTOR = 0.15; // Semakin kecil semakin halus, rahasia anti-lompat!
+
+float speedValueFiltered = 0.0; 
 int speedValue = 0; 
 int targetSpeed = 0;
 int topSpeed = 0;
@@ -170,23 +176,31 @@ void setup() {
 // MAIN LOOP
 // ======================================================================
 void loop() {
-    int steerPWM = pulseIn(STEER_PIN, HIGH, 10000);
-    int throttlePWM = pulseIn(THROTTLE_PIN, HIGH, 10000);
+    int rawSteerPWM = pulseIn(STEER_PIN, HIGH, 15000);
+    int rawThrottlePWM = pulseIn(THROTTLE_PIN, HIGH, 15000);
 
-    if (steerPWM == 0)     steerPWM = 1500;
-    if (throttlePWM == 0)  throttlePWM = 1500; 
+    if (rawSteerPWM == 0)     rawSteerPWM = 1500;
+    if (rawThrottlePWM == 0)  rawThrottlePWM = 1500; 
 
-    if (throttlePWM < 1490) { 
-        targetSpeed = map(throttlePWM, 1500, 1000, 0, 120);
+    // FILTER LOMPATAN: Rumus Rata-rata Bergerak Rendah Elektronik (EMA Filter)
+    smoothedThrottle = (smoothedThrottle * (1.0 - SMOOTH_FACTOR)) + (rawThrottlePWM * SMOOTH_FACTOR);
+    smoothedSteer = (smoothedSteer * (1.0 - SMOOTH_FACTOR)) + (rawSteerPWM * SMOOTH_FACTOR);
+
+    // Hitung kecepatan berdasarkan data yang sudah di-smoothing halus
+    if (smoothedThrottle < 1485) { 
+        targetSpeed = map((int)smoothedThrottle, 1485, 1000, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
-    } else if (throttlePWM > 1510) { 
-        targetSpeed = map(throttlePWM, 1500, 2000, 0, 50);
+    } else if (smoothedThrottle > 1515) { 
+        targetSpeed = map((int)smoothedThrottle, 1515, 2000, 0, 50);
         targetSpeed = constrain(targetSpeed, 0, 50);
     } else {
         targetSpeed = 0; 
     }
 
-    speedValue = targetSpeed; 
+    // Pemulusan transisi angka kecepatan agar naiknya urut satu per satu (tidak langsung lompat belasan angka)
+    speedValueFiltered = (speedValueFiltered * 0.8) + (targetSpeed * 0.2);
+    speedValue = (int)(speedValueFiltered + 0.5);
+
     if (speedValue > topSpeed) topSpeed = speedValue;
 
     if (millis() - blinkTimer > 350) {
@@ -194,9 +208,10 @@ void loop() {
         blinkState = !blinkState;
     }
 
+    // Penentuan Sen Kiri / Kanan yang Presisi & Kebal Jitter
     currentSteerState = 0; 
-    if (steerPWM < 1400)      currentSteerState = 1; 
-    else if (steerPWM > 1600) currentSteerState = 2; 
+    if (smoothedSteer < 1380)      currentSteerState = 1; 
+    else if (smoothedSteer > 1620) currentSteerState = 2; 
 
     if (millis() - sensorTimer > 500) {
         sensorTimer = millis();
@@ -221,7 +236,7 @@ void loop() {
     canvas->setCursor(275, 4);
     canvas->printf("%d%%", batteryPercent);
 
-    // ---- C. LAMPU SEIN KIRI & KANAN ----
+    // ---- C. LAMPU SEIN KIRI & KANAN (Kini Sangat Stabil) ----
     uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN_BRIGHT : DARK_BLUE;
     canvas->fillTriangle(18, 52, 30, 40, 30, 64, leftArrowColor);
     canvas->fillRect(30, 47, 12, 10, leftArrowColor);
@@ -282,7 +297,6 @@ void loop() {
     canvas->setCursor(kmhX, kmhY);     canvas->print("KM/H");
     canvas->setCursor(kmhX + 1, kmhY); canvas->print("KM/H"); 
 
-
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
     canvas->drawRect(15, 142, 75, 26, DARK_BLUE);
     canvas->setTextColor(GRAY); canvas->setTextSize(1);
@@ -306,17 +320,13 @@ void loop() {
     int barWidth = map(speedValue, 0, 120, 0, 70);
     
     for (int i = 0; i < barWidth; i++) {
-        uint16_t col = GREEN_BRIGHT; // Default Kepala Komet (Terang Benderang)
-        
-        // Logika Fading (Buntut Komet memudar ke belakang)
+        uint16_t col = GREEN_BRIGHT; 
         int distanceFromHead = barWidth - 1 - i; 
         
         if (distanceFromHead > 0) {
-            // Menggeser kecerahan komponen Hijau (Green dalam RGB565 berada di bit tengah)
-            // Semakin jauh dari kepala komet, warna hijaunya semakin diredupkan
             int intensity = 63 - (distanceFromHead * 4); 
-            if (intensity < 12) intensity = 12; // Batas minimal redup agar buntut tidak hilang total
-            col = (intensity << 5); // Terapkan nilai intensitas ke bit warna hijau
+            if (intensity < 12) intensity = 12; 
+            col = (intensity << 5); 
         }
         
         canvas->drawFastVLine(135 + i, 164, 5, col);
@@ -325,5 +335,5 @@ void loop() {
     // TAMPILKAN SELURUH MEMORI KANVAS KE LCD
     gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
 
-    delay(5); 
+    delay(10); // Memberikan sedikit jeda stabilisasi sampling rate
 }
