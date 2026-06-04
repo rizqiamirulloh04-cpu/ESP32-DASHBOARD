@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V54 PERFECT INDIKATOR: NO OVERLAP & BRIGHT BLUE
+// WAVESHARE ESP32-C6 1.47" - CODE V55: REAL METEOR ARC (GLOW TO FADE RED)
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,11 +21,11 @@
 // COLOR PALETTE (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 // Merah Murni Solid Maksimal
+#define RED_BRIGHT     0xF800 
 #define GREEN_BRIGHT   0x07E0 
 #define YELLOW         0xFFE0
-#define CYAN           0x07FF // Cyan untuk teks SPEED / pelengkap
-#define BRIGHT_BLUE    0x03BF // WARNA BARU: Biru Tua tapi Terang (Electric Deep Blue)
+#define CYAN           0x07FF 
+#define BRIGHT_BLUE    0x03BF // Biru Tua Terang untuk Garis Atas
 #define DARK_BLUE      0x0010 // Background busur pas diam
 #define GRAY           0x5AEB
 
@@ -65,7 +65,7 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: MENGGAMBAR BUSUR METEOR MERAH SOLID BERSINAR & KEPALA PUTIH
+// FUNGSI UTAMA: METEOR BERGRADASI (KEPALA PUTIH -> BADAN MERAH TERANG -> EKOR REDUP)
 // ======================================================================
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
     int totalAngles = endDeg - startDeg;
@@ -84,15 +84,21 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             uint16_t pixelColor = defaultColor;
             
             if (isSpeedArc && totalAngles > 0) {
-                int currentPos = angle - startDeg;
+                int currentPos = angle - startDeg; // Posisi pixel saat ini dihitung dari pangkal (0 KM/H)
                 
-                // Kepala di ujung gas (4 derajat terakhir) menyala Putih bersih
+                // 1. KEPALA METEOR (Ujung Gas): Menyala Putih Terang Kontras (4 derajat terakhir)
                 if (currentPos >= totalAngles - 4) {
                     pixelColor = WHITE; 
                 } 
-                // Seluruh badan komet di belakangnya menggunakan Merah Solid Maksimal bersinar
+                // 2. BADAN & EKOR METEOR: Semakin ke depan semakin TERANG, semakin ke belakang semakin REDUP
                 else {
-                    pixelColor = RED_BRIGHT; 
+                    // Map posisi dari pangkal (ekor) ke dekat kepala untuk menentukan intensitas bit merah (5-bit: 0 s.d 31)
+                    // Kita setel batas bawahnya 6 (merah redup/gelap) agar tidak hilang total, dan batas atas 31 (merah maksimal)
+                    int redIntensity = map(currentPos, 0, totalAngles, 6, 31);
+                    redIntensity = constrain(redIntensity, 6, 31);
+                    
+                    // Format RGB565: Bit Merah digeser ke kiri sebanyak 11 kali
+                    pixelColor = (redIntensity << 11); 
                 }
             }
             
@@ -100,7 +106,7 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
                 canvas->drawPixel(x, y, pixelColor);
             }
 
-            // Gambar titik skala (Ticks)
+            // Gambar titik skala (Ticks) di lapisan luar background busur
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
                 for (int tickLen = 1; tickLen <= 4; tickLen++) {
                     int tx = cx + (int)(cos(rad) * (rx + tickLen));
@@ -226,15 +232,14 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESAIN GARIS ATAS AGRESIF BARU (WARNA BIRU TUA TERANG & BEBAS NABRAK) ----
-    // Posisi Y awal diturunkan dari 24 ke 27 agar lewat di bawah teks dBm dengan aman
+    // ---- A. DESAIN GARIS ATAS AGRESIF (WARNA BIRU TUA TERANG & BEBAS NABRAK) ----
     canvas->drawLine(10, 27, 85, 27, BRIGHT_BLUE);
-    canvas->drawLine(85, 27, 98, 14, BRIGHT_BLUE); // Jalur miring naik menjauh dari text area
-    canvas->drawLine(98, 14, 222, 14, BRIGHT_BLUE); // Flat tengah atas
-    canvas->drawLine(222, 14, 235, 24, BRIGHT_BLUE); // Jalur miring turun sebelum area batre
+    canvas->drawLine(85, 27, 98, 14, BRIGHT_BLUE); 
+    canvas->drawLine(98, 14, 222, 14, BRIGHT_BLUE); 
+    canvas->drawLine(222, 14, 235, 24, BRIGHT_BLUE); 
     canvas->drawLine(235, 24, 310, 24, BRIGHT_BLUE);
 
-    // ---- B. INFO STATUS HEADER ATAS (KOORDINAT AMAN) ----
+    // ---- B. INFO STATUS HEADER ATAS ----
     drawSignalIcon(15, 4);
     canvas->setTextColor(WHITE);
     canvas->setCursor(40, 7);
@@ -259,13 +264,13 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & METEOR ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & METEOR GRADASI ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
     // Background dasar busur asli Biru Gelap (DARK_BLUE)
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
     
-    // RENDERING METEOR GAS DENGAN WARNA MERAH MENYALA MAKSIMAL
+    // RENDERING METEOR GAS DENGAN EFEK GRADASI MERAH (TERANG KE REDUP DI UJUNG BELAKANG)
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true);
     }
