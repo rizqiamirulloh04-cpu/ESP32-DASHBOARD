@@ -2,7 +2,7 @@
 #include <Arduino_GFX_Library.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE FIX: PERFECT TEXT POSITIONS
+// WAVESHARE ESP32-C6 1.47" - CODE FIX V4: PERFECT ARC & TEXT SPACING
 // ======================================================================
 
 #define TFT_BL 22
@@ -31,7 +31,7 @@
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 
-// Canvas Utama Ukuran Penuh (320x172) untuk Double Buffering (Anti-Kedip)
+// Canvas Utama Ukuran Penuh (320x172) untuk Double Buffering
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
 int speedValue = 0; 
@@ -41,14 +41,13 @@ bool blinkState = false;
 unsigned long blinkTimer = 0;
 int currentSteerState = 0;
 
-// Variabel Sensor Analog
 int batteryPercent = 89;
 int signalDbm = -67;
 int temperature = 38;
 unsigned long sensorTimer = 0;
 
 // ======================================================================
-// FUNGSI GRADASI PIKSEL (MENGALIR DARI PINK KE MERAH TUA)
+// FUNGSI GRADASI PIKSEL BUSUR
 // ======================================================================
 uint16_t getArcGradientColor(int currentAngle, int startAngle, int endAngle) {
     float ratio = (float)(currentAngle - startAngle) / (float)(endAngle - startAngle);
@@ -71,7 +70,7 @@ uint16_t getArcGradientColor(int currentAngle, int startAngle, int endAngle) {
 }
 
 // ======================================================================
-// FUNGSI UNTUK MENGGAMBAR ELEMEN GRAFIS CUSTOM (IKON)
+// FUNGSI GRAFIS IKON
 // ======================================================================
 void drawSignalIcon(int x, int y) {
     canvas->fillCircle(x + 10, y + 12, 2, CYAN);
@@ -140,7 +139,7 @@ void loop() {
         targetSpeed = 0; 
     }
 
-    // RESPONS INSTAN (Tanpa delay/lemot)
+    // RESPONS INSTAN
     speedValue = targetSpeed; 
 
     if (speedValue > topSpeed) topSpeed = speedValue;
@@ -168,26 +167,26 @@ void loop() {
     canvas->setFont(NULL); 
 
     // ---- A. GARIS DEKORASI HEADER ATAS ----
-    // FIX: Menaikkan posisi Y tulisan agar berada rapi di atas garis tekukan, tidak tertabrak lagi
+    // FIX: Teks dinaikkan ke Y:2 agar menjauh dari tekukan garis dekorasi
     canvas->setTextColor(CYAN);
     canvas->setTextSize(1);
-    canvas->setCursor(132, 3); 
+    canvas->setCursor(132, 2); 
     canvas->print("SPORT MODE");
 
-    canvas->drawLine(10, 15, 115, 15, CYAN);
-    canvas->drawLine(115, 15, 123, 6, CYAN);
-    canvas->drawLine(123, 6, 197, 6, CYAN);
-    canvas->drawLine(197, 6, 205, 15, CYAN);
-    canvas->drawLine(205, 15, 310, 15, CYAN);
+    canvas->drawLine(10, 14, 115, 14, CYAN);
+    canvas->drawLine(115, 14, 123, 5, CYAN);
+    canvas->drawLine(123, 5, 197, 5, CYAN);
+    canvas->drawLine(197, 5, 205, 14, CYAN);
+    canvas->drawLine(205, 14, 310, 14, CYAN);
 
     // ---- B. INFO SINYAL & BATERAI ATAS ----
-    drawSignalIcon(15, 2);
+    drawSignalIcon(15, 1);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(40, 5);
+    canvas->setCursor(40, 4);
     canvas->printf("%d dBm", signalDbm);
     
-    drawBatteryIcon(250, 2);
-    canvas->setCursor(275, 5);
+    drawBatteryIcon(250, 1);
+    canvas->setCursor(275, 4);
     canvas->printf("%d%%", batteryPercent);
 
     // ---- C. INDIKATOR LAMPU SEIN ----
@@ -197,19 +196,19 @@ void loop() {
     canvas->fillRect(30, 47, 12, 10, leftArrowColor);
     canvas->setTextColor(leftArrowColor == GREEN ? GREEN : GRAY);
     canvas->setCursor(20, 72); canvas->print("LEFT");
-    drawSteeringIcon(28, 100);
+    drawSteeringIcon(28, 102);
 
     uint16_t rightArrowColor = (currentSteerState == 2 && blinkState) ? GREEN : DARK_BLUE;
     canvas->fillTriangle(302, 52, 290, 40, 290, 64, rightArrowColor);
     canvas->fillRect(278, 47, 12, 10, rightArrowColor);
     canvas->setTextColor(rightArrowColor == GREEN ? GREEN : GRAY);
     canvas->setCursor(278, 72); canvas->print("RIGHT");
-    drawSteeringIcon(292, 100);
+    drawSteeringIcon(292, 102);
 
-    // ---- D. LENGKUNGAN BUSUR SPEEDOMETER GRADASI ----
-    // Digeser sedikit ke bawah (Y: 92) memberikan ruang lega untuk tulisan atas
+    // ---- D. LENGKUNGAN BUSUR SPEEDOMETER ----
+    // FIX UTAMA: CenterY diturunkan ke 102 agar busur tidak menumpuk ke atas
     int centerX = 160;
-    int centerY = 92; 
+    int centerY = 102; 
     int startAngle = 150;
     int endAngle = 390;
     int totalArcLength = endAngle - startAngle; 
@@ -228,41 +227,41 @@ void loop() {
         }
     }
     
-    // ---- E. FIX POSISI ANGKA SKALA (MUTLAK DI LUAR BUSUR) ----
+    // ---- E. RE-KALIBRASI ANGKA SKALA (MENGIKUTI CENTER Y BARU) ----
     canvas->setTextColor(GRAY);
     canvas->setTextSize(1);
     
-    canvas->setCursor(82, 126);  canvas->print("0");    
-    canvas->setCursor(70, 85);   canvas->print("20");   
-    canvas->setCursor(90, 42);   canvas->print("40");   
-    canvas->setCursor(154, 21);  canvas->print("60");   // FIX: Berada di atas luar busur, tidak menabrak garis/SPEED
-    canvas->setCursor(214, 42);  canvas->print("80");   
-    canvas->setCursor(236, 85);  canvas->print("100");  
-    canvas->setCursor(224, 126); canvas->print("120");  
+    canvas->setCursor(82, 140);  canvas->print("0");    
+    canvas->setCursor(70, 99);   canvas->print("20");   
+    canvas->setCursor(90, 56);   canvas->print("40");   
+    canvas->setCursor(154, 19);  canvas->print("60");   // FIX: Sekarang pas di area kosong atas busur!
+    canvas->setCursor(214, 56);  canvas->print("80");   
+    canvas->setCursor(236, 99);  canvas->print("100");  
+    canvas->setCursor(224, 140); canvas->print("120");  
 
-    // Label SPEED diposisikan manis di dalam busur bagian atas
+    // Label SPEED di dalam busur bagian atas
     canvas->setTextColor(CYAN);
-    canvas->setCursor(145, 54);
+    canvas->setCursor(145, 48);
     canvas->print("SPEED");
 
-    // ---- F. DIGIT ANGKA KECEPATAN UTAMA DI TENGAH (SIZE 4) ----
+    // ---- F. DIGIT KECEPATAN UTAMA DI TENGAH (SIZE 4) ----
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     
     canvas->setTextSize(4); 
     // Shadow belakang
     canvas->setTextColor(DARK_BLUE);
-    canvas->setCursor(123, 75); canvas->print(speedText);
-    canvas->setCursor(125, 77); canvas->print(speedText);
+    canvas->setCursor(123, 67); canvas->print(speedText);
+    canvas->setCursor(125, 69); canvas->print(speedText);
     // Angka utama
     canvas->setTextColor(WHITE);
-    canvas->setCursor(124, 76); 
+    canvas->setCursor(124, 68); 
     canvas->print(speedText);
 
     // Teks KM/H di bawah angka utama
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(146, 114);
+    canvas->setCursor(146, 106);
     canvas->print("KM/H");
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
@@ -301,7 +300,7 @@ void loop() {
         canvas->drawFastVLine(135 + i, 162, 5, col);
     }
 
-    // KIRIM SELURUH KANVAS MEMORI KE LAYAR FISIK LCD
+    // KIRIM MEMORI KANVAS KE FISIK LCD
     gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
 
     delay(5); 
