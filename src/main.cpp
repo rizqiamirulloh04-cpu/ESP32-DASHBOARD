@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V47: PURPLE LINE HEIGHT PERFECTLY TUNED
+// WAVESHARE ESP32-C6 1.47" - CODE V48: DEEP NEON BLUE LINE THEME
 // ======================================================================
 
 #define TFT_BL 22
@@ -27,7 +27,7 @@
 #define CYAN           0x07FF
 #define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
-#define NEON_PURPLE    0xF81F // Ungu Menyala Pilihan Mas
+#define NEON_BLUE      0x001F // Warna Biru Tua Menyala Pilihan Baru Mas
 
 // INITIALISASI HARDWARE DISPLAY
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
@@ -207,13 +207,12 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (TINGGI DINAIKKAN SEDIKIT) ----
-    // Koordinat Y disesuaikan dari (25 & 18) dinaikkan sedikit menjadi (21 & 14)
-    canvas->drawFastHLine(10, 21, 100, NEON_PURPLE);  
-    canvas->drawLine(110, 21, 122, 14, NEON_PURPLE); 
-    canvas->drawFastHLine(122, 14, 76, NEON_PURPLE);  
-    canvas->drawLine(198, 14, 210, 21, NEON_PURPLE); 
-    canvas->drawFastHLine(210, 21, 100, NEON_PURPLE); 
+    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (WARNA BIRU TUA MENYALA) ----
+    canvas->drawFastHLine(10, 21, 100, NEON_BLUE);  
+    canvas->drawLine(110, 21, 122, 14, NEON_BLUE); 
+    canvas->drawFastHLine(122, 14, 76, NEON_BLUE);  
+    canvas->drawLine(198, 14, 210, 21, NEON_BLUE); 
+    canvas->drawFastHLine(210, 21, 100, NEON_BLUE); 
 
     // ---- B. INFO STATUS HEADER ATAS ----
     drawSignalIcon(15, 2);
