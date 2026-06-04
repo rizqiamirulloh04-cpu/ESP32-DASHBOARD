@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V35: SPEED ARC REAL KOMET GRADATION EFFECT
+// WAVESHARE ESP32-C6 1.47" - CODE V36: SUPER BRIGHT GREEN RPM EFEK GLOW
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,11 +21,12 @@
 // COLOR PALETTE (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 // Kepala Komet Merah Terang
-#define GREEN_BRIGHT   0x07E0 // Kepala Komet RPM
+#define RED_BRIGHT     0xF800 // Kepala Komet Speedometer
+#define GREEN_BRIGHT   0x37E0 // RACIKAN BARU: Super Bright Lime Green (Jauh lebih menyala)
+#define GREEN_MINT     0x07FF // Alternatif Hijau Cyan Stabilo untuk aksen ikon
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
-#define DARK_BLUE      0x0010 // Background busur pas diam
+#define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
 
 // INITIALISASI HARDWARE DISPLAY
@@ -64,7 +65,7 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN EFEK KOMET GRADASI MEMUDAR (REAL TIME)
+// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN EFEK KOMET GRADASI MEMUDAR
 // ======================================================================
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
     int totalAngles = endDeg - startDeg;
@@ -82,16 +83,10 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             
             uint16_t pixelColor = defaultColor;
             
-            // Logika Gradasi Efek Komet Bergerak untuk Busur Kecepatan
             if (isSpeedArc && totalAngles > 0) {
-                int currentPos = angle - startDeg; // Jarak dari titik nol awal
-                
-                // Hitung intensitas warna Merah (5-bit merah pada RGB565 maksimal bernilai 31)
-                // Ujung busur (currentPos mendekati totalAngles) mendapatkan nilai paling terang
+                int currentPos = angle - startDeg;
                 int redIntensity = map(currentPos, 0, totalAngles, 6, 31); 
                 redIntensity = constrain(redIntensity, 6, 31);
-                
-                // Bungkus kembali ke format warna 16-bit RGB565 (Bit merah digeser 11 kali ke kiri)
                 pixelColor = (redIntensity << 11); 
             }
             
@@ -99,7 +94,6 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
                 canvas->drawPixel(x, y, pixelColor);
             }
 
-            // Gambar titik skala (Ticks) di lapisan terluar busur background saja
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
                 for (int tickLen = 1; tickLen <= 4; tickLen++) {
                     int tx = cx + (int)(cos(rad) * (rx + tickLen));
@@ -138,7 +132,7 @@ void drawSignalIcon(int x, int y) {
 void drawBatteryIcon(int x, int y) {
     canvas->drawRect(x, y + 3, 18, 10, GRAY);
     canvas->fillRect(x + 18, y + 6, 2, 4, GRAY);
-    canvas->fillRect(x + 2, y + 5, 14, 6, GREEN_BRIGHT);
+    canvas->fillRect(x + 2, y + 5, 14, 6, GREEN_MINT);
 }
 
 void drawSteeringIcon(int x, int y) {
@@ -160,8 +154,9 @@ void drawThermometerIcon(int x, int y) {
 void setup() {
     Serial.begin(115200);
     
+    // SETUP BACKLIGHT: Ditingkatkan dari 150 menjadi 240 agar layar super terang menyala
     ledcAttach(TFT_BL, 5000, 8);
-    ledcWrite(TFT_BL, 150); 
+    ledcWrite(TFT_BL, 240); 
 
     gfx->begin();
     gfx->invertDisplay(false);
@@ -186,11 +181,9 @@ void loop() {
     if (rawSteerPWM == 0)     rawSteerPWM = 1500;
     if (rawThrottlePWM == 0)  rawThrottlePWM = 1500; 
 
-    // FILTER PENYARINGAN DATA (SMOOTHING)
     smoothedThrottle = (smoothedThrottle * (1.0 - THROTTLE_SMOOTH_FACTOR)) + (rawThrottlePWM * THROTTLE_SMOOTH_FACTOR);
     smoothedSteer = (smoothedSteer * (1.0 - STEER_SMOOTH_FACTOR)) + (rawSteerPWM * STEER_SMOOTH_FACTOR);
 
-    // KALIBRASI MAJU DAN MUNDUR 120 KM/H EQUAL
     if (smoothedThrottle < 1480) { 
         targetSpeed = map((int)smoothedThrottle, 1480, 1050, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
@@ -201,7 +194,6 @@ void loop() {
         targetSpeed = 0; 
     }
 
-    // Transisi filter akhir
     speedValueFiltered = (speedValueFiltered * 0.4) + (targetSpeed * 0.6);
     speedValue = (int)(speedValueFiltered + 0.5);
 
@@ -240,27 +232,23 @@ void loop() {
     canvas->printf("%d%%", batteryPercent);
 
     // ---- C. LAMPU SEIN KIRI & KANAN ----
-    uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN_BRIGHT : DARK_BLUE;
+    uint16_t leftArrowColor = (currentSteerState == 1 && blinkState) ? GREEN_MINT : DARK_BLUE;
     canvas->fillTriangle(18, 52, 30, 40, 30, 64, leftArrowColor);
     canvas->fillRect(30, 47, 12, 10, leftArrowColor);
-    canvas->setTextColor(leftArrowColor == GREEN_BRIGHT ? GREEN_BRIGHT : GRAY);
+    canvas->setTextColor(leftArrowColor == GREEN_MINT ? GREEN_MINT : GRAY);
     canvas->setCursor(20, 72); canvas->print("LEFT");
     drawSteeringIcon(28, 102);
 
-    uint16_t rightArrowColor = (currentSteerState == 2 && blinkState) ? GREEN_BRIGHT : DARK_BLUE;
+    uint16_t rightArrowColor = (currentSteerState == 2 && blinkState) ? GREEN_MINT : DARK_BLUE;
     canvas->fillTriangle(302, 52, 290, 40, 290, 64, rightArrowColor);
     canvas->fillRect(278, 47, 12, 10, rightArrowColor);
-    canvas->setTextColor(rightArrowColor == GREEN_BRIGHT ? GREEN_BRIGHT : GRAY);
+    canvas->setTextColor(rightArrowColor == GREEN_MINT ? GREEN_MINT : GRAY);
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
     // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & KOMET ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
-    
-    // Background dasar busur asli Biru Gelap (DARK_BLUE)
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
-    
-    // RENDERING EFEK KOMET GRADASI: Dari awal (merah samar) menuju posisi gas sekarang (merah cerah)
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true);
     }
@@ -315,7 +303,7 @@ void loop() {
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- H. BAR RPM EFEK KOMET BERBUNTUT ----
+    // ---- H. BAR RPM DENGAN WARNA HIJAU SUPER BRIGHT & KOMET BERBUNTUT ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
@@ -326,10 +314,16 @@ void loop() {
         uint16_t col = GREEN_BRIGHT; 
         int distanceFromHead = barWidth - 1 - i; 
         
+        // Pemetaan gradasi ekor komet RPM agar buntutnya memudar estetik
         if (distanceFromHead > 0) {
-            int intensity = 63 - (distanceFromHead * 4); 
-            if (intensity < 12) intensity = 12; 
-            col = (intensity << 5); 
+            // Skala kecerahan hijau baru yang lebih tinggi di bagian kepala
+            int intensityG = map(i, 0, barWidth, 12, 63); 
+            intensityG = constrain(intensityG, 12, 63);
+            
+            int intensityR = map(i, 0, barWidth, 1, 6);
+            intensityR = constrain(intensityR, 1, 6);
+            
+            col = (intensityR << 11) | (intensityG << 5); 
         }
         
         canvas->drawFastVLine(135 + i, 164, 5, col);
