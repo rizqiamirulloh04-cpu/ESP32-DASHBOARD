@@ -128,9 +128,9 @@ void printAutoCenterLabel(const char* label, int angle, int textGap) {
 }
 
 void drawSignalIcon(int x, int y) {
-    canvas->fillCircle(x + 10, y + 12, 2, BRIGHT_BLUE);
-    canvas->drawArc(x + 10, y + 12, 5, 4, 220, 320, BRIGHT_BLUE);
-    canvas->drawArc(x + 10, y + 12, 9, 8, 220, 320, BRIGHT_BLUE);
+    canvas->fillCircle(x + 10, y + 12, 2, GREEN_BRIGHT);
+    canvas->drawArc(x + 10, y + 12, 5, 4, 220, 320, GREEN_BRIGHT);
+    canvas->drawArc(x + 10, y + 12, 9, 8, 220, 320, GREEN_BRIGHT);
 }
 
 void drawBatteryIcon(int x, int y) {
@@ -309,7 +309,7 @@ void loop() {
     canvas->setTextColor(WHITE); canvas->setCursor(23, 156); canvas->print("12.4V");
 
     canvas->drawRect(110, 137, 100, 19, DARK_BLUE);
-    canvas->setTextColor(BRIGHT_BLUE); canvas->setCursor(132, 140); canvas->print("TOP SPEED");
+    canvas->setTextColor(CYAN); canvas->setCursor(132, 140); canvas->print("TOP SPEED");
     canvas->setTextColor(WHITE); canvas->setCursor(136, 147); canvas->printf("%d KM/H", topSpeed);
 
     canvas->drawRect(230, 142, 75, 26, DARK_BLUE);
