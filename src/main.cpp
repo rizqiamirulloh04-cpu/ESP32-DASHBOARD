@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V34: MAJU MUNDUR EQUAL SPEED 120 KM/H
+// WAVESHARE ESP32-C6 1.47" - CODE V35: SPEED ARC REAL KOMET GRADATION EFFECT
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,11 +21,11 @@
 // COLOR PALETTE (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 // Warna Busur Merah Terang
+#define RED_BRIGHT     0xF800 // Kepala Komet Merah Terang
 #define GREEN_BRIGHT   0x07E0 // Kepala Komet RPM
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF
-#define DARK_BLUE      0x0010 
+#define DARK_BLUE      0x0010 // Background busur pas diam
 #define GRAY           0x5AEB
 
 // INITIALISASI HARDWARE DISPLAY
@@ -64,9 +64,11 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: MENGGAMBAR BUSUR OVAL KECEPATAN
+// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN EFEK KOMET GRADASI MEMUDAR (REAL TIME)
 // ======================================================================
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
+    int totalAngles = endDeg - startDeg;
+
     for (int t = 0; t < thickness; t++) {
         int curRx = rx - t;
         int curRy = ry - t;
@@ -78,12 +80,26 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             int x = cx + (int)(cos(rad) * curRx);
             int y = cy + (int)(sin(rad) * curRy);
             
-            uint16_t pixelColor = isSpeedArc ? RED_BRIGHT : defaultColor;
+            uint16_t pixelColor = defaultColor;
+            
+            // Logika Gradasi Efek Komet Bergerak untuk Busur Kecepatan
+            if (isSpeedArc && totalAngles > 0) {
+                int currentPos = angle - startDeg; // Jarak dari titik nol awal
+                
+                // Hitung intensitas warna Merah (5-bit merah pada RGB565 maksimal bernilai 31)
+                // Ujung busur (currentPos mendekati totalAngles) mendapatkan nilai paling terang
+                int redIntensity = map(currentPos, 0, totalAngles, 6, 31); 
+                redIntensity = constrain(redIntensity, 6, 31);
+                
+                // Bungkus kembali ke format warna 16-bit RGB565 (Bit merah digeser 11 kali ke kiri)
+                pixelColor = (redIntensity << 11); 
+            }
             
             if (x >= 0 && x < 320 && y >= 0 && y < 172) {
                 canvas->drawPixel(x, y, pixelColor);
             }
 
+            // Gambar titik skala (Ticks) di lapisan terluar busur background saja
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
                 for (int tickLen = 1; tickLen <= 4; tickLen++) {
                     int tx = cx + (int)(cos(rad) * (rx + tickLen));
@@ -170,23 +186,18 @@ void loop() {
     if (rawSteerPWM == 0)     rawSteerPWM = 1500;
     if (rawThrottlePWM == 0)  rawThrottlePWM = 1500; 
 
-    // FILTER PENYARINGAN DATA
+    // FILTER PENYARINGAN DATA (SMOOTHING)
     smoothedThrottle = (smoothedThrottle * (1.0 - THROTTLE_SMOOTH_FACTOR)) + (rawThrottlePWM * THROTTLE_SMOOTH_FACTOR);
     smoothedSteer = (smoothedSteer * (1.0 - STEER_SMOOTH_FACTOR)) + (rawSteerPWM * STEER_SMOOTH_FACTOR);
 
-    // ==================================================================
-    // FIX KALIBRASI: MAJU & MUNDUR SAMA-SAMA MENTOK DI 120 KM/H
-    // ==================================================================
+    // KALIBRASI MAJU DAN MUNDUR 120 KM/H EQUAL
     if (smoothedThrottle < 1480) { 
-        // GAS MAJU: Nilai PWM mengecil, target map full 120 KM/H
         targetSpeed = map((int)smoothedThrottle, 1480, 1050, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
     } else if (smoothedThrottle > 1520) { 
-        // GAS MUNDUR: Nilai PWM membesar, SEKARANG DIRUBAH JADI FULL 120 KM/H
         targetSpeed = map((int)smoothedThrottle, 1520, 1950, 0, 120);
         targetSpeed = constrain(targetSpeed, 0, 120);
     } else {
-        // POSISI DIAM (NETRAL)
         targetSpeed = 0; 
     }
 
@@ -243,13 +254,13 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & KOMET ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
     
-    // Background busur asli Biru Gelap (DARK_BLUE)
+    // Background dasar busur asli Biru Gelap (DARK_BLUE)
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
     
-    // Sinar aktif MERAH TERANG mengalir lurus berbarengan dengan injakan gas maju/mundur
+    // RENDERING EFEK KOMET GRADASI: Dari awal (merah samar) menuju posisi gas sekarang (merah cerah)
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true);
     }
