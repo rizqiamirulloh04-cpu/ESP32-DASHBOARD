@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V11.2: FIXED VERTICAL MIDDLE SPACING
+// WAVESHARE ESP32-C6 1.47" - CODE V12: CLEAN MIDDLE & NO SHADOW EFFECT
 // ======================================================================
 
 #define TFT_BL 22
@@ -49,7 +49,7 @@ unsigned long sensorTimer = 0;
 
 // Konfigurasi Pusat Elips Utama
 const int centerX = 160;
-const int centerY = 124; //
+const int centerY = 124; 
 const int rx = 84;       
 const int ry = 62;       
 
@@ -64,8 +64,8 @@ uint16_t getOvalGradientColor(int currentAngle, int startAngle, int endAngle) {
     if (ratio < 0.0) ratio = 0.0;
     if (ratio > 1.0) ratio = 1.0;
 
-    uint8_t startR = 0;   uint8_t startG = 28;  uint8_t startB = 31; // CYAN
-    uint8_t endR = 31;    uint8_t endG = 0;     uint8_t endB = 0;  // RED
+    uint8_t startR = 0;   uint8_t startG = 28;  uint8_t startB = 31; 
+    uint8_t endR = 31;    uint8_t endG = 0;     uint8_t endB = 0;  
 
     uint8_t r = startR + (endR - startR) * ratio;
     uint8_t g = startG + (endG - startG) * ratio;
@@ -95,7 +95,6 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
                 }
             }
 
-            // Gambar Tick Marks menjorok keluar
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
                 for (int tickLen = 1; tickLen <= 4; tickLen++) {
                     int tx = cx + (int)(cos(rad) * (rx + tickLen));
@@ -126,7 +125,7 @@ void printAutoCenterLabel(const char* label, int angle, int textGap) {
 }
 
 // ======================================================================
-// FUNGSO GRAFIS IKON STATUS
+// FUNGSI GRAFIS IKON STATUS
 // ======================================================================
 void drawSignalIcon(int x, int y) {
     canvas->fillCircle(x + 10, y + 12, 2, CYAN);
@@ -269,34 +268,29 @@ void loop() {
     printAutoCenterLabel("0",   165, 12); 
     printAutoCenterLabel("20",  182, 12); 
     printAutoCenterLabel("40",  215, 13); 
-    printAutoCenterLabel("60",  270, 14); //
+    printAutoCenterLabel("60",  270, 14); 
     printAutoCenterLabel("80",  325, 13); 
     printAutoCenterLabel("100", 358, 12); 
     printAutoCenterLabel("120", 375, 12); 
 
-    // Label Teks SPEED (Dinaikkan sedikit ke Y=45 agar lepas dari angka 000)
+    // Label Teks SPEED (Pas di atas angka utama)
     canvas->setTextColor(CYAN);
-    canvas->setCursor(146, 45);
+    canvas->setCursor(146, 44);
     canvas->print("SPEED");
 
-    // ---- F. ANGKA UTAMA SPEED DIGITAL (DINAIKKAN KE Y=58 BIAR SPACE BAWAH SANGAT LONGGAR) ----
+    // ---- F. ANGKA UTAMA SPEED DIGITAL (SHADOW DIHAPUS BIAR RECOGNITION BERSIH & LEGA) ----
     char speedText[4];
     sprintf(speedText, "%03d", speedValue);
     
     canvas->setTextSize(4); 
-    // Shadow belakang
-    canvas->setTextColor(DARK_BLUE);
-    canvas->setCursor(123, 57); canvas->print(speedText); 
-    canvas->setCursor(125, 59); canvas->print(speedText); 
-    // Angka utama
     canvas->setTextColor(WHITE);
-    canvas->setCursor(124, 58);                            
+    canvas->setCursor(124, 56); // Hanya satu garis text murni                            
     canvas->print(speedText);
 
-    // Teks KM/H (Dinaikkan ke Y=96, pas di tengah ruang kosong sebelum boks TOP SPEED)
+    // Teks KM/H (Turun sedikit ke Y=94, melayang bebas tepat di tengah ruang kosong)
     canvas->setTextSize(1);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(146, 96);                           
+    canvas->setCursor(146, 94);                           
     canvas->print("KM/H");
 
     // ---- G. FOOTER PANEL STATUS INDIKATOR BAWAH ----
