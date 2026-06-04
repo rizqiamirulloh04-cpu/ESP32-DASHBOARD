@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V48: DEEP NEON BLUE LINE THEME
+// WAVESHARE ESP32-C6 1.47" - CODE V49: METEOR RED FIXED & CLEAN LOOK
 // ======================================================================
 
 #define TFT_BL 22
@@ -27,7 +27,7 @@
 #define CYAN           0x07FF
 #define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
-#define NEON_BLUE      0x001F // Warna Biru Tua Menyala Pilihan Baru Mas
+#define NEON_BLUE      0x001F // Garis Atas Biru Tua Menyala Pilihan Mas
 
 // INITIALISASI HARDWARE DISPLAY
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
@@ -65,9 +65,9 @@ const int startAngle = 145;
 const int endAngle = 395;
 
 // ======================================================================
-// FUNGSI UTAMA: MENGGAMBAR BUSUR POLOS TANPA EFEK MERAH MEREMBET
+// FUNGSI UTAMA: MENGGAMBAR BUSUR DENGAN EFEK METEOR MERAH YANG PRESISI
 // ======================================================================
-void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
+void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc, int activeAngle) {
     for (int t = 0; t < thickness; t++) {
         int curRx = rx - t;
         int curRy = ry - t;
@@ -80,8 +80,22 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             
             uint16_t pixelColor = defaultColor;
             
-            if (x >= 0 && x < 320 && y >= 0 && y < 172) {
-                canvas->drawPixel(x, y, pixelColor);
+            // JIKA SEBAGAI BUSUR AKTIF (GAS): BERIKAN EFEK METEOR GRADASI MERAH DI UJUNGNYA
+            if (isSpeedArc) {
+                int distanceFromHead = activeAngle - angle;
+                if (distanceFromHead >= 0 && distanceFromHead <= 28) {
+                    // Gradasi ekor komet dari Merah Cerah ke Cyan Utama
+                    int redIntensity = 31 - (distanceFromHead / 1); 
+                    if (redIntensity < 0) redIntensity = 0;
+                    pixelColor = (redIntensity << 11) | (0x07FF & defaultColor); 
+                }
+            }
+            
+            // Pengaman koordinat layar agar tidak menggambar pixel bocor keluar batas busur
+            if (x >= (cx - rx - 4) && x <= (cx + rx + 4) && y >= (cy - ry - 4) && y <= (cy + ry + 4)) {
+                if (x >= 0 && x < 320 && y >= 0 && y < 172) {
+                    canvas->drawPixel(x, y, pixelColor);
+                }
             }
 
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
@@ -207,7 +221,7 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (WARNA BIRU TUA MENYALA) ----
+    // ---- A. DESIGN GARIS PANEL ATAS AGRESIF MODEREN (TINGGI DISET PAS) ----
     canvas->drawFastHLine(10, 21, 100, NEON_BLUE);  
     canvas->drawLine(110, 21, 122, 14, NEON_BLUE); 
     canvas->drawFastHLine(122, 14, 76, NEON_BLUE);  
@@ -239,11 +253,13 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & KOMET ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & KOMET (METEOR MERAH KEMBALI AKTIF) ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
-    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
+    // Background busur pasif (Biru Gelap)
+    drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false, 0);
+    // Busur aktif (Cyan + Ujung Meteor Merah)
     if (speedValue > 0) {
-        drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, CYAN, 3, false, true);
+        drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, CYAN, 3, false, true, currentActiveAngle);
     }
     
     // ---- E. DISTRIBUSI LABEL ANGKA KELILING ----
@@ -298,7 +314,7 @@ void loop() {
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- H. BAR RPM KOMET GRADASI MEMUDAR TEBAL ----
+    // ---- H. BAR RPM KOMET GRADASI ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
