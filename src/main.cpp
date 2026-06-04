@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V55: REAL METEOR ARC (GLOW TO FADE RED)
+// WAVESHARE ESP32-C6 1.47" - CODE V57: INSTANT SPEED & SMOOTH/DELAY RPM
 // ======================================================================
 
 #define TFT_BL 22
@@ -25,8 +25,8 @@
 #define GREEN_BRIGHT   0x07E0 
 #define YELLOW         0xFFE0
 #define CYAN           0x07FF 
-#define BRIGHT_BLUE    0x03BF // Biru Tua Terang untuk Garis Atas
-#define DARK_BLUE      0x0010 // Background busur pas diam
+#define BRIGHT_BLUE    0x03BF 
+#define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
 
 // INITIALISASI HARDWARE DISPLAY
@@ -36,16 +36,21 @@ Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34
 // Canvas Utama Ukuran Penuh (320x172)
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
-// VARIABEL FILTERING (SMOOTHING)
-float smoothedThrottle = 1500.0;
+// VARIABEL FILTERING (SMOOTHING TERPISAH - LOGIKA SUDAH DIPERBAIKI)
 float smoothedSteer = 1500.0;
-const float THROTTLE_SMOOTH_FACTOR = 0.45; 
 const float STEER_SMOOTH_FACTOR = 0.35;    
 
+// 1. Variabel Kecepatan (Dibuat INSTAN & Responsif Tanpa Delay)
 float speedValueFiltered = 0.0; 
 int speedValue = 0; 
 int targetSpeed = 0;
 int topSpeed = 0;
+
+// 2. Variabel RPM (Dibuat LEBIH LAMBAT / Smooth Delay)
+float smoothedThrottleRPM = 1500.0; 
+const float RPM_SMOOTH_FACTOR = 0.15; // Angka kecil agar gerakan bar RPM lambat dan tenang
+int rpmBarWidth = 0; 
+
 bool blinkState = false;
 unsigned long blinkTimer = 0;
 int currentSteerState = 0;
@@ -84,20 +89,14 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             uint16_t pixelColor = defaultColor;
             
             if (isSpeedArc && totalAngles > 0) {
-                int currentPos = angle - startDeg; // Posisi pixel saat ini dihitung dari pangkal (0 KM/H)
+                int currentPos = angle - startDeg; 
                 
-                // 1. KEPALA METEOR (Ujung Gas): Menyala Putih Terang Kontras (4 derajat terakhir)
                 if (currentPos >= totalAngles - 4) {
                     pixelColor = WHITE; 
                 } 
-                // 2. BADAN & EKOR METEOR: Semakin ke depan semakin TERANG, semakin ke belakang semakin REDUP
                 else {
-                    // Map posisi dari pangkal (ekor) ke dekat kepala untuk menentukan intensitas bit merah (5-bit: 0 s.d 31)
-                    // Kita setel batas bawahnya 6 (merah redup/gelap) agar tidak hilang total, dan batas atas 31 (merah maksimal)
                     int redIntensity = map(currentPos, 0, totalAngles, 6, 31);
                     redIntensity = constrain(redIntensity, 6, 31);
-                    
-                    // Format RGB565: Bit Merah digeser ke kiri sebanyak 11 kali
                     pixelColor = (redIntensity << 11); 
                 }
             }
@@ -106,7 +105,6 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
                 canvas->drawPixel(x, y, pixelColor);
             }
 
-            // Gambar titik skala (Ticks) di lapisan luar background busur
             if (drawTicks && t == 0 && (angle % 4 == 0)) {
                 for (int tickLen = 1; tickLen <= 4; tickLen++) {
                     int tx = cx + (int)(cos(rad) * (rx + tickLen));
@@ -120,9 +118,6 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
     }
 }
 
-// ======================================================================
-// FUNGSI PRINT ANGKA OTOMATIS MENGIKUTI POSISI DERAJAT ELIPS
-// ======================================================================
 void printAutoCenterLabel(const char* label, int angle, int textGap) {
     float rad = (float)angle * M_PI / 180.0;
     int targetX = centerX + (int)(cos(rad) * (rx + textGap));
@@ -133,9 +128,6 @@ void printAutoCenterLabel(const char* label, int angle, int textGap) {
     canvas->print(label);
 }
 
-// ======================================================================
-// FUNGSI GRAFIS IKON STATUS
-// ======================================================================
 void drawSignalIcon(int x, int y) {
     canvas->fillCircle(x + 10, y + 12, 2, BRIGHT_BLUE);
     canvas->drawArc(x + 10, y + 12, 5, 4, 220, 320, BRIGHT_BLUE);
@@ -161,9 +153,6 @@ void drawThermometerIcon(int x, int y) {
     canvas->fillRect(x + 4, y + 3, 1, 10, RED_BRIGHT);
 }
 
-// ======================================================================
-// MAIN SETUP
-// ======================================================================
 void setup() {
     Serial.begin(115200);
     
@@ -183,9 +172,6 @@ void setup() {
     pinMode(SIGNAL_PIN, INPUT);
 }
 
-// ======================================================================
-// MAIN LOOP
-// ======================================================================
 void loop() {
     int rawSteerPWM = pulseIn(STEER_PIN, HIGH, 20000);
     int rawThrottlePWM = pulseIn(THROTTLE_PIN, HIGH, 20000);
@@ -193,25 +179,34 @@ void loop() {
     if (rawSteerPWM == 0)     rawSteerPWM = 1500;
     if (rawThrottlePWM == 0)  rawThrottlePWM = 1500; 
 
-    // FILTER PENYARINGAN DATA (SMOOTHING)
-    smoothedThrottle = (smoothedThrottle * (1.0 - THROTTLE_SMOOTH_FACTOR)) + (rawThrottlePWM * THROTTLE_SMOOTH_FACTOR);
     smoothedSteer = (smoothedSteer * (1.0 - STEER_SMOOTH_FACTOR)) + (rawSteerPWM * STEER_SMOOTH_FACTOR);
 
-    // KALIBRASI KECEPATAN
-    if (smoothedThrottle < 1480) { 
-        targetSpeed = map((int)smoothedThrottle, 1480, 1050, 0, 120);
-        targetSpeed = constrain(targetSpeed, 0, 120);
-    } else if (smoothedThrottle > 1520) { 
-        targetSpeed = map((int)smoothedThrottle, 1520, 1950, 0, 120);
-        targetSpeed = constrain(targetSpeed, 0, 120);
+    // 1. HITUNG KECEPATAN SECARA INSTAN (Sangat Cepat & Responsif)
+    if (rawThrottlePWM < 1480) { 
+        targetSpeed = map(rawThrottlePWM, 1480, 1050, 0, 120);
+    } else if (rawThrottlePWM > 1520) { 
+        targetSpeed = map(rawThrottlePWM, 1520, 1950, 0, 120);
     } else {
         targetSpeed = 0; 
     }
+    targetSpeed = constrain(targetSpeed, 0, 120);
 
-    speedValueFiltered = (speedValueFiltered * 0.4) + (targetSpeed * 0.6);
+    // Filter diperingan maksimal (0.85) agar busur komet merah langsung melesat instan
+    speedValueFiltered = (speedValueFiltered * 0.15) + (targetSpeed * 0.85);
     speedValue = (int)(speedValueFiltered + 0.5);
 
     if (speedValue > topSpeed) topSpeed = speedValue;
+
+    // 2. FILTER KHUSUS BAR RPM (Dibuat tenang, bergerak lebih lama/delay alami)
+    smoothedThrottleRPM = (smoothedThrottleRPM * (1.0 - RPM_SMOOTH_FACTOR)) + (rawThrottlePWM * RPM_SMOOTH_FACTOR);
+    
+    int targetRpmWidth = 0;
+    if (smoothedThrottleRPM < 1480) {
+        targetRpmWidth = map((int)smoothedThrottleRPM, 1480, 1050, 0, 70);
+    } else if (smoothedThrottleRPM > 1520) {
+        targetRpmWidth = map((int)smoothedThrottleRPM, 1520, 1950, 0, 70);
+    }
+    rpmBarWidth = constrain(targetRpmWidth, 0, 70);
 
     if (millis() - blinkTimer > 350) {
         blinkTimer = millis();
@@ -232,7 +227,7 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESAIN GARIS ATAS AGRESIF (WARNA BIRU TUA TERANG & BEBAS NABRAK) ----
+    // ---- A. DESAIN GARIS ATAS AGRESIF ----
     canvas->drawLine(10, 27, 85, 27, BRIGHT_BLUE);
     canvas->drawLine(85, 27, 98, 14, BRIGHT_BLUE); 
     canvas->drawLine(98, 14, 222, 14, BRIGHT_BLUE); 
@@ -264,13 +259,10 @@ void loop() {
     canvas->setCursor(278, 72); canvas->print("RIGHT");
     drawSteeringIcon(292, 102);
 
-    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & METEOR GRADASI ----
+    // ---- D. RENDERING BUSUR ELIPS OVAL BACKGROUND & METEOR ----
     int currentActiveAngle = map(speedValue, 0, 120, startAngle, endAngle);
-    
-    // Background dasar busur asli Biru Gelap (DARK_BLUE)
     drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, endAngle, DARK_BLUE, 3, true, false);
     
-    // RENDERING METEOR GAS DENGAN EFEK GRADASI MERAH (TERANG KE REDUP DI UJUNG BELAKANG)
     if (speedValue > 0) {
         drawCustomOvalArc(centerX, centerY, rx, ry, startAngle, currentActiveAngle, BLACK, 3, false, true);
     }
@@ -325,16 +317,16 @@ void loop() {
     drawThermometerIcon(238, 151);
     canvas->setTextColor(WHITE); canvas->setCursor(254, 156); canvas->printf("%d 'C", temperature);
 
-    // ---- H. BAR RPM EFEK KOMET BERBUNTUT ----
+    // ---- H. BAR RPM DENGAN EFEK DELAY/SMOOTH ----
     canvas->setTextColor(WHITE);
     canvas->setCursor(110, 163); canvas->print("RPM");
     
     canvas->fillRect(135, 165, 70, 4, DARK_BLUE); 
-    int barWidth = map(speedValue, 0, 120, 0, 70);
     
-    for (int i = 0; i < barWidth; i++) {
+    // Rendering balok RPM menggunakan variabel slow 'rpmBarWidth'
+    for (int i = 0; i < rpmBarWidth; i++) {
         uint16_t col = GREEN_BRIGHT; 
-        int distanceFromHead = barWidth - 1 - i; 
+        int distanceFromHead = rpmBarWidth - 1 - i; 
         
         if (distanceFromHead > 0) {
             int intensity = 63 - (distanceFromHead * 4); 
