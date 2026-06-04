@@ -3,7 +3,7 @@
 #include <math.h>
 
 // ======================================================================
-// WAVESHARE ESP32-C6 1.47" - CODE V54 FIX: GLOWING RED METEOR & BLUE LINE
+// WAVESHARE ESP32-C6 1.47" - CODE V54 PERFECT INDIKATOR: NO OVERLAP & BRIGHT BLUE
 // ======================================================================
 
 #define TFT_BL 22
@@ -21,10 +21,11 @@
 // COLOR PALETTE (RGB565 16-Bit)
 #define BLACK          0x0000
 #define WHITE          0xFFFF
-#define RED_BRIGHT     0xF800 // Merah Murni Maksimal (Bersinar)
+#define RED_BRIGHT     0xF800 // Merah Murni Solid Maksimal
 #define GREEN_BRIGHT   0x07E0 
 #define YELLOW         0xFFE0
-#define CYAN           0x07FF // Neon Blue Terang untuk Header & Teks
+#define CYAN           0x07FF // Cyan untuk teks SPEED / pelengkap
+#define BRIGHT_BLUE    0x03BF // WARNA BARU: Biru Tua tapi Terang (Electric Deep Blue)
 #define DARK_BLUE      0x0010 // Background busur pas diam
 #define GRAY           0x5AEB
 
@@ -82,15 +83,14 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
             
             uint16_t pixelColor = defaultColor;
             
-            // LOGIKA WARNA MERAH HIGH-INTENSITY & KEPALA PUTIH BERSINAR
             if (isSpeedArc && totalAngles > 0) {
                 int currentPos = angle - startDeg;
                 
-                // Kepala di ujung gas (4 derajat terakhir) menyala Putih bersih agar kontras bersinar
+                // Kepala di ujung gas (4 derajat terakhir) menyala Putih bersih
                 if (currentPos >= totalAngles - 4) {
                     pixelColor = WHITE; 
                 } 
-                // Seluruh badan komet di belakangnya menggunakan Merah Solid Maksimal tanpa redup
+                // Seluruh badan komet di belakangnya menggunakan Merah Solid Maksimal bersinar
                 else {
                     pixelColor = RED_BRIGHT; 
                 }
@@ -131,9 +131,9 @@ void printAutoCenterLabel(const char* label, int angle, int textGap) {
 // FUNGSI GRAFIS IKON STATUS
 // ======================================================================
 void drawSignalIcon(int x, int y) {
-    canvas->fillCircle(x + 10, y + 12, 2, CYAN);
-    canvas->drawArc(x + 10, y + 12, 5, 4, 220, 320, CYAN);
-    canvas->drawArc(x + 10, y + 12, 9, 8, 220, 320, CYAN);
+    canvas->fillCircle(x + 10, y + 12, 2, BRIGHT_BLUE);
+    canvas->drawArc(x + 10, y + 12, 5, 4, 220, 320, BRIGHT_BLUE);
+    canvas->drawArc(x + 10, y + 12, 9, 8, 220, 320, BRIGHT_BLUE);
 }
 
 void drawBatteryIcon(int x, int y) {
@@ -150,8 +150,8 @@ void drawSteeringIcon(int x, int y) {
 }
 
 void drawThermometerIcon(int x, int y) {
-    canvas->drawCircle(x + 4, y + 12, 4, CYAN);
-    canvas->fillRect(x + 3, y, 3, 10, CYAN);
+    canvas->drawCircle(x + 4, y + 12, 4, BRIGHT_BLUE);
+    canvas->fillRect(x + 3, y, 3, 10, BRIGHT_BLUE);
     canvas->fillRect(x + 4, y + 3, 1, 10, RED_BRIGHT);
 }
 
@@ -226,17 +226,18 @@ void loop() {
     canvas->fillScreen(BLACK); 
     canvas->setFont(NULL); 
 
-    // ---- A. DESAIN GARIS HEADER V54 UTUH (NEON BLUE AGRESIF) ----
-    canvas->drawLine(10, 24, 60, 24, CYAN);
-    canvas->drawLine(60, 24, 75, 14, CYAN);
-    canvas->drawLine(75, 14, 245, 14, CYAN);
-    canvas->drawLine(245, 14, 260, 24, CYAN);
-    canvas->drawLine(260, 24, 310, 24, CYAN);
+    // ---- A. DESAIN GARIS ATAS AGRESIF BARU (WARNA BIRU TUA TERANG & BEBAS NABRAK) ----
+    // Posisi Y awal diturunkan dari 24 ke 27 agar lewat di bawah teks dBm dengan aman
+    canvas->drawLine(10, 27, 85, 27, BRIGHT_BLUE);
+    canvas->drawLine(85, 27, 98, 14, BRIGHT_BLUE); // Jalur miring naik menjauh dari text area
+    canvas->drawLine(98, 14, 222, 14, BRIGHT_BLUE); // Flat tengah atas
+    canvas->drawLine(222, 14, 235, 24, BRIGHT_BLUE); // Jalur miring turun sebelum area batre
+    canvas->drawLine(235, 24, 310, 24, BRIGHT_BLUE);
 
-    // ---- B. INFO STATUS HEADER ATAS ----
-    drawSignalIcon(15, 6);
+    // ---- B. INFO STATUS HEADER ATAS (KOORDINAT AMAN) ----
+    drawSignalIcon(15, 4);
     canvas->setTextColor(WHITE);
-    canvas->setCursor(40, 9);
+    canvas->setCursor(40, 7);
     canvas->printf("%d dBm", signalDbm);
     
     drawBatteryIcon(250, 6);
@@ -284,7 +285,7 @@ void loop() {
 
     // ---- F. CLUSTER TENGAH ----
     canvas->setTextSize(1);
-    canvas->setTextColor(CYAN);
+    canvas->setTextColor(BRIGHT_BLUE);
     int speedX = 145; int speedY = 56;  
     canvas->setCursor(speedX, speedY);     canvas->print("SPEED");
     canvas->setCursor(speedX + 1, speedY); canvas->print("SPEED"); 
@@ -311,7 +312,7 @@ void loop() {
     canvas->setTextColor(WHITE); canvas->setCursor(23, 156); canvas->print("12.4V");
 
     canvas->drawRect(110, 137, 100, 19, DARK_BLUE);
-    canvas->setTextColor(CYAN); canvas->setCursor(132, 140); canvas->print("TOP SPEED");
+    canvas->setTextColor(BRIGHT_BLUE); canvas->setCursor(132, 140); canvas->print("TOP SPEED");
     canvas->setTextColor(WHITE); canvas->setCursor(136, 147); canvas->printf("%d KM/H", topSpeed);
 
     canvas->drawRect(230, 142, 75, 26, DARK_BLUE);
