@@ -9,7 +9,7 @@ void init_ui(Arduino_GFX *gfx_ptr) {
     canvas->begin();
 }
 
-// Fungsi menggambar panah sederhana
+// Fungsi menggambar panah sen
 void drawArrow(int x, int y, bool isLeft, uint16_t color) {
     if (isLeft) {
         canvas->fillTriangle(x, y, x + 10, y - 8, x + 10, y + 8, color);
@@ -24,14 +24,13 @@ void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool
     if (!canvas) return;
     canvas->fillScreen(0x0000); 
 
-    // --- KIRI: SPEEDOMETER ANALOG (Kembali ke posisi semula) ---
+    // --- KIRI: SPEEDOMETER ANALOG ---
     int centerX = 85; 
     int centerY = 85;
     int radius = 70;
 
     canvas->drawCircle(centerX, centerY, radius, 0x5AEB); 
 
-    // Skala Garis & Angka
     for (int i = 0; i <= 200; i += 10) { 
         int angle = map(i, 0, 200, 140, 400);
         float rad = angle * M_PI / 180.0;
@@ -54,14 +53,17 @@ void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool
     canvas->fillCircle(centerX, centerY, 5, 0xF800);
 
     // --- KANAN: DASHBOARD INFORMASI ---
+    // Sen
     if(blinkState) {
-        drawArrow(190, 20, true, 0x07E0);  // Panah Kiri
-        drawArrow(270, 20, false, 0x07E0); // Panah Kanan
+        drawArrow(190, 20, true, 0x07E0);  
+        drawArrow(270, 20, false, 0x07E0); 
     }
 
-    // Baterai
-    canvas->drawRect(220, 10, 40, 20, 0xFFFF);
-    canvas->fillRect(222, 12, map(batt, 0, 100, 0, 36), 16, 0x07E0);
+    // Baterai (Persentase Angka)
+    canvas->setCursor(230, 15);
+    canvas->setTextSize(2);
+    canvas->setTextColor(0x07E0); // Warna hijau
+    canvas->printf("%d%%", constrain(batt, 0, 100));
     
     // Bar RPM
     canvas->drawRect(180, 50, 120, 40, 0x5AEB);
