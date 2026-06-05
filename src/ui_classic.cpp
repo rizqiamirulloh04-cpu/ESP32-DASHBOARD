@@ -13,49 +13,54 @@ void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool
     if (!canvas) return;
     canvas->fillScreen(0x0000); 
 
-    int centerX = 85; 
-    int centerY = 85;
+    // --- BAGIAN KIRI: SPEEDOMETER ANALOG ---
+    int centerX = 80; 
+    int centerY = 86;
     int radius = 70;
-
-    // 1. Lingkaran Utama
     canvas->drawCircle(centerX, centerY, radius, 0x5AEB); 
-
-    // 2. Skala Garis & Angka
-    for (int i = 0; i <= 200; i += 10) { 
+    
+    // Skala & Angka
+    for (int i = 0; i <= 200; i += 40) {
         int angle = map(i, 0, 200, 140, 400);
         float rad = angle * M_PI / 180.0;
-
-        // Tentukan panjang garis
-        int innerR = (i % 40 == 0) ? (radius - 12) : (radius - 6);
-        
-        int x1 = centerX + (int)(cos(rad) * innerR);
-        int y1 = centerY + (int)(sin(rad) * innerR);
+        int x1 = centerX + (int)(cos(rad) * (radius - 10));
+        int y1 = centerY + (int)(sin(rad) * (radius - 10));
         int x2 = centerX + (int)(cos(rad) * radius);
         int y2 = centerY + (int)(sin(rad) * radius);
-        
         canvas->drawLine(x1, y1, x2, y2, 0xFFFF);
-
-        // Hanya gambar angka jika i adalah kelipatan 40
-        if (i % 40 == 0) {
-            int tx = centerX + (int)(cos(rad) * (radius + 12));
-            int ty = centerY + (int)(sin(rad) * (radius + 12));
-            canvas->setCursor(tx - 5, ty - 4);
-            canvas->print(i);
-        }
+        int tx = centerX + (int)(cos(rad) * (radius - 22));
+        int ty = centerY + (int)(sin(rad) * (radius - 22));
+        canvas->setCursor(tx - 5, ty - 3);
+        canvas->print(i);
     }
-
-    // 3. Jarum Merah
+    // Jarum
     int angle = map(constrain(speed, 0, 200), 0, 200, 140, 400);
     float rad = angle * M_PI / 180.0;
-    int x2 = centerX + (int)(cos(rad) * 55);
-    int y2 = centerY + (int)(sin(rad) * 55);
-    
-    canvas->drawLine(centerX, centerY, x2, y2, 0xF800);
-    canvas->drawLine(centerX+1, centerY+1, x2+1, y2+1, 0xF800);
+    canvas->drawLine(centerX, centerY, centerX + (int)(cos(rad)*55), centerY + (int)(sin(rad)*55), 0xF800);
     canvas->fillCircle(centerX, centerY, 5, 0xF800);
 
-    // KOTAK KANAN SUDAH DIHAPUS
+    // --- BAGIAN KANAN: DASHBOARD INFORMASI ---
+    // 1. Indikator Kiri/Kanan (Blink)
+    if(blinkState) {
+        canvas->fillCircle(200, 20, 8, 0x07E0); // Sen Kiri
+        canvas->fillCircle(280, 20, 8, 0x07E0); // Sen Kanan
+    }
+    // 2. Baterai (Tengah Atas)
+    canvas->drawRect(220, 10, 40, 20, 0xFFFF);
+    canvas->fillRect(222, 12, map(batt, 0, 100, 0, 36), 16, 0x07E0);
+    
+    // 3. Kotak Tengah: Bar RPM
+    canvas->drawRect(180, 50, 120, 40, 0x5AEB);
+    canvas->fillRect(182, 52, map(constrain(rpm, 0, 100), 0, 100, 0, 116), 36, 0xF800);
+    
+    // 4. Kotak Bawah: KMH Digital
+    canvas->setCursor(210, 110);
+    canvas->setTextSize(3);
+    canvas->setTextColor(0x07FF); // Warna Cyan
+    canvas->printf("%03d", speed);
+    canvas->setCursor(270, 120);
+    canvas->setTextSize(1);
+    canvas->print("KMH");
 
-    // Render ke layar fisik
     gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
 }
