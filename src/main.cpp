@@ -7,7 +7,7 @@
 // WAVESHARE ESP32-C6 1.47" - CODE V56 FIXED: SPEED DELAY & RPM INSTAN
 // ======================================================================
 
-Preferences prefs; // Objek untuk NVS
+Preferences prefs; // Objek NVS
 
 #define TFT_BL 22
 #define TFT_MOSI 6
@@ -21,7 +21,7 @@ Preferences prefs; // Objek untuk NVS
 #define BATTERY_PIN  3  
 #define SIGNAL_PIN   4  
 
-// COLOR PALETTE (RGB565 16-Bit)
+// COLOR PALETTE
 #define BLACK          0x0000
 #define WHITE          0xFFFF
 #define RED_BRIGHT     0xF800 
@@ -32,19 +32,20 @@ Preferences prefs; // Objek untuk NVS
 #define DARK_BLUE      0x0010 
 #define GRAY           0x5AEB
 
+// HARDWARE INIT
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
+// VARIABLES
 float smoothedThrottleSpeed = 1500.0;
 float smoothedSteer = 1500.0;
 const float SPEED_SMOOTH_FACTOR = 0.18;
 const float STEER_SMOOTH_FACTOR = 0.35;    
-
 float speedValueFiltered = 0.0; 
 int speedValue = 0; 
 int targetSpeed = 0;
-int topSpeed = 0; // Nilai ini akan dimuat dari NVS
+int topSpeed = 0; 
 
 int rpmBarWidth = 0; 
 bool blinkState = false;
@@ -62,7 +63,7 @@ const int ry = 48;
 const int startAngle = 145;
 const int endAngle = 395;
 
-// (Fungsi-fungsi drawCustomOvalArc, printAutoCenterLabel, dll tetap sama di sini)
+// FUNGSI GAMBAR (ASLI MILIKMU)
 void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg, uint16_t defaultColor, int thickness, bool drawTicks, bool isSpeedArc) {
     int totalAngles = endDeg - startDeg;
     for (int t = 0; t < thickness; t++) {
@@ -94,36 +95,92 @@ void drawCustomOvalArc(int cx, int cy, int rx, int ry, int startDeg, int endDeg,
     }
 }
 
-// ... (tambahkan kembali fungsi printAutoCenterLabel, drawSignalIcon, dll di sini agar rapi) ...
+void printAutoCenterLabel(const char* label, int angle, int textGap) {
+    float rad = (float)angle * M_PI / 180.0;
+    int targetX = centerX + (int)(cos(rad) * (rx + textGap));
+    int targetY = centerY + (int)(sin(rad) * (ry + textGap));
+    int stringWidth = strlen(label) * 6; 
+    int stringHeight = 8;
+    canvas->setCursor(targetX - (stringWidth / 2), targetY - (stringHeight / 2));
+    canvas->print(label);
+}
+
+void drawSignalIcon(int x, int y) {
+    canvas->fillCircle(x + 10, y + 12, 2, GREEN_BRIGHT);
+    canvas->drawArc(x + 10, y + 12, 5, 4, 220, 320, GREEN_BRIGHT);
+    canvas->drawArc(x + 10, y + 12, 9, 8, 220, 320, GREEN_BRIGHT);
+}
+
+void drawBatteryIcon(int x, int y) {
+    canvas->drawRect(x, y + 3, 18, 10, GRAY);
+    canvas->fillRect(x + 18, y + 6, 2, 4, GRAY);
+    canvas->fillRect(x + 2, y + 5, 14, 6, GREEN_BRIGHT);
+}
+
+void drawSteeringIcon(int x, int y) {
+    canvas->drawCircle(x, y, 12, GRAY);
+    canvas->drawCircle(x, y, 2, GRAY);
+    canvas->drawLine(x - 11, y, x + 11, y, GRAY);
+    canvas->drawLine(x, y + 2, x, y + 11, GRAY);
+}
+
+void drawThermometerIcon(int x, int y) {
+    canvas->drawCircle(x + 4, y + 12, 4, BRIGHT_BLUE);
+    canvas->fillRect(x + 3, y, 3, 10, BRIGHT_BLUE);
+    canvas->fillRect(x + 4, y + 3, 1, 10, RED_BRIGHT);
+}
 
 void setup() {
     Serial.begin(115200);
 
-    // Inisialisasi NVS
+    // INISIALISASI NVS
     prefs.begin("speedo", false);
-    topSpeed = prefs.getInt("topSpeed", 0); // Muat topSpeed dari memori
+    topSpeed = prefs.getInt("topSpeed", 0); // Ambil dari memori
 
     ledcAttach(TFT_BL, 5000, 8);
     ledcWrite(TFT_BL, 100); 
+
     gfx->begin();
     gfx->setRotation(1); 
     canvas->begin();
     canvas->fillScreen(BLACK);
+
     pinMode(STEER_PIN, INPUT);
     pinMode(THROTTLE_PIN, INPUT);
+    pinMode(BATTERY_PIN, INPUT);
+    pinMode(SIGNAL_PIN, INPUT);
 }
 
 void loop() {
-    // ... (Logika sensor PWM tetap sama) ...
-    
-    // Logika Auto-Save Top Speed
-    if (speedValue > topSpeed) {
-        topSpeed = speedValue;
-        prefs.putInt("topSpeed", topSpeed); // Simpan ke memori setiap kali memecahkan rekor
+    int rawSteerPWM = pulseIn(STEER_PIN, HIGH, 20000);
+    int rawThrottlePWM = pulseIn(THROTTLE_PIN, HIGH, 20000);
+    if (rawSteerPWM == 0) rawSteerPWM = 1500;
+    if (rawThrottlePWM == 0) rawThrottlePWM = 1500; 
+
+    smoothedThrottleSpeed = (smoothedThrottleSpeed * (1.0 - SPEED_SMOOTH_FACTOR)) + (rawThrottlePWM * SPEED_SMOOTH_FACTOR);
+    smoothedSteer = (smoothedSteer * (1.0 - STEER_SMOOTH_FACTOR)) + (rawSteerPWM * STEER_SMOOTH_FACTOR);
+
+    if (smoothedThrottleSpeed < 1480) { 
+        targetSpeed = map((int)smoothedThrottleSpeed, 1480, 1050, 0, 120);
+        targetSpeed = constrain(targetSpeed, 0, 120);
+    } else if (smoothedThrottleSpeed > 1520) { 
+        targetSpeed = map((int)smoothedThrottleSpeed, 1520, 1950, 0, 120);
+        targetSpeed = constrain(targetSpeed, 0, 120);
+    } else {
+        targetSpeed = 0; 
     }
 
-    // ... (Sisa rendering canvas dan drawing lainnya tetap sama) ...
-    
-    gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
+    speedValueFiltered = (speedValueFiltered * 0.4) + (targetSpeed * 0.6);
+    speedValue = (int)(speedValueFiltered + 0.5);
+
+    // UPDATE TOP SPEED & SAVE KE NVS
+    if (speedValue > topSpeed) {
+        topSpeed = speedValue;
+        prefs.putInt("topSpeed", topSpeed); 
+    }
+
+    // (Logika rendering lainnya sama seperti milikmu...)
+    // ... [Copy-paste bagian rendering canvas milikmu di sini] ...
+
     delay(3); 
 }
