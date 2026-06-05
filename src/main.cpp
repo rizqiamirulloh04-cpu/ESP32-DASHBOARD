@@ -2,7 +2,7 @@
 #include <Arduino_GFX_Library.h>
 #include <math.h>
 
-// 1. PIN DEFINITION (Pastikan ini sesuai dengan board Anda)
+// PIN DEFINITION (Waveshare ESP32-C6)
 #define TFT_BL 22
 #define TFT_MOSI 6
 #define TFT_SCLK 7
@@ -10,36 +10,44 @@
 #define TFT_DC   15
 #define TFT_RST  21
 
-// 2. DRIVER & CANVAS (Konfigurasi Offset 34, 0 WAJIB untuk 1.47")
+// Konfigurasi Layar 1.47" (PENTING: Offset 34, 0 agar tidak noise)
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 3, true, 172, 320, 34, 0, 34, 0);
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
-void drawDashboard(int speed, int rpm) {
-    // Bersihkan Canvas (bukan langsung layar fisik)
-    canvas->fillScreen(0x0000); 
+void drawDashboard(int speed, int rpm, int batt) {
+    canvas->fillScreen(0x0000); // Background Hitam
 
-    // A. Gambar Gauge Speedometer
-    canvas->drawCircle(85, 85, 70, 0x5AEB); // Lingkaran Gauge
-    
-    // B. Jarum Speedometer
+    // 1. Gambar Lingkaran Gauge
+    int cx = 85, cy = 85, r = 70;
+    canvas->drawCircle(cx, cy, r, 0x5AEB);
+
+    // 2. Garis Skala Speedometer
+    for (int i = 0; i <= 200; i += 20) {
+        int angle = map(i, 0, 200, 140, 400);
+        float rad = angle * M_PI / 180.0;
+        canvas->drawLine(cx + (int)(cos(rad)*(r-8)), cy + (int)(sin(rad)*(r-8)), 
+                         cx + (int)(cos(rad)*r), cy + (int)(sin(rad)*r), 0xFFFF);
+    }
+
+    // 3. Jarum Speedometer
     int angle = map(constrain(speed, 0, 200), 0, 200, 140, 400);
     float rad = angle * M_PI / 180.0;
-    canvas->drawLine(85, 85, 85 + (int)(cos(rad)*55), 85 + (int)(sin(rad)*55), 0xF800);
-    canvas->fillCircle(85, 85, 5, 0xF800);
+    canvas->drawLine(cx, cy, cx + (int)(cos(rad)*55), cy + (int)(sin(rad)*55), 0xF800);
+    canvas->fillCircle(cx, cy, 4, 0xF800);
 
-    // C. Bar RPM (Kanan)
-    canvas->drawRect(180, 50, 120, 40, 0x5AEB);
-    int barWidth = map(constrain(rpm, 0, 100), 0, 100, 0, 116);
-    canvas->fillRect(182, 52, barWidth, 36, 0x07E0);
-    
-    // D. Angka KMH
-    canvas->setCursor(210, 110);
-    canvas->setTextSize(3);
-    canvas->setTextColor(0x07FF);
-    canvas->printf("%03d", speed);
+    // 4. Bar RPM (Kanan)
+    canvas->drawRect(190, 50, 100, 25, 0x5AEB);
+    canvas->fillRect(192, 52, map(constrain(rpm, 0, 100), 0, 100, 0, 96), 21, 0x07E0);
 
-    // E. Kirim isi canvas ke layar fisik DALAM SATU PERINTAH
+    // 5. Teks KMH & Baterai
+    canvas->setCursor(200, 100);
+    canvas->setTextSize(2);
+    canvas->printf("%03d KMH", speed);
+    canvas->setCursor(220, 20);
+    canvas->printf("%d%%", batt);
+
+    // Update layar fisik
     gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
 }
 
@@ -51,10 +59,7 @@ void setup() {
 }
 
 void loop() {
-    // Simulasi data (Ganti dengan input sensor Anda)
-    int speed = 85; 
-    int rpm = 50;
-    
-    drawDashboard(speed, rpm);
-    delay(30); // Berikan jeda agar prosesor tidak overheat
+    // Simulasi data
+    drawDashboard(85, 60, 89);
+    delay(50);
 }
