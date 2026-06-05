@@ -9,32 +9,39 @@
 #define TFT_CS   14
 #define TFT_DC   15
 #define TFT_RST  21
+#define RX_PIN   1 
 
-// Konfigurasi Layar 1.47" (PENTING: Offset 34, 0 agar tidak noise)
+// Konfigurasi Layar (Offset 34, 0 WAJIB untuk 1.47")
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 3, true, 172, 320, 34, 0, 34, 0);
 Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
 
-void drawDashboard(int speed, int rpm, int batt) {
+void drawUI(int speed, int rpm, int batt) {
     canvas->fillScreen(0x0000); // Background Hitam
 
     // 1. Gambar Lingkaran Gauge
     int cx = 85, cy = 85, r = 70;
     canvas->drawCircle(cx, cy, r, 0x5AEB);
 
-    // 2. Garis Skala Speedometer
-    for (int i = 0; i <= 200; i += 20) {
-        int angle = map(i, 0, 200, 140, 400);
+    // 2. Skala Garis & Angka 0-120
+    int skala[] = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120};
+    for (int i = 0; i < 12; i++) {
+        int angle = map(skala[i], 0, 120, 140, 400);
         float rad = angle * M_PI / 180.0;
-        canvas->drawLine(cx + (int)(cos(rad)*(r-8)), cy + (int)(sin(rad)*(r-8)), 
+        int len = (skala[i] % 20 == 0) ? 12 : 6;
+        canvas->drawLine(cx + (int)(cos(rad)*(r-len)), cy + (int)(sin(rad)*(r-len)), 
                          cx + (int)(cos(rad)*r), cy + (int)(sin(rad)*r), 0xFFFF);
+        if (skala[i] % 20 == 0) {
+            canvas->setCursor(cx + (int)(cos(rad)*(r-25)) - 5, cy + (int)(sin(rad)*(r-25)) - 4);
+            canvas->print(skala[i]);
+        }
     }
 
     // 3. Jarum Speedometer
-    int angle = map(constrain(speed, 0, 200), 0, 200, 140, 400);
+    int angle = map(constrain(speed, 0, 120), 0, 120, 140, 400);
     float rad = angle * M_PI / 180.0;
     canvas->drawLine(cx, cy, cx + (int)(cos(rad)*55), cy + (int)(sin(rad)*55), 0xF800);
-    canvas->fillCircle(cx, cy, 4, 0xF800);
+    canvas->fillCircle(cx, cy, 5, 0xF800);
 
     // 4. Bar RPM (Kanan)
     canvas->drawRect(190, 50, 100, 25, 0x5AEB);
@@ -47,19 +54,21 @@ void drawDashboard(int speed, int rpm, int batt) {
     canvas->setCursor(220, 20);
     canvas->printf("%d%%", batt);
 
-    // Update layar fisik
+    // Kirim ke layar
     gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
 }
 
 void setup() {
     pinMode(TFT_BL, OUTPUT);
     digitalWrite(TFT_BL, HIGH);
+    pinMode(RX_PIN, INPUT_PULLUP);
     gfx->begin();
     canvas->begin();
 }
 
 void loop() {
-    // Simulasi data
-    drawDashboard(85, 60, 89);
+    int pulse = pulseIn(RX_PIN, HIGH, 20000);
+    int speed = map(pulse, 1000, 2000, 0, 120);
+    drawUI(speed, speed, 89); // RPM dihubungkan ke speed sementara
     delay(50);
 }
