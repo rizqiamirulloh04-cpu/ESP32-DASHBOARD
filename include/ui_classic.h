@@ -3,12 +3,11 @@
 
 #include <lvgl.h>
 
-// Deklarasi gambar (nanti kamu masukkan kode C Array dari converter di sini)
-LV_IMG_DECLARE(bg_speedo); 
-LV_IMG_DECLARE(needle);
+// Deklarasi extern agar bisa dipanggil di file lain
+extern const lv_img_dsc_t bg_speedo;
+extern const lv_img_dsc_t needle_speed;
 
-// Fungsi Utama
 void create_screen_classic();
-void update_gauges(int speed, int rpm, int batt, int temp);
+void update_gauges(int speed);
 
 #endif
