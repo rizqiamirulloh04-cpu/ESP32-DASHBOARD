@@ -1,20 +1,29 @@
 #include "lvgl.h"
 
-// Data array untuk background (hasil konversi png)
+// --- DATA BACKGROUND ---
+const uint8_t bg_speedo_map[] = {
+    // ... [PASTE SEMUA DATA HEX KAMU DI SINI] ...
+};
+
 const lv_img_dsc_t bg_speedo = {
   .header.always_zero = 0,
-  .header.w = 320, // Lebar gambar
-  .header.h = 172, // Tinggi gambar
+  .header.w = 320, // Sesuaikan dengan lebar gambarmu
+  .header.h = 172, // Sesuaikan dengan tinggi gambarmu
   .data_size = 320 * 172 * 4,
   .header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA,
   .data = (const uint8_t *)bg_speedo_map,
 };
 
-// Data array piksel (ini yang panjang sekali)
-const uint8_t bg_speedo_map[] = {
-  0x00, 0x00, 0xFF, 0x00, // Contoh data piksel
-  0x1A, 0x2B, 0x3C, 0xFF,
-  // ... ribuan baris lainnya ...
+// --- DATA JARUM (NEEDLE) ---
+const uint8_t needle_speed_map[] = {
+    // ... [PASTE DATA HEX JARUM DI SINI] ...
 };
 
-// Lakukan hal yang sama untuk needle_speed, needle_rpm, dll.
+const lv_img_dsc_t needle_speed = {
+  .header.always_zero = 0,
+  .header.w = 20, // Contoh lebar jarum
+  .header.h = 50, // Contoh tinggi jarum
+  .data_size = 20 * 50 * 4,
+  .header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA,
+  .data = (const uint8_t *)needle_speed_map,
+};
