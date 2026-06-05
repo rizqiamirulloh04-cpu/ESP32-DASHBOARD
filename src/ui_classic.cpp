@@ -21,11 +21,11 @@ void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool
     canvas->drawCircle(centerX, centerY, radius, 0x5AEB); 
 
     // 2. Skala Garis & Angka
-    for (int i = 0; i <= 200; i += 10) { // Langkah 10 untuk kerapatan garis
+    for (int i = 0; i <= 200; i += 10) { 
         int angle = map(i, 0, 200, 140, 400);
         float rad = angle * M_PI / 180.0;
 
-        // Tentukan panjang garis: garis utama lebih panjang dari garis sela
+        // Tentukan panjang garis
         int innerR = (i % 40 == 0) ? (radius - 12) : (radius - 6);
         
         int x1 = centerX + (int)(cos(rad) * innerR);
@@ -54,10 +54,8 @@ void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool
     canvas->drawLine(centerX+1, centerY+1, x2+1, y2+1, 0xF800);
     canvas->fillCircle(centerX, centerY, 5, 0xF800);
 
-    // 4. Bar Indikator RPM (Kanan)
-    canvas->drawRect(240, 40, 40, 80, 0x5AEB);
-    int barHeight = map(constrain(rpm, 0, 100), 0, 100, 0, 78);
-    canvas->fillRect(241, 119 - barHeight, 38, barHeight, 0xF800); 
+    // KOTAK KANAN SUDAH DIHAPUS
 
+    // Render ke layar fisik
     gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
 }
