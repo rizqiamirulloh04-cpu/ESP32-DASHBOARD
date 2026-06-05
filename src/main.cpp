@@ -12,7 +12,7 @@ int currentRPM = 0;
 int batteryLevel = 89; 
 bool blinkState = false;
 
-// Setup Layar (Menggunakan bus default untuk board ini)
+// Setup Layar
 Arduino_DataBus *bus = new Arduino_ESP32SPI(8, 9, 10, 11, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_GC9A01(bus, 12, 0, true);
 
@@ -26,7 +26,10 @@ void setup() {
     if (!gfx->begin()) {
         Serial.println("gfx->begin() failed!");
     }
-    gfx->fillScreen(BLACK);
+    
+    // Perbaikan: Mengganti BLACK dengan 0x0000
+    gfx->fillScreen(0x0000); 
+    
     init_ui(gfx);
 }
 
