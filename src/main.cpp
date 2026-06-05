@@ -2,53 +2,52 @@
 #include <Arduino_GFX_Library.h>
 #include "ui_classic.h"
 
-// --- KONFIGURASI HARDWARE WAVESHARE ESP32-C6 1.47" ---
-#define TFT_BL 22
-#define TFT_MOSI 6
-#define TFT_SCLK 7
-#define TFT_CS 14
-#define TFT_DC 15
-#define TFT_RST 21
+// Konfigurasi Pin pada board ESP32-C6-LCD-1.47
+#define STEER_PIN 1    // Pin 1 untuk Steering
+#define THROTTLE_PIN 2 // Pin 2 untuk Throttle
 
-// Inisialisasi Bus SPI
-Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
+// Variabel Global
+int currentSpeed = 0;
+int currentRPM = 0;
+int batteryLevel = 89; 
+bool blinkState = false;
 
-// Inisialisasi Layar
-Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
-
-// --- VARIABEL DATA ---
-int speedValue = 0;
-int rpmValue = 0;
-int batteryPercent = 89;
-int signalDbm = -67;
-int steerState = 0; 
+// Setup Layar (Menggunakan bus default untuk board ini)
+Arduino_DataBus *bus = new Arduino_ESP32SPI(8, 9, 10, 11, GFX_NOT_DEFINED);
+Arduino_GFX *gfx = new Arduino_GC9A01(bus, 12, 0, true);
 
 void setup() {
     Serial.begin(115200);
-
-    // Aktifkan Backlight
-    pinMode(TFT_BL, OUTPUT);
-    digitalWrite(TFT_BL, HIGH);
-
-    // Inisialisasi Layar & UI
-    if (!gfx->begin()) {
-        Serial.println("Gagal menginisialisasi layar!");
-    }
-    init_ui(gfx);
     
-    Serial.println("System Ready - Menampilkan UI...");
+    // Set pin sebagai input analog
+    pinMode(STEER_PIN, INPUT);
+    pinMode(THROTTLE_PIN, INPUT);
+    
+    if (!gfx->begin()) {
+        Serial.println("gfx->begin() failed!");
+    }
+    gfx->fillScreen(BLACK);
+    init_ui(gfx);
 }
 
 void loop() {
-    static unsigned long blinkTimer = 0;
-    static bool blinkState = false;
-    if (millis() - blinkTimer > 400) {
-        blinkTimer = millis();
-        blinkState = !blinkState;
-    }
+    // 1. Baca Sensor Analog
+    int rawSteer = analogRead(STEER_PIN);
+    int rawThrottle = analogRead(THROTTLE_PIN);
 
-    // Panggil fungsi UI dari file ui_classic.cpp
-    draw_ui_classic(speedValue, rpmValue, batteryPercent, signalDbm, steerState, blinkState);
+    // 2. Mapping nilai sensor (0-4095) ke rentang UI
+    int targetRPM = map(constrain(rawSteer, 0, 4095), 0, 4095, 0, 100);
+    int targetSpeed = map(constrain(rawThrottle, 0, 4095), 0, 4095, 0, 200);
 
-    delay(10);
+    // 3. Smoothing agar jarum tidak bergetar
+    currentRPM = (currentRPM * 0.8) + (targetRPM * 0.2);
+    currentSpeed = (currentSpeed * 0.8) + (targetSpeed * 0.2);
+
+    // 4. Simulasi Blink Sen
+    blinkState = (millis() % 1000 < 500);
+
+    // 5. Update UI (Fungsi dari ui_classic.cpp)
+    draw_ui_classic(currentSpeed, currentRPM, batteryLevel, 0, 0, blinkState);
+
+    delay(30); 
 }
