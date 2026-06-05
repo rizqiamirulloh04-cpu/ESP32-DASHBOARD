@@ -54,8 +54,8 @@ void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool
         drawArrow(270, 20, false, 0x07E0); 
     }
 
-    // Persentase Baterai Putih dan Terpusat
-    canvas->setCursor(225, 15);
+    // Persentase Baterai - digeser ke 220 agar lebih ke kiri
+    canvas->setCursor(220, 15); 
     canvas->setTextSize(2);
     canvas->setTextColor(0xFFFF); 
     canvas->printf("%d%%", constrain(batt, 0, 100));
