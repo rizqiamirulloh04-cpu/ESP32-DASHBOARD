@@ -28,15 +28,16 @@ void drawDashboard(int speed, int rpm) {
         int angle = map(v, 0, 120, 140, 400);
         float rad = angle * M_PI / 180.0;
 
-        // Garis PUTIH (tebal/panjang) untuk kelipatan 20, UNGU (tipis/pendek) untuk sisa
         bool isMajor = (v % 20 == 0);
-        int len = isMajor ? 12 : 6;
-        uint16_t color = isMajor ? 0xFFFF : 0xF81F; // 0xFFFF = Putih, 0xF81F = Ungu
+        
+        // Garis tebal putih untuk angka, garis KUNING TERANG untuk garis tipis
+        // Kita buat garis tipis lebih panjang sedikit (9) agar terlihat jelas
+        int len = isMajor ? 12 : 9; 
+        uint16_t color = isMajor ? 0xFFFF : 0xFFE0; // Putih : Kuning Terang
 
         canvas->drawLine(cx + (int)(cos(rad) * (r - len)), cy + (int)(sin(rad) * (r - len)), 
                          cx + (int)(cos(rad) * r), cy + (int)(sin(rad) * r), color);
 
-        // Cetak angka hanya untuk kelipatan 20
         if (isMajor) {
             int tx = cx + (int)(cos(rad) * (r - 28));
             int ty = cy + (int)(sin(rad) * (r - 28));
