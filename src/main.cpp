@@ -1,28 +1,33 @@
-#include "ui_classic.h"
-#include <Preferences.h>
+#include <Arduino.h>
+#include <Arduino_GFX_Library.h>
 
-// Deklarasi global agar bisa diakses ui_classic.cpp via extern
-Arduino_DataBus *bus = new Arduino_ESP32SPI(15, 14, 7, 6, -1);
-Arduino_GFX *gfx = new Arduino_ST7789(bus, 21, 1, true, 172, 320, 34, 0, 34, 0);
+// Definisi pin sesuai hardware asli kamu
+#define TFT_BL 22
+#define TFT_MOSI 6
+#define TFT_SCLK 7
+#define TFT_CS   14
+#define TFT_DC   15
+#define TFT_RST  21
 
-int speedValue = 0, rpmBarWidth = 0, batteryPercent = 89, signalDbm = -67, currentSteerState = 0;
-Preferences prefs;
-int topSpeed = 0;
+Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
+Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
 
 void setup() {
     Serial.begin(115200);
-    gfx->begin();
-    init_ui(gfx);
     
-    prefs.begin("speedo", false);
-    topSpeed = prefs.getInt("topSpeed", 0);
+    // Paksa backlight nyala
+    pinMode(TFT_BL, OUTPUT);
+    digitalWrite(TFT_BL, HIGH); 
+
+    if (!gfx->begin()) {
+        Serial.println("gfx->begin() gagal!");
+    } else {
+        Serial.println("gfx->begin() sukses!");
+        gfx->fillScreen(0xF800); // Merah (0xF800 adalah warna merah di RGB565)
+        Serial.println("Seharusnya layar sekarang berwarna merah.");
+    }
 }
 
 void loop() {
-    static unsigned long blinkTimer = 0;
-    static bool blinkState = false;
-    if (millis() - blinkTimer > 350) { blinkTimer = millis(); blinkState = !blinkState; }
-
-    draw_ui_classic(speedValue, rpmBarWidth, batteryPercent, signalDbm, currentSteerState, blinkState);
-    delay(10);
+    // Kosongkan
 }
