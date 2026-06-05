@@ -13,7 +13,6 @@ void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool
     if (!canvas) return;
     canvas->fillScreen(0x0000); 
 
-    // POSISI KIRI
     int centerX = 85; 
     int centerY = 85;
     int radius = 70;
@@ -21,25 +20,28 @@ void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool
     // 1. Lingkaran Utama
     canvas->drawCircle(centerX, centerY, radius, 0x5AEB); 
 
-    // 2. Skala Garis & Angka (Diletakkan di LUAR busur)
-    canvas->setTextColor(0xFFFF);
-    canvas->setTextSize(1);
-    for (int i = 0; i <= 200; i += 40) {
+    // 2. Skala Garis & Angka
+    for (int i = 0; i <= 200; i += 10) { // Langkah 10 untuk kerapatan garis
         int angle = map(i, 0, 200, 140, 400);
         float rad = angle * M_PI / 180.0;
 
-        // Garis skala di dalam busur
-        int x1 = centerX + (int)(cos(rad) * (radius - 10));
-        int y1 = centerY + (int)(sin(rad) * (radius - 10));
+        // Tentukan panjang garis: garis utama lebih panjang dari garis sela
+        int innerR = (i % 40 == 0) ? (radius - 12) : (radius - 6);
+        
+        int x1 = centerX + (int)(cos(rad) * innerR);
+        int y1 = centerY + (int)(sin(rad) * innerR);
         int x2 = centerX + (int)(cos(rad) * radius);
         int y2 = centerY + (int)(sin(rad) * radius);
+        
         canvas->drawLine(x1, y1, x2, y2, 0xFFFF);
 
-        // Angka di LUAR busur (radius + 8)
-        int tx = centerX + (int)(cos(rad) * (radius + 8));
-        int ty = centerY + (int)(sin(rad) * (radius + 8));
-        canvas->setCursor(tx - 5, ty - 3);
-        canvas->print(i);
+        // Hanya gambar angka jika i adalah kelipatan 40
+        if (i % 40 == 0) {
+            int tx = centerX + (int)(cos(rad) * (radius + 12));
+            int ty = centerY + (int)(sin(rad) * (radius + 12));
+            canvas->setCursor(tx - 5, ty - 4);
+            canvas->print(i);
+        }
     }
 
     // 3. Jarum Merah
@@ -52,7 +54,7 @@ void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool
     canvas->drawLine(centerX+1, centerY+1, x2+1, y2+1, 0xF800);
     canvas->fillCircle(centerX, centerY, 5, 0xF800);
 
-    // 4. Bar Indikator RPM (Pindah ke KANAN)
+    // 4. Bar Indikator RPM (Kanan)
     canvas->drawRect(240, 40, 40, 80, 0x5AEB);
     int barHeight = map(constrain(rpm, 0, 100), 0, 100, 0, 78);
     canvas->fillRect(241, 119 - barHeight, 38, barHeight, 0xF800); 
