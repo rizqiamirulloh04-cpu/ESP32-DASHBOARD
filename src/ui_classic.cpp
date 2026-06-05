@@ -1,12 +1,10 @@
-#include "ui_classic.h"
+#ifndef UI_CLASSIC_H
+#define UI_CLASSIC_H
 
-// Gunakan 'extern' agar kodenya tahu gfx didefinisikan di tempat lain
-extern Arduino_GFX *gfx; 
-Arduino_Canvas *canvas;
+#include <Arduino_GFX_Library.h>
 
-void init_ui(Arduino_GFX *gfx_ptr) {
-    gfx = gfx_ptr;
-    canvas = new Arduino_Canvas(320, 172, gfx);
-    canvas->begin();
-}
-// ... sisa kode draw_ui_classic ...
+void init_ui(Arduino_GFX *gfx_ptr);
+// Pastikan parameter di sini SAMA dengan di file .cpp
+void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool blinkState);
+
+#endif
