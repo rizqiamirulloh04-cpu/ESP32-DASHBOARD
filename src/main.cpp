@@ -1,75 +1,98 @@
-#include "ui_classic.h"
+#include <Arduino.h>
+#include <Arduino_GFX_Library.h>
 #include <math.h>
 
-extern Arduino_GFX *gfx;
-Arduino_Canvas *canvas;
+// PIN CONFIG
+#define TFT_BL 22
+#define TFT_MOSI 6
+#define TFT_SCLK 7
+#define TFT_CS   14
+#define TFT_DC   15
+#define TFT_RST  21
+#define STEER_PIN    1
+#define THROTTLE_PIN 2
 
-void init_ui(Arduino_GFX *gfx_ptr) {
-    canvas = new Arduino_Canvas(320, 172, gfx_ptr);
+// COLOR DEFINITIONS
+#define BLACK  0x0000
+#define WHITE  0xFFFF
+#define CYAN   0x07FF
+#define YELLOW 0xFFE0
+#define RED    0xF800
+#define GRAY   0x5AEB
+
+Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
+Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
+Arduino_Canvas *canvas = new Arduino_Canvas(320, 172, gfx);
+
+// FILTER VARIABLES
+float filteredThrottle = 1500.0;
+float filteredSteer = 1500.0;
+const float SMOOTH_THROTTLE = 0.15; // Halus
+const float SMOOTH_STEER = 0.08;    // Lebih halus
+
+void drawSteeringIndicator(int x, int y, float steerVal) {
+    // Tentukan warna: Normal Cyan, Belok Kiri/Kanan jadi Kuning
+    uint16_t steerColor = (steerVal < 1350 || steerVal > 1650) ? YELLOW : CYAN;
+    
+    canvas->drawCircle(x, y, 15, GRAY);
+    float angle = map(constrain(steerVal, 1000, 2000), 1000, 2000, -45, 45) * M_PI / 180.0;
+    
+    int x1 = x + (int)(12 * sin(angle));
+    int y1 = y - (int)(12 * cos(angle));
+    int x2 = x - (int)(12 * sin(angle));
+    int y2 = y + (int)(12 * cos(angle));
+    canvas->drawLine(x1, y1, x2, y2, steerColor);
+}
+
+void drawGauge(int cx, int cy, int radius, int speed) {
+    canvas->drawCircle(cx, cy, radius, GRAY);
+    
+    // Skala
+    for (int i = 0; i <= 240; i += 20) {
+        float angle = map(i, 0, 240, 140, 400) * M_PI / 180.0;
+        int x1 = cx + (radius - 8) * cos(angle);
+        int y1 = cy + (radius - 8) * sin(angle);
+        int x2 = cx + radius * cos(angle);
+        int y2 = cy + radius * sin(angle);
+        canvas->drawLine(x1, y1, x2, y2, WHITE);
+    }
+
+    // Jarum
+    float needleAngle = map(constrain(speed, 0, 240), 0, 240, 140, 400) * M_PI / 180.0;
+    int nx = cx + (radius - 15) * cos(needleAngle);
+    int ny = cy + (radius - 15) * sin(needleAngle);
+    canvas->drawLine(cx, cy, nx, ny, YELLOW);
+    canvas->fillCircle(cx, cy, 5, YELLOW);
+}
+
+void setup() {
+    gfx->begin();
+    gfx->setRotation(1);
     canvas->begin();
+    pinMode(STEER_PIN, INPUT);
+    pinMode(THROTTLE_PIN, INPUT);
 }
 
-void drawArrow(int x, int y, bool isLeft, uint16_t color) {
-    if (isLeft) {
-        canvas->fillTriangle(x, y, x + 10, y - 8, x + 10, y + 8, color);
-        canvas->fillRect(x + 10, y - 4, 5, 8, color);
-    } else {
-        canvas->fillTriangle(x + 15, y, x + 5, y - 8, x + 5, y + 8, color);
-        canvas->fillRect(x, y - 4, 5, 8, color);
-    }
-}
+void loop() {
+    int rawThrottle = pulseIn(THROTTLE_PIN, HIGH, 20000);
+    int rawSteer = pulseIn(STEER_PIN, HIGH, 20000);
+    if(rawThrottle == 0) rawThrottle = 1500;
+    if(rawSteer == 0) rawSteer = 1500;
 
-void draw_ui_classic(int speed, int rpm, int batt, int sig, int steerState, bool blinkState) {
-    if (!canvas) return;
-    canvas->fillScreen(0x0000); 
+    filteredThrottle = (filteredThrottle * (1.0 - SMOOTH_THROTTLE)) + (rawThrottle * SMOOTH_THROTTLE);
+    filteredSteer = (filteredSteer * (1.0 - SMOOTH_STEER)) + (rawSteer * SMOOTH_STEER);
 
-    int centerX = 85; 
-    int centerY = 85;
-    int radius = 70;
+    int speed = map(constrain((int)filteredThrottle, 1050, 1950), 1050, 1950, 0, 240);
+    if(speed < 10) speed = 0;
 
-    canvas->drawCircle(centerX, centerY, radius, 0x5AEB); 
-
-    for (int i = 0; i <= 200; i += 10) { 
-        int angle = map(i, 0, 200, 140, 400);
-        float rad = angle * M_PI / 180.0;
-        int innerR = (i % 40 == 0) ? (radius - 12) : (radius - 6);
-        canvas->drawLine(centerX + (int)(cos(rad)*innerR), centerY + (int)(sin(rad)*innerR), 
-                         centerX + (int)(cos(rad)*radius), centerY + (int)(sin(rad)*radius), 0xFFFF);
-        if (i % 40 == 0) {
-            int tx = centerX + (int)(cos(rad) * (radius + 12));
-            int ty = centerY + (int)(sin(rad) * (radius + 12));
-            canvas->setCursor(tx - 5, ty - 4);
-            canvas->print(i);
-        }
-    }
-
-    int angle = map(constrain(speed, 0, 200), 0, 200, 140, 400);
-    float rad = angle * M_PI / 180.0;
-    canvas->drawLine(centerX, centerY, centerX + (int)(cos(rad)*55), centerY + (int)(sin(rad)*55), 0xF800);
-    canvas->drawLine(centerX+1, centerY+1, centerX + (int)(cos(rad)*55)+1, centerY + (int)(sin(rad)*55)+1, 0xF800);
-    canvas->fillCircle(centerX, centerY, 5, 0xF800);
-
-    if(blinkState) {
-        drawArrow(190, 20, true, 0x07E0);  
-        drawArrow(270, 20, false, 0x07E0); 
-    }
-
-    // Persentase Baterai - digeser ke 220 agar lebih ke kiri
-    canvas->setCursor(220, 15); 
-    canvas->setTextSize(2);
-    canvas->setTextColor(0xFFFF); 
-    canvas->printf("%d%%", constrain(batt, 0, 100));
+    canvas->fillScreen(BLACK);
+    drawGauge(160, 85, 75, speed);
+    drawSteeringIndicator(260, 85, filteredSteer);
     
-    canvas->drawRect(180, 50, 120, 40, 0x5AEB);
-    canvas->fillRect(182, 52, map(constrain(rpm, 0, 100), 0, 100, 0, 116), 36, 0xF800);
-    
-    canvas->setCursor(210, 110);
-    canvas->setTextSize(3);
-    canvas->setTextColor(0x07FF);
-    canvas->printf("%03d", speed);
-    canvas->setCursor(270, 120);
-    canvas->setTextSize(1);
-    canvas->print("KMH");
+    canvas->setCursor(145, 140);
+    canvas->setTextColor(WHITE);
+    canvas->printf("%03d KM/H", speed);
 
     gfx->draw16bitRGBBitmap(0, 0, canvas->getFramebuffer(), 320, 172);
+    delay(10);
 }
