@@ -2,6 +2,7 @@
 #include <Arduino_GFX_Library.h>
 #include <math.h>
 
+// PIN CONFIG
 #define TFT_BL 22
 #define TFT_MOSI 6
 #define TFT_SCLK 7
@@ -10,6 +11,14 @@
 #define TFT_RST  21
 #define STEER_PIN    1
 #define THROTTLE_PIN 2
+
+// TAMBAHKAN DEFINISI WARNA DI SINI
+#define BLACK  0x0000
+#define WHITE  0xFFFF    // <--- Ini yang kurang tadi
+#define CYAN   0x07FF
+#define YELLOW 0xFFE0
+#define GRAY   0x5AEB
+#define RED    0xF800    // Tambahkan ini sekalian buat jaga-jaga
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCLK, TFT_MOSI, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 1, true, 172, 320, 34, 0, 34, 0);
