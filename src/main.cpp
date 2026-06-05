@@ -1,7 +1,13 @@
 #include "ui_classic.h"
 #include <Preferences.h>
 
-// Definisi pin dan hardware sama seperti sebelumnya...
+// 1. Tambahkan deklarasi variabel yang dibutuhkan
+int speedValue = 0;
+int rpmBarWidth = 0;
+int batteryPercent = 89;
+int signalDbm = -67;
+int currentSteerState = 0;
+
 Arduino_DataBus *bus = new Arduino_ESP32SPI(15, 14, 7, 6, -1);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, 21, 1, true, 172, 320, 34, 0, 34, 0);
 
@@ -18,15 +24,15 @@ void setup() {
 }
 
 void loop() {
-    // 1. Baca sensor (PWM/Analog)
-    // 2. Hitung speedValue dan rpm
-    // 3. Update topSpeed ke NVS
+    // 2. Di sini tempat kamu memasukkan logika pembacaan sensor (pulseIn, map, dll.)
+    // Contoh singkat:
+    // speedValue = map(analogRead(THROTTLE_PIN), 0, 4095, 0, 120);
     
-    // 4. Panggil UI
     static unsigned long blinkTimer = 0;
     static bool blinkState = false;
     if (millis() - blinkTimer > 350) { blinkTimer = millis(); blinkState = !blinkState; }
 
+    // Sekarang variabel sudah dideklarasikan, error akan hilang
     draw_ui_classic(speedValue, rpmBarWidth, batteryPercent, signalDbm, currentSteerState, blinkState);
     
     delay(10);
