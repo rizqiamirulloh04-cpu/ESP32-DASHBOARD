@@ -1,15 +1,14 @@
-#ifndef UI_CLASSIC_H
-#define UI_CLASSIC_H
+#include "ui_classic.h"
 
-#include <Arduino_GFX_Library.h>
+// Kita "meminjam" variabel dari main.cpp menggunakan extern
+Arduino_DataBus *bus;
+Arduino_GFX *gfx;
+Arduino_Canvas *canvas;
 
-// Gunakan extern: artinya variabel ini dibuat di file lain (main.cpp)
-extern Arduino_DataBus *bus;
-extern Arduino_GFX *gfx;
-extern Arduino_Canvas *canvas;
+void init_ui() {
+    // Isi logika gambar UI Anda di sini
+}
 
-// Deklarasi fungsi agar bisa dipanggil di main.cpp
-void init_ui();
-void draw_ui_classic(int speed, int rpm, int bat, int sig, int temp, bool blink);
-
-#endif
+void draw_ui_classic(int speed, int rpm, int bat, int sig, int temp, bool blink) {
+    // Isi logika gambar UI Anda di sini
+}
