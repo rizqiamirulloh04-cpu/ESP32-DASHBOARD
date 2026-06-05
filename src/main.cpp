@@ -2,9 +2,19 @@
 #include <Arduino_GFX_Library.h>
 #include "ui_classic.h"
 
-// Kita tetap gunakan pin 1 dan 2 sesuai permintaan Anda
-#define STEER_PIN 1    
-#define THROTTLE_PIN 2 
+//
+
+‎#definedefine TFT_BL 22
+‎#define TFT_MOSI 6
+‎#define TFT_SCLK 7
+‎#define TFT_CS   14
+‎#define TFT_DC   15
+‎#define TFT_RST  21
+‎
+‎#define STEER_PIN    1
+‎#define THROTTLE_PIN 2
+‎#define BATTERY_PIN  3  
+‎#define SIGNAL_PIN   4  
 
 Arduino_DataBus *bus = new Arduino_ESP32SPI(8, 9, 10, 11, GFX_NOT_DEFINED);
 Arduino_GFX *gfx = new Arduino_GC9A01(bus, 12, 0, true);
